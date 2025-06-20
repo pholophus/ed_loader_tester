@@ -1,7 +1,5 @@
-import mongoose from 'mongoose';
-
 export interface FileFormat {
-  _id?: mongoose.Types.ObjectId | string; // Using string or ObjectId depending on usage context, ObjectId is safer with mongoose
+  _id?: string; // MongoDB ObjectId as string
   name: string;
   type: string;
   isActive: boolean;

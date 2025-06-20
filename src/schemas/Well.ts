@@ -1,7 +1,6 @@
-import mongoose from "mongoose";
-
+// Remove mongoose import and use proper ObjectId type for native MongoDB
 interface Well {
-    _id?: mongoose.Types.ObjectId;
+    _id?: string; // MongoDB ObjectId as string
     wellboreId?: string;
     country?: string;
     region?: string;

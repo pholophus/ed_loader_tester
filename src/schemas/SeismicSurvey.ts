@@ -1,11 +1,5 @@
-import mongoose from 'mongoose';
-
-export interface ObjectId {
-  $oid: string;
-}
-
 export interface SeismicSurvey {
-  _id?: mongoose.Types.ObjectId;
+  _id?: string; // MongoDB ObjectId as string
   name: string;
   block?: string;
   dimension?: string;

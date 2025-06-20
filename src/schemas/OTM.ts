@@ -1,7 +1,6 @@
 import Well from './Well';
 import { SeismicLine } from './SeismicLine';
 import { SeismicSurvey } from './SeismicSurvey';
-import mongoose from 'mongoose';
 
 export interface File {
   path: string;
@@ -11,7 +10,7 @@ export interface File {
 
 export interface EdafyValue {
   name?: string
-  _id?: mongoose.Types.ObjectId
+  _id?: string // MongoDB ObjectId as string
 }
 
 export interface OTMData {

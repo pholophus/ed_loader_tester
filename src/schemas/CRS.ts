@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 interface CRS {
-    _id: mongoose.Types.ObjectId;
+    _id: string; // MongoDB ObjectId as string
     srid: number;
     name: string;
     proj4: string;

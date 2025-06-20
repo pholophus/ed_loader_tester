@@ -1,7 +1,5 @@
-import mongoose from 'mongoose';
-
 export interface DataType {
-    _id: mongoose.Types.ObjectId;
+    _id: string; // MongoDB ObjectId as string
     name: string;
 }
 

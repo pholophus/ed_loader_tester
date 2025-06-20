@@ -1,9 +1,7 @@
-import mongoose from 'mongoose';
-
 export interface SubDataType {
-    _id: mongoose.Types.ObjectId;
+    _id: string; // MongoDB ObjectId as string
     name: string;
-    dataTypeId: mongoose.Types.ObjectId;
+    dataTypeId: string; // MongoDB ObjectId as string
 }
 
 export default SubDataType;

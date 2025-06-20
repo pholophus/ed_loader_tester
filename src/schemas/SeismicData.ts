@@ -1,7 +1,5 @@
-import mongoose from "mongoose";
-
 export interface SeismicData {
-  _id?: mongoose.Types.ObjectId;
+  _id?: string;
   datasetTypeId: string;
   subDatasetTypeId: string;
   status?: string;
@@ -25,5 +23,5 @@ export interface SeismicData {
   recordLengthUom?: string;
   sampleRate?: number;
   sampleRateUom?: string;
-  seismicLineId?: mongoose.Types.ObjectId; 
+  seismicLineId?: string;
 } 

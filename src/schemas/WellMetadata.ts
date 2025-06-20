@@ -1,7 +1,5 @@
-import mongoose from "mongoose";
-
 interface WellMetadata {
-    _id?: mongoose.Types.ObjectId;
+    _id?: string;
     datasetTypeId?: string;
     subDatasetTypeId?: string;
     status?: string;
@@ -27,7 +25,7 @@ interface WellMetadata {
     topDepthUom?: string;
     baseDepth?: number;
     baseDepthUom?: string;
-    wellId?: mongoose.Types.ObjectId;
+    wellId?: string;
 }
 
 export default WellMetadata;

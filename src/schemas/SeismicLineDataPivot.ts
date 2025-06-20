@@ -1,11 +1,9 @@
-import mongoose from 'mongoose';
-
-interface SeismicSurveyLinePivot {
-    _id?: mongoose.Types.ObjectId;
-    seismicDataId: mongoose.Types.ObjectId;
-    lineId: mongoose.Types.ObjectId;
-    createdAt: Date;
-    updatedAt: Date;
+interface SeismicLineDataPivot {
+    _id?: string; // MongoDB ObjectId as string
+    seismicDataId: string; // MongoDB ObjectId as string
+    lineId: string; // MongoDB ObjectId as string
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
-export default SeismicSurveyLinePivot;
+export default SeismicLineDataPivot;
