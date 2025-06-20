@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { connectMongo, closeMongo, findDocuments, insertDocument, updateDocument, deleteDocument, upsertDocument, startSession, getDb, getSession, endSession, insertManyDocuments, setDbNameAndReconnect } from './db/mongo';
 import { extractSegyContent, extractLasContent, extractOthersContent, extractSEGYFilesContent, extractSegySingleFileContent, extractSegyCoordinates } from './services/pythonService';
 import { openFolderDialog, readDirectory, fileExists, readSingleFile } from './services/fileService';
+import { startTusServer, stopTusServer, getTusServerUrl, TusServerConfig } from './services/tusServer';
 import { manualTraceHeaderExtractRequest } from './schemas/SegyTable';
 import log from 'electron-log';
 
@@ -191,6 +192,30 @@ app.whenReady().then(async () => {
     console.error('Error connecting to MongoDB:', err);
   }
 
+  // Start Tus server for resumable uploads
+  try {
+    const tusConfig: TusServerConfig = {
+      onUploadComplete: (file) => {
+        console.log('📁 File upload completed:', file.originalName);
+        // Send notification to renderer process
+        if (mainWindow) {
+          mainWindow.webContents.send('upload-complete', file);
+        }
+      },
+      onUploadProgress: (file, progress) => {
+        // Send progress update to renderer process
+        if (mainWindow) {
+          mainWindow.webContents.send('upload-progress', { file, progress });
+        }
+      }
+    };
+    
+    const port = await startTusServer(tusConfig);
+    console.log(`🎯 Tus server started on port ${port}`);
+  } catch (err) {
+    console.error('Error starting Tus server:', err);
+  }
+
   // Set up the default protocol client
   const protocol = 'afed-digital-ed-loader-desktop';
   if (process.platform === 'darwin') {
@@ -231,6 +256,7 @@ app.on('ready', () => {
 // Quit when all windows are closed, except on macOS.
 app.on('window-all-closed', async () => {
   await closeMongo();
+  stopTusServer();
   if (process.platform !== 'darwin') {
     app.quit();
   }
@@ -521,6 +547,43 @@ ipcMain.handle('settings:setDbName', async (_event, newDbName: string) => {
     return { success: true };
   } catch (error: any) {
     console.error('Error setting new DB name and reconnecting:', error);
+    return { error: error.message };
+  }
+});
+
+// Tus server operations
+ipcMain.handle('tus:getServerUrl', async () => {
+  return getTusServerUrl();
+});
+
+ipcMain.handle('tus:processUploadedFile', async (_event, filePath: string, originalName: string, metadata: any) => {
+  try {
+    // Process the uploaded file - categorize it based on extension
+    const fileExtension = path.extname(originalName).toLowerCase().substring(1);
+    
+    if (fileExtension === 'sgy' || fileExtension === 'segy') {
+      // Copy to SEGY list for processing
+      const segyListPath = path.join(__dirname, '../scripts/data/segy_list.txt');
+      const dir = path.dirname(segyListPath);
+      await fs.promises.mkdir(dir, { recursive: true });
+      await fs.promises.appendFile(segyListPath, filePath + '\n');
+    } else if (fileExtension === 'las') {
+      // Copy to LAS list for processing
+      const lasListPath = path.join(__dirname, '../scripts/data/las_list.txt');
+      const dir = path.dirname(lasListPath);
+      await fs.promises.mkdir(dir, { recursive: true });
+      await fs.promises.appendFile(lasListPath, filePath + '\n');
+    } else {
+      // Copy to others list for processing
+      const othersListPath = path.join(__dirname, '../scripts/data/others_list.txt');
+      const dir = path.dirname(othersListPath);
+      await fs.promises.mkdir(dir, { recursive: true });
+      await fs.promises.appendFile(othersListPath, filePath + '\n');
+    }
+    
+    return { success: true, fileType: fileExtension };
+  } catch (error: any) {
+    console.error('Error processing uploaded file:', error);
     return { error: error.message };
   }
 });

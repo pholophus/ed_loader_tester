@@ -12,6 +12,16 @@ interface ElectronAPI {
   extractOthersContent: (folderPath?: string, formData?: any) => Promise<any>;
   extractSEGYFilesContent: (manualTraceHeaderExtractRequest: any) => Promise<any>;
   extractSegyCoordinates: (fileConfigs: any[], srid: number, proj4_string: string) => Promise<any>;
+  
+  // Tus server operations
+  getTusServerUrl: () => Promise<string>;
+  processUploadedFile: (filePath: string, originalName: string, metadata: any) => Promise<any>;
+  
+  // Upload event listeners
+  onUploadComplete: (callback: (file: any) => void) => void;
+  onUploadProgress: (callback: (data: { file: any, progress: number }) => void) => void;
+  removeUploadListeners: () => void;
+  
   onDeepLink: (callback: (url: string) => void) => void;
   setDbName: (newDbName: string) => Promise<any>;
 }
