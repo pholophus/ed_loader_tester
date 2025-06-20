@@ -111,6 +111,17 @@
           </CardContent>
         </Card>
       </div>
+
+      <!-- Chart Example -->
+      <div class="max-w-2xl mx-auto mt-6">
+        <SimpleChart
+          type="line"
+          :data="chartData"
+          title="Weekly Activity"
+          description="Your activity over the past week"
+          height="250px"
+        />
+      </div>
     </main>
 
     <!-- Footer -->
@@ -140,9 +151,25 @@ import {
   CardTitle 
 } from '@/Components/ui/card';
 import { Input } from '@/Components/ui/input';
+import SimpleChart from '@/Components/SimpleChart.vue';
 
 const projectName = ref('');
 const projectCount = ref(3);
+
+// Chart data for the weekly activity chart
+const chartData = ref({
+  labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+  datasets: [
+    {
+      label: 'Activities',
+      backgroundColor: '#793E94' + '20',
+      borderColor: '#793E94',
+      data: [12, 19, 15, 22, 18, 25, 20],
+      fill: true,
+      tension: 0.4
+    }
+  ]
+});
 
 const handleNewProject = () => {
   console.log('Creating new project...');
