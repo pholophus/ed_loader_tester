@@ -1,0 +1,2 @@
+/Users/afedsetup/Documents/projects/rnd/auto-import-segy-data/combination test/MYS1985P19862DM01PMOPMEC_CS86-965_RAW_MIGR.sgy
+/Users/afedsetup/Documents/projects/rnd/auto-import-segy-data/combination test/MYS2019P20192DM01PMOPM419_PM4192D191001P1-008_FILT_SCAL_MIGR_kpstm_enhanced.sgy
