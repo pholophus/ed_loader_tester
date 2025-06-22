@@ -1,7 +1,12 @@
 export interface SubDataType {
-    _id: string; // MongoDB ObjectId as string
+    _id: string; 
     name: string;
-    dataTypeId: string; // MongoDB ObjectId as string
+    dataTypeId: string; 
+    isActive: boolean;
+    createdBy: string;
+    createdAt: Date;
+    updatedBy: string;
+    updatedAt: Date;
 }
 
 export default SubDataType;

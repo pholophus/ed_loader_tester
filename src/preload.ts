@@ -17,9 +17,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openFile: () => ipcRenderer.invoke('dialog:openFile'),
   readDirectory: (path: string) => ipcRenderer.invoke('fs:readDir', path),
   readSingleFile: (filePath: string) => ipcRenderer.invoke('fs:readSingleFile', filePath),
+  getFileStats: (filePath: string) => ipcRenderer.invoke('fs:getFileStats', filePath),
   countFilesInFolder: (folderPath: string) => ipcRenderer.invoke('fs:countFilesInFolder', folderPath),
   filterFile: (filePath: string, enableExtensions: string[], chosenDataFormats: string[]) => ipcRenderer.invoke('fs:filterFile', filePath, enableExtensions, chosenDataFormats) as Promise<FileDetails[]| undefined>,
   filterFilesInFolder: (folderPath: string, enableExtensions: string[], chosenDataFormats: string[]) => ipcRenderer.invoke('fs:filterFilesInFolder', folderPath, enableExtensions, chosenDataFormats) as Promise<FileDetails[]| undefined>,
+  
+  // LAS file operations
+  parseLasForPreview: (filePath: string) => ipcRenderer.invoke('las:parseForPreview', filePath),
   
   // Python script operations
   extractSingleFileSegyContent: (filePath: string) => ipcRenderer.invoke('python:runSingleFileSegy', filePath),
@@ -60,23 +64,29 @@ contextBridge.exposeInMainWorld('electronAPI', {
     });
   },
 
-  // MongoDB operations
-  mongoFind: (collectionName: string, query: any, sessionId?: string) => 
-    ipcRenderer.invoke('mongo:find', collectionName, query, sessionId),
-  mongoInsert: (collectionName: string, document: any, sessionId?: string) => 
-    ipcRenderer.invoke('mongo:insert', collectionName, document, sessionId),
-  mongoUpdate: (collectionName: string, filter: any, update: any, sessionId?: string) => 
-    ipcRenderer.invoke('mongo:update', collectionName, filter, update, sessionId),
-  mongoDelete: (collectionName: string, filter: any, sessionId?: string) => 
-    ipcRenderer.invoke('mongo:delete', collectionName, filter, sessionId),
-  mongoUpsert: (collectionName: string, filter: any, document: any, sessionId?: string) => 
-    ipcRenderer.invoke('mongo:upsert', collectionName, filter, document, sessionId),
-  mongoStartSession: () => ipcRenderer.invoke('mongo:startSession'),
-  mongoStartTransaction: (sessionId: string) => ipcRenderer.invoke('mongo:startTransaction', sessionId),
-  mongoCommitTransaction: (sessionId: string) => ipcRenderer.invoke('mongo:commitTransaction', sessionId),
-  mongoAbortTransaction: (sessionId: string) => ipcRenderer.invoke('mongo:abortTransaction', sessionId),
-  mongoEndSession: (sessionId: string) => ipcRenderer.invoke('mongo:endSession', sessionId),
-  
   // Settings
   setDbName: (newDbName: string) => ipcRenderer.invoke('settings:setDbName', newDbName),
+});
+
+// Expose MongoDB API separately
+contextBridge.exposeInMainWorld('mongoAPI', {
+  find: (collectionName: string, query: any, sessionId?: string) => 
+    ipcRenderer.invoke('mongo:find', collectionName, query, sessionId),
+  aggregate: (collectionName: string, pipeline: any[], sessionId?: string) => 
+    ipcRenderer.invoke('mongo:aggregate', collectionName, pipeline, sessionId),
+  insert: (collectionName: string, document: any, sessionId?: string) => 
+    ipcRenderer.invoke('mongo:insert', collectionName, document, sessionId),
+  insertMany: (collectionName: string, documents: any[], sessionId?: string) => 
+    ipcRenderer.invoke('mongo:insertMany', collectionName, documents, sessionId),
+  update: (collectionName: string, filter: any, update: any, sessionId?: string) => 
+    ipcRenderer.invoke('mongo:update', collectionName, filter, update, sessionId),
+  delete: (collectionName: string, filter: any, sessionId?: string) => 
+    ipcRenderer.invoke('mongo:delete', collectionName, filter, sessionId),
+  upsert: (collectionName: string, filter: any, document: any, sessionId?: string) => 
+    ipcRenderer.invoke('mongo:upsert', collectionName, filter, document, sessionId),
+  startSession: () => ipcRenderer.invoke('mongo:startSession'),
+  startTransaction: (sessionId: string) => ipcRenderer.invoke('mongo:startTransaction', sessionId),
+  commitTransaction: (sessionId: string) => ipcRenderer.invoke('mongo:commitTransaction', sessionId),
+  abortTransaction: (sessionId: string) => ipcRenderer.invoke('mongo:abortTransaction', sessionId),
+  endSession: (sessionId: string) => ipcRenderer.invoke('mongo:endSession', sessionId),
 });

@@ -348,7 +348,7 @@ const refreshData = () => {
     Math.floor(Math.random() * 50) + 10
   )
   
-  console.log('Chart data refreshed!')
+  // console.log('Chart data refreshed!')
 }
 
 const updateTheme = () => {
@@ -358,12 +358,12 @@ const updateTheme = () => {
   barChartData.datasets[0].backgroundColor = colors
   doughnutChartData.datasets[0].backgroundColor = colors
   
-  console.log(`Theme changed to: ${selectedTheme.value}`)
+  // console.log(`Theme changed to: ${selectedTheme.value}`)
 }
 
 const updateAnimation = () => {
   // This would update chart animation settings
-  console.log(`Animation ${enableAnimation.value ? 'enabled' : 'disabled'}`)
+  // console.log(`Animation ${enableAnimation.value ? 'enabled' : 'disabled'}`)
 }
 
 const addDataPoint = () => {
@@ -376,11 +376,11 @@ const addDataPoint = () => {
     lineChartData.datasets[1].data.push(Math.floor(Math.random() * 100))
   }
   
-  console.log('Added new data point!')
+  // console.log('Added new data point!')
 }
 
 onMounted(() => {
-  console.log('Chart.js + vue-chartjs demo loaded successfully!')
+  // console.log('Chart.js + vue-chartjs demo loaded successfully!')
 })
 </script>
 

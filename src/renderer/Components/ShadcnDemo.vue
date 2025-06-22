@@ -99,7 +99,7 @@ const email = ref('')
 const message = ref('')
 
 const handleSubmit = () => {
-  console.log('Form submitted:', { name: name.value })
+  // console.log('Form submitted:', { name: name.value })
   // You can add your logic here
 }
 
@@ -108,10 +108,10 @@ const handleReset = () => {
 }
 
 const handleContactSubmit = () => {
-  console.log('Contact form submitted:', { 
-    email: email.value, 
-    message: message.value 
-  })
+  // console.log('Contact form submitted:', { 
+  //   email: email.value, 
+  //   message: message.value 
+  // })
   // You can add your logic here
 }
 </script> 

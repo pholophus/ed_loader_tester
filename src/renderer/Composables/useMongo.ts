@@ -12,16 +12,21 @@ export const useMongo = <T = any>(collectionName: string) => {
             // console.log(`[useMongo] Fetching from ${collectionName} with query:`, JSON.stringify(query, null, 2));
             // @ts-ignore
             const result = await window.mongoAPI.find(collectionName, query, session);
-            // console.log(`[useMongo] Fetch result for ${collectionName}:`, JSON.stringify(result, null, 2));
+            // console.log(`[useMongo] Raw result for ${collectionName}:`, result);
+            // console.log(`[useMongo] Result type:`, typeof result);
+            // console.log(`[useMongo] Is array:`, Array.isArray(result));
+            
             if (Array.isArray(result)) {
+                // console.log(`[useMongo] Setting items for ${collectionName}, count:`, result.length);
                 items.value = result;
                 return result; // Return the result array
             } else {
-                error.value = result.error || 'Unknown error';
+                // console.log(`[useMongo] Result is not array for ${collectionName}:`, result);
+                error.value = result?.error || 'Unknown error';
                 return []; // Return empty array on error
             }
         } catch (e: any) {
-            console.error(`[useMongo] Error fetching from ${collectionName}:`, e);
+            // console.error(`[useMongo] Error fetching from ${collectionName}:`, e);
             error.value = e.message;
             return []; // Return empty array on error
         } finally {

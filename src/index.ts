@@ -279,7 +279,7 @@ ipcMain.handle('dialog:openFolder', async () => {
 
 ipcMain.handle('dialog:openFile', async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog({
-    properties: ['openFile']
+    properties: ['openFile', 'multiSelections']
   });
   return { canceled, filePaths };
 });
@@ -444,6 +444,116 @@ ipcMain.handle('python:extractSegyCoordinates', async (_event, fileConfigs: any[
   return extractSegyCoordinates(fileConfigs, srid, proj4_string);
 });
 
+// LAS file preview handler
+ipcMain.handle('las:parseForPreview', async (_event, filePath: string) => {
+  try {
+    const wellio = require('wellio');
+    
+    // Read the file content
+    const fileContent = await readSingleFile(filePath);
+    
+    if (!fileContent) {
+      return {
+        asciiText: '',
+        metadata: {},
+        error: 'Unable to read file content'
+      };
+    }
+
+    // Filter out ASCII data section - only show header sections
+    const lines = fileContent.split('\n');
+    const headerLines: string[] = [];
+    let inAsciiDataSection = false;
+    
+    for (const line of lines) {
+      // Check if we've reached the ASCII data section
+      if (line.trim().startsWith('~A') || line.trim().startsWith('~ASCII')) {
+        inAsciiDataSection = true;
+        headerLines.push(line); // Include the ~A header line
+        headerLines.push('... [ASCII log data section excluded from preview] ...');
+        break; // Stop processing lines after ASCII section starts
+      }
+      
+      // Only include lines that are not in the ASCII data section
+      if (!inAsciiDataSection) {
+        headerLines.push(line);
+      }
+    }
+    
+    const asciiText = headerLines.join('\n');
+
+    // Try to parse basic metadata from the LAS file
+    let metadata: any = {};
+    
+    try {
+      // Use wellio to parse the LAS file for metadata
+      const wellioJson = wellio.las2json(fileContent);
+      
+      if (wellioJson && wellioJson['WELL INFORMATION BLOCK']) {
+        const wellInfo = wellioJson['WELL INFORMATION BLOCK'];
+        
+        // Extract common metadata fields
+        metadata = {
+          wellName: extractWellInfoValue(wellInfo, 'WELL'),
+          location: extractWellInfoValue(wellInfo, 'LOC'),
+          uwi: extractWellInfoValue(wellInfo, 'UWI'),
+          startDepth: extractWellInfoValue(wellInfo, 'STRT'),
+          stopDepth: extractWellInfoValue(wellInfo, 'STOP'),
+          step: extractWellInfoValue(wellInfo, 'STEP'),
+        };
+      }
+
+      // Extract curve information
+      if (wellioJson && wellioJson['CURVE INFORMATION BLOCK']) {
+        const curveInfo = wellioJson['CURVE INFORMATION BLOCK'];
+        const curves: string[] = [];
+        
+        Object.keys(curveInfo).forEach(key => {
+          if (curveInfo[key] && curveInfo[key].MNEM) {
+            curves.push(curveInfo[key].MNEM);
+          }
+        });
+        
+        metadata.curves = curves;
+        metadata.curveCount = curves.length;
+      }
+    } catch (parseError) {
+      console.warn('[LAS Preview Service] Could not parse metadata:', parseError);
+      // Continue without metadata - we can still show the ASCII text
+    }
+
+    return {
+      asciiText,
+      metadata,
+    };
+
+  } catch (error) {
+    console.error('[LAS Preview Service] Error parsing LAS file:', error);
+    return {
+      asciiText: '',
+      metadata: {},
+      error: `Error parsing LAS file: ${error instanceof Error ? error.message : 'Unknown error'}`
+    };
+  }
+});
+
+// Helper function for extracting well info values
+function extractWellInfoValue(wellInfo: any, key: string): string | undefined {
+  // Look for exact key match first
+  if (wellInfo[key] && wellInfo[key].DATA) {
+    return wellInfo[key].DATA;
+  }
+  
+  // Look for key in MNEM_* pattern
+  for (const infoKey of Object.keys(wellInfo)) {
+    if (infoKey.startsWith('MNEM_') && wellInfo[infoKey] && wellInfo[infoKey].MNEM === key) {
+      return wellInfo[infoKey].DATA;
+    }
+  }
+  
+  return undefined;
+}
+
 // ipcMain.handle('python:runCustom', async (_event, scriptPath: string, args: string[] = []) => {
 //   return runCustomPythonScript(scriptPath, args);
 // });
@@ -585,6 +695,26 @@ ipcMain.handle('tus:processUploadedFile', async (_event, filePath: string, origi
   } catch (error: any) {
     console.error('Error processing uploaded file:', error);
     return { error: error.message };
+  }
+});
+
+// Add a new handler to get file stats
+ipcMain.handle('fs:getFileStats', async (_event, filePath: string) => {
+  try {
+    const stats = await fs.promises.stat(filePath);
+    const fileName = path.basename(filePath);
+    return {
+      name: fileName,
+      size: stats.size,
+      path: filePath,
+      isFile: stats.isFile(),
+      isDirectory: stats.isDirectory(),
+      modified: stats.mtime,
+      created: stats.birthtime
+    };
+  } catch (error) {
+    console.error('Error getting file stats:', error);
+    throw error;
   }
 });
 

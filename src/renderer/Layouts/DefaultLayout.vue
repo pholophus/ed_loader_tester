@@ -4,7 +4,7 @@
     <header class="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div class="container flex h-14 items-center px-4">
         <div class="mr-4 flex">
-          <h1 class="text-lg font-semibold">ED Loader App</h1>
+          <h1 class="text-base font-semibold">ED Loader App</h1>
         </div>
         <div class="flex flex-1 items-center space-x-2 justify-end">
           <Button variant="ghost" size="sm">
@@ -43,7 +43,7 @@ import { ref } from 'vue';
 import { Button } from '@/Components/ui/button';
 
 const showDemo = () => {
-  console.log('Showing shadcn demo...');
+  // console.log('Showing shadcn demo...');
   // You could navigate to the ShadcnDemo component here
 };
 </script>

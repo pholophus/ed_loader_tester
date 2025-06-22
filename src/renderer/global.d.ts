@@ -6,6 +6,10 @@ interface ElectronAPI {
   countFilesInFolder: (folderPath: string) => Promise<number>;
   filterFile: (filePath: string, enableExtensions: string[], chosenDataFormats: string[]) => Promise<any>;
   filterFilesInFolder: (folderPath: string, enableExtensions: string[], chosenDataFormats: string[]) => Promise<any>;
+  
+  // LAS file operations
+  parseLasForPreview: (filePath: string) => Promise<any>;
+  
   extractSingleFileSegyContent: (filePath: string) => Promise<any>;
   extractSegyContent: () => Promise<any>;
   extractLasContent: (folderPath?: string, formData?: any) => Promise<any>;
