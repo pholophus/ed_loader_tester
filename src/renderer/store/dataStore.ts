@@ -5,10 +5,19 @@ interface FileData {
   name: string;
   size: number;
   progress: number;
-  path?: string; // File path/location
+  path?: string;
 }
 
-export const useDataStore = defineStore('data', {
+interface Metadata {
+  editedBy: string;
+  createdBy: string;
+  fileFormat: string;
+  comments: string;
+  dataTypeId: string;
+  subDataTypeId: string;
+}
+
+export const useFileStore = defineStore('data', {
   state: () => ({
     selectedFiles: [] as FileData[],
   }),

@@ -21,8 +21,8 @@
             
             <!-- Workflow Progress -->
             <WorkflowProgress 
-                :current-stage="'approval'"
-                :completed-stages="['preparation', 'loading', 'quality-check']"
+                :current-stage="wellStore.data.currentStage"
+                :completed-stages="wellStore.data.completedStages"
             />
         </header>
 
@@ -212,8 +212,10 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import WorkflowProgress from '../Components/WorkflowProgress.vue';
+import { useWellStore } from '../store/wellStore';
 
 const router = useRouter();
+const wellStore = useWellStore();
 
 // Form data
 const approvalNotes = ref('');
@@ -260,6 +262,10 @@ const reviewFile = (file: any) => {
 };
 
 const approveDataset = () => {
+    // Advance workflow to publication stage and mark approval as completed
+    wellStore.advanceWorkflow('publication', 'approval');
+    
+    console.log('[Approval] Dataset approved, advancing to publication stage');
     router.push('/data-publication');
 };
 

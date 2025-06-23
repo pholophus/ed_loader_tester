@@ -24,6 +24,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // LAS file operations
   parseLasForPreview: (filePath: string) => ipcRenderer.invoke('las:parseForPreview', filePath),
+  extractLasMetadata: (filePath: string) => ipcRenderer.invoke('las:extractMetadata', filePath),
+  extractLasDepthMetadata: (filePath: string) => ipcRenderer.invoke('las:extractDepthMetadata', filePath),
+  extractLasComprehensiveData: (filePath: string, includeLogData?: boolean) => ipcRenderer.invoke('las:extractComprehensiveData', filePath, includeLogData),
+  parseLasToWellioJson: (filePath: string) => ipcRenderer.invoke('las:parseToWellioJson', filePath),
+  countLasCurves: (filePath: string) => ipcRenderer.invoke('las:countCurves', filePath),
   
   // Python script operations
   extractSingleFileSegyContent: (filePath: string) => ipcRenderer.invoke('python:runSingleFileSegy', filePath),

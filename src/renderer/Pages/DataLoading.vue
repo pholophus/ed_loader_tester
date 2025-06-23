@@ -11,19 +11,19 @@
                 </router-link>
                 <div class="header-actions">
                     <button class="btn btn-primary" @click="proceedToQualityCheck">
-                        Proceed to Quality Check
+                        Load
                     </button>
                 </div>
             </div>
             <div class="header-title">
-                <h1>Data Loading</h1>
-                <p>Loading your dataset files into the system</p>
+                <!-- <h1>Data Loading</h1> -->
+                <!-- <p>Loading your dataset files into the system</p> -->
             </div>
             
             <!-- Workflow Progress -->
             <WorkflowProgress 
-                :current-stage="'loading'"
-                :completed-stages="['preparation']"
+                :current-stage="wellStore.data.currentStage"
+                :completed-stages="wellStore.data.completedStages"
             />
         </header>
 
@@ -77,7 +77,7 @@
                                         <td class="file-name">{{ file.name }}</td>
                                         <td>{{ formatFileSize(file.size) }}</td>
                                         <td>
-                                            <select class="entity-select" v-model="file.selectedDataTypeId" @change="onDataTypeChange(file, file.selectedDataTypeId)">
+                                            <select class="entity-select" v-model="file.selectedDataTypeId" @change="onDataTypeChange(file, file.selectedDataTypeId || '')">
                                                 <option value="">Select Category</option>
                                                 <option v-for="dataType in activeDataTypes" :key="dataType._id" :value="dataType._id">
                                                     {{ dataType.name }}
@@ -85,9 +85,9 @@
                                             </select>
                                         </td>
                                         <td>
-                                            <select class="entity-select" v-model="file.selectedSubDataTypeId" :disabled="!file.selectedDataTypeId" @change="onSubDataTypeChange(file, file.selectedSubDataTypeId)">
+                                            <select class="entity-select" v-model="file.selectedSubDataTypeId" :disabled="!file.selectedDataTypeId" @change="onSubDataTypeChange(file, file.selectedSubDataTypeId || '')">
                                                 <option value="">Select Sub Category</option>
-                                                <option v-for="subDataType in getFilteredSubDataTypes(file.selectedDataTypeId)" :key="subDataType._id" :value="subDataType._id">
+                                                <option v-for="subDataType in getFilteredSubDataTypes(file.selectedDataTypeId || '')" :key="subDataType._id" :value="subDataType._id">
                                                     {{ subDataType.name }}
                                                 </option>
                                             </select>
@@ -197,44 +197,66 @@
                                     <span class="form-value">{{ selectedSubDataTypeName }}</span>
                                 </div>
 
-                                <!-- <div class="form-group">
-                                    <label>Borehole Name</label>
-                                    <span class="form-value">{{ selectedFile.boreholeName }}</span>
+                                <div class="form-group">
+                                    <label>Top Depth </label>
+                                    <span class="form-value">
+                                        <template v-if="isLoadingDepthMetadata">
+                                            <div class="loading-spinner small"></div>
+                                        </template>
+                                        <template v-else-if="currentDepthMetadata?.topDepth !== null && currentDepthMetadata?.topDepth !== undefined">
+                                            {{ currentDepthMetadata.topDepth }}
+                                        </template>
+                                        <template v-else>
+                                            N/A
+                                        </template>
+                                    </span>
                                 </div>
 
                                 <div class="form-group">
-                                    <label>Field Name</label>
-                                    <span class="form-value">{{ selectedFile.fieldName }}</span>
-                                </div> -->
-
-                                <!-- <div class="form-group">
-                                    <label>Target ONLINE Project</label>
-                                    <div class="select-with-icon">
-                                        <select class="form-select">
-                                            <option :selected="selectedFile.targetProject === 'CORPORATE'">CORPORATE</option>
-                                        </select>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" class="select-icon">
-                                            <path d="M12 2L12 22M2 12L22 12" stroke="currentColor" stroke-width="2"/>
-                                        </svg>
-                                    </div>
+                                    <label>Top Depth UoM</label>
+                                    <span class="form-value">
+                                        <template v-if="isLoadingDepthMetadata">
+                                            <div class="loading-spinner small"></div>
+                                        </template>
+                                        <template v-else-if="currentDepthMetadata?.topDepthUom">
+                                            {{ currentDepthMetadata.topDepthUom }}
+                                        </template>
+                                        <template v-else>
+                                            N/A
+                                        </template>
+                                    </span>
                                 </div>
 
                                 <div class="form-group">
-                                    <label>Number of Logs</label>
-                                    <span class="form-value">{{ selectedFile.numberOfLogs }}</span>
+                                    <label>Base Depth</label>
+                                    <span class="form-value">
+                                        <template v-if="isLoadingDepthMetadata">
+                                            <div class="loading-spinner small"></div>
+                                        </template>
+                                        <template v-else-if="currentDepthMetadata?.baseDepth !== null && currentDepthMetadata?.baseDepth !== undefined">
+                                            {{ currentDepthMetadata.baseDepth }}
+                                        </template>
+                                        <template v-else>
+                                            N/A
+                                        </template>
+                                    </span>
                                 </div>
 
                                 <div class="form-group">
-                                    <label>Contractor</label>
-                                    <div class="select-with-icon">
-                                        <select class="form-select">
-                                            <option>Select...</option>
-                                        </select>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" class="select-icon">
-                                            <path d="M12 2L12 22M2 12L22 12" stroke="currentColor" stroke-width="2"/>
-                                        </svg>
-                                    </div>
-                                </div> -->
+                                    <label>Base Depth UoM</label>
+                                    <span class="form-value">
+                                        <template v-if="isLoadingDepthMetadata">
+                                            <div class="loading-spinner small"></div>
+                                        </template>
+                                        <template v-else-if="currentDepthMetadata?.baseDepthUom">
+                                            {{ currentDepthMetadata.baseDepthUom }}
+                                        </template>
+                                        <template v-else>
+                                            N/A
+                                        </template>
+                                    </span>
+                                </div>
+
                             </div>
 
                             <div v-else-if="activeTab === 'preview'" class="preview-content">
@@ -321,40 +343,29 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useFileStore } from '../store/fileStore';
+// import { useFileStore } from '../store/fileStore';
+import { useWellStore } from '../store/wellStore';
 import { useDataType } from '../Composables/useDataType';
 import { useSubDataType } from '../Composables/useSubDataType';
 import WorkflowProgress from '../Components/WorkflowProgress.vue';
-import { parseLasFileForPreview, isLasFile, type LasPreviewData } from '../../services/lasPreviewService';
-
-// Types - Extended FileData to include additional properties for the loading view
-interface ExtendedFileData {
-    id: string;
-    name: string;
-    size: number;
-    progress: number;
-    path?: string;
-    // Additional properties for loading view
-    targetEntity: string;
-    selectedDataTypeId: string;
-    selectedSubDataTypeId: string;
-    preparation: string;
-    loadingStatus: string;
-    qualityCheck: string;
-    publication: string;
-    editedBy: string;
-    createdBy: string;
-    targetFileName: string;
-    fileFormat: string;
-    status: string;
-    boreholeName: string;
-    fieldName: string;
-    targetProject: string;
-    numberOfLogs: string;
-}
+import ExtendedFileData from '../../schemas/ExtendedFileData';
+import { 
+    parseLasFileForPreview, 
+    isLasFile, 
+    extractLasMetadata,
+    extractLasComprehensiveData,
+    extractLasMetadataForDisplay,
+    extractLasDepthMetadata,
+    parseLasToWellioJson,
+    type LasPreviewData,
+    type LasMetadata,
+    type LasComprehensiveData,
+    type LasDepthMetadata
+} from '../../services/lasService';
 
 const router = useRouter();
-const fileStore = useFileStore();
+// const fileStore = useFileStore();
+const wellStore = useWellStore();
 
 // Composables
 const { items: dataTypes, fetch: fetchDataTypes } = useDataType();
@@ -369,30 +380,38 @@ const editableFileName = ref('');
 const previewData = ref<LasPreviewData | null>(null);
 const isLoadingPreview = ref(false);
 
+// LAS depth metadata state
+const currentDepthMetadata = ref<LasDepthMetadata | null>(null);
+const isLoadingDepthMetadata = ref(false);
+const depthMetadataCache = ref<Map<string, LasDepthMetadata>>(new Map());
+
 // Initialize file data from store
 const initializeFileData = () => {
     const newMap = new Map<string, ExtendedFileData>();
-    fileStore.getSelectedFiles.forEach((file, index) => {
-        newMap.set(file.id, {
-            ...file,
-            // Add default values for properties not in the store
-            targetEntity: getFileExtension(file.name) === 'las' ? 'LOG' : 'BOREHOLE_FILE',
-            selectedDataTypeId: '',
-            selectedSubDataTypeId: '',
-            // loadingStatus: file.progress >= 100 ? 'completed' : file.progress > 0 ? 'loading' : 'pending',
-            editedBy: '',
-            createdBy: '',
-            targetFileName: file.name,
-            fileFormat: getFileExtension(file.name).toUpperCase(),
-            // status: file.progress >= 100 ? 'COMPLETED' : 'PENDING',
-            // boreholeName: '15_5-F-11B',
-            // fieldName: 'VOLVE',
-            // targetProject: 'CORPORATE',
-            // numberOfLogs: getFileExtension(file.name) === 'las' ? '1' : '0'
+    wellStore.data.wellMetadatas.forEach((file, index) => {
+        const fileId = file.id || `file-${index}-${Date.now()}`;
+        const fileName = file.name || 'unknown';
+        newMap.set(fileId, {
+            id: fileId,
+            name: fileName,
+            size: file.size || 0,
+            progress: file.progress || 0,
+            path: file.path,
+            selectedDataTypeId: file.dataTypeId || '',
+            selectedSubDataTypeId: file.subDataTypeId || '',
+            editedBy: file.editedBy || '',
+            createdBy: file.createdBy || '',
+            targetFileName: fileName,
+            fileFormat: file.fileFormat || getFileExtension(fileName).toUpperCase(),
+            createdFor: file.createdFor || '',
+            createdDate: file.createdDate || '',
+            topDepth: 0,
+            topDepthUoM: '',
+            baseDepth: 0,
+            baseDepthUoM: '',
         } as ExtendedFileData);
     });
     fileDataMap.value = newMap;
-    console.log('[DataLoading] File data map:', fileDataMap.value);
 };
 
 // Computed properties
@@ -402,20 +421,15 @@ const displayFiles = computed(() => {
 
 // Computed properties for filtered data
 const activeDataTypes = computed(() => {
-    console.log('[DataLoading] Computing active data types...');
-    console.log('[DataLoading] dataTypes.value:', dataTypes.value);
     
     if (!dataTypes.value) {
-        console.log('[DataLoading] dataTypes.value is null/undefined');
         return [];
     }
     
     const filtered = dataTypes.value.filter((dt: any) => {
-        console.log('[DataLoading] Checking data type:', dt.name, 'isActive:', dt.isActive, 'type:', typeof dt.isActive);
         return dt.isActive;
     });
     
-    console.log('[DataLoading] Filtered active data types:', filtered);
     return filtered;
 });
 
@@ -437,15 +451,11 @@ const selectedSubDataTypeName = computed(() => {
 });
 
 const getFilteredSubDataTypes = (dataTypeId: string) => {
-    console.log('[DataLoading] Filtering sub data types for dataTypeId:', dataTypeId);
-    console.log('[DataLoading] Available sub data types:', subDataTypes.value);
     
     const filtered = subDataTypes.value?.filter((sdt: any) => {
-        console.log('[DataLoading] Checking sub data type:', sdt.name, 'isActive:', sdt.isActive, 'dataTypeId:', sdt.dataTypeId, 'matches:', sdt.dataTypeId === dataTypeId);
         return sdt.isActive && sdt.dataTypeId === dataTypeId;
     }) || [];
     
-    console.log('[DataLoading] Filtered sub data types:', filtered);
     return filtered;
 };
 
@@ -469,6 +479,19 @@ const selectFile = (file: ExtendedFileData) => {
     
     // Clear previous preview data
     previewData.value = null;
+    
+    // Set depth metadata from cache if it's a LAS file
+    if (isLasFile(selectedFile.value.name)) {
+        const cached = depthMetadataCache.value.get(selectedFile.value.path || '');
+        if (cached) {
+            currentDepthMetadata.value = cached;
+        } else {
+            // If not in cache, load it
+            loadDepthMetadata(selectedFile.value);
+        }
+    } else {
+        currentDepthMetadata.value = null;
+    }
     
     // Load preview if it's a .las file and preview tab is active
     if (activeTab.value === 'preview' && isLasFile(selectedFile.value.name)) {
@@ -518,6 +541,37 @@ const toggleAllFiles = (event: Event) => {
 };
 
 const proceedToQualityCheck = () => {
+    // First, save any pending changes to the currently selected file
+    if (selectedFile.value && editableFileName.value !== selectedFile.value.targetFileName) {
+        updateMetadata();
+    }
+    
+    // Prepare metadata from all files in fileDataMap with the most current values
+    const metadatas = Array.from(fileDataMap.value.values()).map(file => ({
+        editedBy: file.editedBy,
+        createdBy: file.createdBy,
+        createdFor: file.createdFor,
+        createdDate: file.createdDate,
+        fileFormat: file.fileFormat,
+        dataTypeId: file.selectedDataTypeId, // From Category dropdown (lines 80-94)
+        subDataTypeId: file.selectedSubDataTypeId, // From Sub Category dropdown (lines 80-94)
+        dataTypeName: getDataTypeName(file.selectedDataTypeId || ''),
+        subDataTypeName: getSubDataTypeName(file.selectedSubDataTypeId || ''),
+        topDepth: file.topDepth,
+        topDepthUoM: file.topDepthUoM,
+        baseDepth: file.baseDepth,
+        baseDepthUoM: file.baseDepthUoM,
+    }));
+
+    // console.log('[DataLoading] Proceeding to quality check...');
+    console.log('[DataLoading] Metadatas:', metadatas);
+    
+    // Update the well store with metadata
+    wellStore.setMetadatas(metadatas);
+    
+    // Advance workflow to quality-check stage and mark loading as completed
+    wellStore.advanceWorkflow('quality-check', 'loading');
+    
     router.push('/data-qc');
 };
 
@@ -560,8 +614,11 @@ const removeSelectedFile = () => {
     
     // Remove all checked files
     checkedFiles.value.forEach(fileId => {
-        // Remove from file store
-        fileStore.removeSelectedFile(fileId);
+        // Remove from well store
+        const fileToRemove = fileDataMap.value.get(fileId);
+        if (fileToRemove) {
+            wellStore.removeSelectedFile(fileToRemove.name);
+        }
         
         // Remove from local file data map
         fileDataMap.value.delete(fileId);
@@ -584,72 +641,42 @@ const removeSelectedFile = () => {
     }
 };
 
-// Test function to check MongoDB connection and data
-// const testMongoConnection = async () => {
-//     try {
-//         console.log('[DataLoading] Testing direct MongoDB connection...');
-        
-//         // Test direct mongoAPI call
-//         // @ts-ignore
-//         const directDataTypes = await window.mongoAPI.find('datatype', {});
-//         console.log('[DataLoading] Direct datatype query result:', directDataTypes);
-        
-//         // @ts-ignore
-//         const directSubDataTypes = await window.mongoAPI.find('subdatatype', {});
-//         console.log('[DataLoading] Direct subdatatype query result:', directSubDataTypes);
-        
-//         // Check if collections exist by querying without filters
-//         // @ts-ignore
-//         const allDataTypes = await window.mongoAPI.find('datatype');
-//         console.log('[DataLoading] All datatypes (no filter):', allDataTypes);
-        
-//     } catch (error) {
-//         console.error('[DataLoading] MongoDB test error:', error);
-//     }
-// };
-
 // Lifecycle
 onMounted(async () => {
+
+    console.log('[DataLoading] Well data:', wellStore.data);
     // Initialize file data
     initializeFileData();
     
     // Fetch data types and sub data types
     try {
-        // console.log('[DataLoading] Fetching data types...');
         await fetchDataTypes();
-        // console.log('[DataLoading] Data types fetched:', dataTypes.value);
-        // console.log('[DataLoading] Data types count:', dataTypes.value?.length);
         
-        // Log first few data types to see their structure
-        // if (dataTypes.value && dataTypes.value.length > 0) {
-        //     console.log('[DataLoading] First data type structure:', dataTypes.value[0]);
-        //     console.log('[DataLoading] First data type isActive:', dataTypes.value[0].isActive);
-        //     console.log('[DataLoading] First data type isActive type:', typeof dataTypes.value[0].isActive);
-        // }
-        
-        // console.log('[DataLoading] Fetching sub data types...');
         await fetchSubDataTypes();
-        // console.log('[DataLoading] Sub data types fetched:', subDataTypes.value);
-        // console.log('[DataLoading] Sub data types count:', subDataTypes.value?.length);
-        
-        // Log first few sub data types to see their structure
-        // if (subDataTypes.value && subDataTypes.value.length > 0) {
-        //     console.log('[DataLoading] First sub data type structure:', subDataTypes.value[0]);
-        //     console.log('[DataLoading] First sub data type isActive:', subDataTypes.value[0].isActive);
-        //     console.log('[DataLoading] First sub data type dataTypeId:', subDataTypes.value[0].dataTypeId);
-        // }
-        
-        // console.log('[DataLoading] Active data types:', activeDataTypes.value);
-        // console.log('[DataLoading] Active data types count:', activeDataTypes.value?.length);
     } catch (error) {
         console.error('[DataLoading] Error fetching data:', error);
     }
+    
+    // Load depth metadata for all LAS files
+    const allFiles = Array.from(fileDataMap.value.values());
+    const lasFiles = allFiles.filter(file => isLasFile(file.name));
+    
+    // Load depth metadata for all LAS files in parallel
+    await Promise.all(lasFiles.map(file => loadDepthMetadata(file)));
     
     // Auto-select first file
     if (displayFiles.value.length > 0) {
         selectedFile.value = displayFiles.value[0];
         // Initialize editable filename
         editableFileName.value = selectedFile.value.targetFileName || selectedFile.value.name;
+        
+        // Depth metadata already loaded above, just set current metadata if it's a LAS file
+        if (isLasFile(selectedFile.value.name)) {
+            const cached = depthMetadataCache.value.get(selectedFile.value.path || '');
+            if (cached) {
+                currentDepthMetadata.value = cached;
+            }
+        }
     }
 });
 
@@ -660,14 +687,70 @@ const updateMetadata = () => {
         
         // Update the file data map to persist all changes (including category and subcategory)
         fileDataMap.value.set(selectedFile.value.id, { ...selectedFile.value });
-        
-        // console.log('Updated file data:', selectedFile.value);
     }
 };
 
 const resetFileName = () => {
     if (selectedFile.value) {
-        editableFileName.value = selectedFile.value.targetFileName;
+        editableFileName.value = selectedFile.value.targetFileName || selectedFile.value.name;
+    }
+};
+
+// Method to load LAS depth metadata
+const loadDepthMetadata = async (file: ExtendedFileData) => {
+    if (!file.path || !isLasFile(file.name)) {
+        currentDepthMetadata.value = null;
+        return;
+    }
+
+    // Check cache first
+    const cached = depthMetadataCache.value.get(file.path);
+    if (cached) {
+        currentDepthMetadata.value = cached;
+        // Update file data with cached metadata
+        updateFileWithDepthMetadata(file, cached);
+        return;
+    }
+
+    isLoadingDepthMetadata.value = true;
+    
+    try {
+        const result = await extractLasDepthMetadata(file.path);
+        
+        if (result.success && result.depthData) {
+            currentDepthMetadata.value = result.depthData;
+            // Cache the result
+            depthMetadataCache.value.set(file.path, result.depthData);
+            // Update file data with extracted metadata
+            updateFileWithDepthMetadata(file, result.depthData);
+        } else {
+            console.error('[DataLoading] Failed to extract depth metadata:', result.error);
+            currentDepthMetadata.value = null;
+        }
+    } catch (error) {
+        console.error('[DataLoading] Error loading depth metadata:', error);
+        currentDepthMetadata.value = null;
+    } finally {
+        isLoadingDepthMetadata.value = false;
+    }
+};
+
+// Helper function to update file data with depth metadata
+const updateFileWithDepthMetadata = (file: ExtendedFileData, depthData: LasDepthMetadata) => {
+    const fileData = fileDataMap.value.get(file.id);
+    if (fileData) {
+        fileData.topDepth = depthData.topDepth ?? 0;
+        fileData.topDepthUoM = depthData.topDepthUom || '';
+        fileData.baseDepth = depthData.baseDepth ?? 0;
+        fileData.baseDepthUoM = depthData.baseDepthUom || '';
+        
+        // Update the map to trigger reactivity
+        fileDataMap.value.set(file.id, { ...fileData });
+        
+        // Update selected file if it's the current one
+        if (selectedFile.value?.id === file.id) {
+            selectedFile.value = fileDataMap.value.get(file.id) || null;
+        }
     }
 };
 
@@ -716,6 +799,18 @@ watch(activeTab, (newTab) => {
         loadFilePreview();
     }
 });
+
+const getDataTypeName = (dataTypeId: string) => {
+    const dataType = dataTypes.value?.find((dt: any) => dt._id === dataTypeId);
+    console.log('[DataLoading] Data type name:', dataType);
+    return dataType?.name || '';
+};
+
+const getSubDataTypeName = (subDataTypeId: string) => {
+    const subDataType = subDataTypes.value?.find((sdt: any) => sdt._id === subDataTypeId);
+    console.log('[DataLoading] Sub data type name:', subDataType);
+    return subDataType?.name || '';
+};
 </script>
 
 <style scoped>

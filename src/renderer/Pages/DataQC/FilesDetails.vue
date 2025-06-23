@@ -3,12 +3,8 @@
         <div class="panel-card">
             <div class="panel-header">
                 <h2>Details</h2>
-                <div class="header-actions">
-                    <button class="btn btn-primary btn-sm">Update</button>
-                    <button class="btn btn-outline btn-sm">Reset</button>
-                </div>
             </div>
-            
+
             <!-- Details Tabs -->
             <div class="tabs">
                 <button class="tab" :class="{ active: detailsTab === 'metadata' }" @click="detailsTab = 'metadata'">
@@ -18,100 +14,146 @@
                     Preview
                 </button>
             </div>
-            
+
             <!-- Metadata Tab -->
             <div v-if="detailsTab === 'metadata'" class="tab-content">
+                <div class="header-actions">
+                    <button class="btn btn-primary btn-sm">Update</button>
+                    <button class="btn btn-outline btn-sm">Reset</button>
+                </div>
                 <div class="file-metadata">
-                    <div class="metadata-row">
-                        <label>Edited By:</label>
-                        <span>{{ editedBy || 'recall_controller' }}</span>
+                    <!-- Selected Row Info -->
+                    <!-- <div v-if="selectedRowIndex !== null" class="form-group">
+                        <label>Selected Row Index</label>
+                        <span class="form-value">{{ selectedRowIndex }}</span>
+                    </div> -->
+
+                    <div v-if="selectedMetadata" class="form-group">
+                        <label>File Name</label>
+                        <span class="form-value">{{ selectedMetadata.name || 'N/A' }}</span>
                     </div>
-                    
-                    <div class="metadata-row">
-                        <label>Created By:</label>
-                        <span>{{ createdBy || 'recall_controller' }}</span>
+
+                    <div class="form-group">
+                        <label>Edited By</label>
+                        <span class="form-value">{{ selectedMetadata?.editedBy }}</span>
                     </div>
-                    
-                    <div class="metadata-row">
-                        <label>Target File Name:</label>
-                        <div class="select-wrapper">
-                            <select v-model="targetFileName" class="file-select">
-                                <option value="15_9.5-11_B_02.LWD_EWL_MWD_REPORT_1-1107.PDF">15_9.5-11_B_02.LWD_EWL_MWD_REPORT_1-1107.PDF</option>
-                                <option value="other_file.pdf">other_file.pdf</option>
-                            </select>
-                            <svg class="select-icon" width="12" height="12" viewBox="0 0 24 24" fill="none">
-                                <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
+
+                    <div class="form-group">
+                        <label>Created By</label>
+                        <span class="form-value">{{ selectedMetadata?.createdBy }}</span>
                     </div>
-                    
-                    <div class="metadata-row">
-                        <label>File Format:</label>
-                        <span class="file-format">{{ fileFormat || 'PDF' }}</span>
+
+                    <div class="form-group">
+                        <label>File Size</label>
+                        <span class="form-value">{{ selectedMetadata?.size ? formatFileSize(selectedMetadata.size) : 'N/A' }}</span>
                     </div>
-                    
-                    <div class="metadata-row">
-                        <label>Status:</label>
-                        <span class="status completed">{{ status || 'COMPLETED' }}</span>
+
+                    <div class="form-group">
+                        <label>File Path</label>
+                        <span class="form-value">{{ selectedMetadata?.path || 'N/A' }}</span>
                     </div>
-                    
-                    <div class="metadata-row">
-                        <label>Target Entity:</label>
-                        <span class="target-entity">{{ targetEntity || 'BOREHOLE FILE' }}</span>
+
+                    <div class="form-group">
+                        <label>File Format</label>
+                        <span class="form-value">{{ selectedMetadata?.fileFormat}}</span>
                     </div>
-                    
-                    <div class="metadata-row">
-                        <label>Borehole Name:</label>
-                        <span>{{ boreholeName || '15_9.5-11B' }}</span>
+
+                    <div class="form-group">
+                        <label>Data Type</label>
+                        <span class="form-value">{{ selectedMetadata?.dataTypeName || 'Not selected' }}</span>
                     </div>
-                    
-                    <div class="metadata-row">
-                        <label>Field Name:</label>
-                        <span>{{ fieldName || 'VOLVE' }}</span>
+
+                    <div class="form-group">
+                        <label>Sub Data Type</label>
+                        <span class="form-value">{{ selectedMetadata?.subDataTypeName || 'Not selected' }}</span>
                     </div>
-                    
-                    <div class="metadata-row">
-                        <label>Target OSDU Project:</label>
-                        <div class="select-wrapper">
-                            <select v-model="targetProject" class="project-select">
-                                <option value="CORPORATE">CORPORATE</option>
-                                <option value="PROJECT_A">PROJECT_A</option>
-                                <option value="PROJECT_B">PROJECT_B</option>
-                            </select>
-                            <svg class="select-icon" width="12" height="12" viewBox="0 0 24 24" fill="none">
-                                <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
+
+                    <div v-if="!selectedMetadata && selectedRowIndex !== null" class="form-group">
+                        <label>Status</label>
+                        <span class="form-value error">No metadata found for index {{ selectedRowIndex }}</span>
                     </div>
-                    
-                    <div class="metadata-row">
-                        <label>Number of Logs:</label>
-                        <span>{{ numberOfLogs || '1' }}</span>
-                    </div>
-                    
-                    <div class="metadata-row">
-                        <label>Contractor:</label>
-                        <div class="select-wrapper">
-                            <select v-model="contractor" class="contractor-select">
-                                <option value="">Select...</option>
-                                <option value="HALLIBURTON">HALLIBURTON</option>
-                                <option value="SCHLUMBERGER">SCHLUMBERGER</option>
-                                <option value="BAKER_HUGHES">BAKER_HUGHES</option>
-                            </select>
-                            <svg class="select-icon" width="12" height="12" viewBox="0 0 24 24" fill="none">
-                                <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
+
+                    <div v-if="selectedRowIndex === null" class="form-group">
+                        <label>Status</label>
+                        <span class="form-value">Please select a file from the table</span>
                     </div>
                 </div>
             </div>
-            
+
             <!-- Preview Tab -->
             <div v-if="detailsTab === 'preview'" class="tab-content">
                 <div class="preview-area">
                     <div class="preview-content">
-                        <div class="preview-header">
-                            <h3>Preview</h3>
+                        <div v-if="isLoadingPreview" class="loading-preview">
+                            <div class="loading-spinner"></div>
+                            <p>Loading preview...</p>
+                        </div>
+                        
+                        <div v-else-if="previewData?.error" class="preview-error">
+                            <p>{{ previewData.error }}</p>
+                        </div>
+                        
+                        <div v-else-if="previewData" class="preview-data">
+                            <!-- Metadata Section -->
+                            <div v-if="previewData.metadata && Object.keys(previewData.metadata).length > 0" class="preview-metadata">
+                                <h4>File Information</h4>
+                                <div class="metadata-grid">
+                                    <div v-if="previewData.metadata.wellName" class="metadata-item">
+                                        <label>Well Name:</label>
+                                        <span>{{ previewData.metadata.wellName }}</span>
+                                    </div>
+                                    <div v-if="previewData.metadata.location" class="metadata-item">
+                                        <label>Location:</label>
+                                        <span>{{ previewData.metadata.location }}</span>
+                                    </div>
+                                    <div v-if="previewData.metadata.uwi" class="metadata-item">
+                                        <label>UWI:</label>
+                                        <span>{{ previewData.metadata.uwi }}</span>
+                                    </div>
+                                    <div v-if="previewData.metadata.startDepth" class="metadata-item">
+                                        <label>Start Depth:</label>
+                                        <span>{{ previewData.metadata.startDepth }}</span>
+                                    </div>
+                                    <div v-if="previewData.metadata.stopDepth" class="metadata-item">
+                                        <label>Stop Depth:</label>
+                                        <span>{{ previewData.metadata.stopDepth }}</span>
+                                    </div>
+                                    <div v-if="previewData.metadata.step" class="metadata-item">
+                                        <label>Step:</label>
+                                        <span>{{ previewData.metadata.step }}</span>
+                                    </div>
+                                    <div v-if="previewData.metadata.curveCount" class="metadata-item">
+                                        <label>Curve Count:</label>
+                                        <span>{{ previewData.metadata.curveCount }}</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Curves List -->
+                                <div v-if="previewData.metadata.curves && previewData.metadata.curves.length > 0" class="curves-section">
+                                    <h5>Available Curves</h5>
+                                    <div class="curves-list">
+                                        <span v-for="curve in previewData.metadata.curves" :key="curve" class="curve-tag">
+                                            {{ curve }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ASCII Text Section -->
+                            <div class="ascii-preview">
+                                <h4>ASCII Content</h4>
+                                <div class="ascii-content">
+                                    <pre>{{ previewData.asciiText }}</pre>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div v-else-if="selectedMetadata" class="no-preview">
+                            <p>No preview available for this file</p>
+                        </div>
+                        
+                        <div v-else class="no-selection">
+                            <p>Select a file to view preview</p>
                         </div>
                     </div>
                 </div>
@@ -121,59 +163,116 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, watch } from 'vue';
+import { useWellStore } from '../../store/wellStore';
+import { 
+    parseLasFileForPreview, 
+    isLasFile, 
+    extractLasMetadata,
+    extractLasComprehensiveData,
+    extractLasMetadataForDisplay,
+    parseLasToWellioJson,
+    type LasPreviewData,
+    type LasMetadata,
+    type LasComprehensiveData
+} from '../../../services/lasService';
 
 // Props for receiving data from parent component
 interface Props {
-    selectedFile?: any;
-    editedBy?: string;
-    createdBy?: string;
-    fileFormat?: string;
-    status?: string;
-    targetEntity?: string;
-    boreholeName?: string;
-    fieldName?: string;
-    numberOfLogs?: string;
+    selectedRowIndex?: number | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    editedBy: 'recall_controller',
-    createdBy: 'recall_controller',
-    fileFormat: 'PDF',
-    status: 'COMPLETED',
-    targetEntity: 'BOREHOLE FILE',
-    boreholeName: '15_9.5-11B',
-    fieldName: 'VOLVE',
-    numberOfLogs: '1'
+    selectedRowIndex: null,
 });
+
+// Access well store
+const wellStore = useWellStore();
+
+// Computed property to get metadata based on selected row index
+const selectedMetadata = computed(() => {
+    if (props.selectedRowIndex === null || props.selectedRowIndex === undefined) {
+        return null;
+    }
+    
+    const metadata = wellStore.data.wellMetadatas[props.selectedRowIndex];
+    console.log('Selected metadata from store:', metadata);
+    return metadata || null;
+});
+
+// Utility function to format file size
+const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+};
 
 // Local reactive data
 const detailsTab = ref('metadata');
-const targetFileName = ref('15_9.5-11_B_02.LWD_EWL_MWD_REPORT_1-1107.PDF');
-const targetProject = ref('CORPORATE');
-const contractor = ref('');
+const previewData = ref<LasPreviewData | null>(null);
+const isLoadingPreview = ref(false);
 
-// Mock event logs
-const eventLogs = ref([
-    {
-        id: 1,
-        timestamp: '2021-03-11 10:57:20',
-        message: 'File uploaded successfully',
-        user: 'recall_controller'
-    },
-    {
-        id: 2,
-        timestamp: '2021-03-11 10:58:15',
-        message: 'Metadata updated',
-        user: 'recall_controller'
-    },
-    {
-        id: 3,
-        timestamp: '2021-03-11 11:00:02',
-        message: 'Quality check completed',
-        user: 'system'
+// Utility function to get file extension
+const getFileExtension = (filename: string): string => {
+    return filename.split('.').pop()?.toLowerCase() || '';
+};
+
+// Method to load file preview
+const loadFilePreview = async () => {
+    if (!selectedMetadata.value) return;
+    
+    isLoadingPreview.value = true;
+    previewData.value = null;
+    
+    try {
+        if (isLasFile(selectedMetadata.value.name || '')) {
+            // For .las files, use the LAS preview service
+            const filePath = selectedMetadata.value.path;
+            if (filePath) {
+                previewData.value = await parseLasFileForPreview(filePath);
+            } else {
+                previewData.value = {
+                    asciiText: '',
+                    metadata: {},
+                    error: 'File path not available'
+                };
+            }
+        } else {
+            // For other file types, show a placeholder
+            previewData.value = {
+                asciiText: `Preview not available for ${selectedMetadata.value.name}.\nFile type: ${getFileExtension(selectedMetadata.value.name || '').toUpperCase()}`,
+                metadata: {},
+            };
+        }
+    } catch (error) {
+        console.error('[FilesDetails] Error loading file preview:', error);
+        previewData.value = {
+            asciiText: '',
+            metadata: {},
+            error: `Error loading preview: ${error instanceof Error ? error.message : 'Unknown error'}`
+        };
+    } finally {
+        isLoadingPreview.value = false;
     }
-]);
+};
+
+// Watch for tab changes to load preview when needed
+watch(detailsTab, (newTab) => {
+    if (newTab === 'preview' && selectedMetadata.value && !previewData.value) {
+        loadFilePreview();
+    }
+});
+
+// Watch for selected metadata changes to clear preview data
+watch(selectedMetadata, () => {
+    previewData.value = null;
+    if (detailsTab.value === 'preview' && selectedMetadata.value) {
+        loadFilePreview();
+    }
+});
+
 </script>
 
 <style scoped>
@@ -209,6 +308,8 @@ const eventLogs = ref([
 .header-actions {
     display: flex;
     gap: 0.5rem;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
 }
 
 .tabs {
@@ -248,22 +349,37 @@ const eventLogs = ref([
     gap: 1rem;
 }
 
+.form-group {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.5rem 0;
+}
+
+.form-group label {
+    color: #64748b;
+    font-weight: 500;
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.form-value {
+    color: #1f2937;
+    font-size: 0.8rem;
+    padding: 0;
+    margin: 0;
+}
+
+.form-value.error {
+    color: #dc2626;
+    font-weight: 500;
+}
+
 .metadata-row {
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
-}
-
-.metadata-row label {
-    color: #64748b;
-    font-weight: 500;
-    font-size: 0.8rem;
-}
-
-.metadata-row span {
-    color: #1f2937;
-    font-size: 0.8rem;
-    padding: 0.4rem 0;
 }
 
 .file-format {
@@ -424,13 +540,171 @@ const eventLogs = ref([
         gap: 1rem;
         align-items: stretch;
     }
-    
+
     .header-actions {
         justify-content: flex-end;
     }
-    
+
     .metadata-row {
         gap: 0.25rem;
     }
+}
+
+/* Preview styles */
+.loading-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    gap: 1rem;
+    color: #6b7280;
+}
+
+.preview-error {
+    padding: 1rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 4px;
+    color: #dc2626;
+}
+
+.preview-data {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.preview-metadata {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 1rem;
+    background: #f9fafb;
+}
+
+.preview-metadata h4 {
+    margin: 0 0 1rem 0;
+    color: #1f2937;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.preview-metadata h5 {
+    margin: 1rem 0 0.5rem 0;
+    color: #374151;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.metadata-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+}
+
+.metadata-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.metadata-item label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.metadata-item span {
+    font-size: 0.875rem;
+    color: #1f2937;
+    font-weight: 500;
+}
+
+.curves-section {
+    margin-top: 1rem;
+}
+
+.curves-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.curve-tag {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: #dbeafe;
+    color: #1e40af;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid #bfdbfe;
+}
+
+.ascii-preview {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.ascii-preview h4 {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    background: #f3f4f6;
+    border-bottom: 1px solid #e5e7eb;
+    color: #1f2937;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.ascii-content {
+    max-height: 400px;
+    overflow-y: auto;
+    background: #ffffff;
+}
+
+.ascii-content pre {
+    margin: 0;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: #374151;
+    white-space: pre;
+    overflow-x: auto;
+}
+
+.no-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.no-selection {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.loading-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #e5e7eb;
+    border-top: 2px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 </style>

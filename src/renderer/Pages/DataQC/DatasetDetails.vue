@@ -15,58 +15,75 @@
                 <button class="tab" :class="{ active: detailsTab === 'metadata' }" @click="detailsTab = 'metadata'">
                     Metadata
                 </button>
-                <button class="tab" :class="{ active: detailsTab === 'event-log' }" @click="detailsTab = 'event-log'">
-                    Event Log
+                <button v-if="wellStore.data.hasDoneQC" class="tab" :class="{ active: detailsTab === 'qc-report' }" @click="detailsTab = 'qc-report'">
+                    QC Report
                 </button>
+                <!-- <button class="tab" :class="{ active: detailsTab === 'event-log' }" @click="detailsTab = 'event-log'">
+                    Event Log
+                </button> -->
             </div>
             
             <!-- Metadata Tab -->
             <div v-if="detailsTab === 'metadata'" class="tab-content">
                 <div class="metadata-info">
                     <div class="info-row">
-                        <label>Data Source:</label>
-                        <span>{{ dataSource || 'BAKER HUGHES' }}</span>
+                        <label>Well Name:</label>
+                        <span>{{ wellStore.data.well.wellName || '-' }}</span>
                     </div>
                     <div class="info-row">
-                        <label>Region:</label>
-                        <span>{{ region || '' }}</span>
+                        <label>UWI:</label>
+                        <span>{{ wellStore.data.well.UWI || '-' }}</span>
+                    </div>
+                    <div class="info-row">
+                        <label>Well EDAFY ID:</label>
+                        <span>{{ wellStore.data.well.wellId || '-' }}</span>
                     </div>
                     <div class="info-row">
                         <label>Created:</label>
-                        <span>{{ createdDate || '2021-03-11 10:57:20' }} by {{ createdBy || 'recall_controller' }}</span>
+                        <span>{{ '-' }}</span>
                     </div>
                     <div class="info-row">
                         <label>Loaded:</label>
-                        <span>{{ loadedDate || '2021-03-11 10:57:20' }} by {{ loadedBy || 'recall_controller' }}</span>
+                        <span>{{ '-' }}</span>
                     </div>
                     <div class="info-row">
                         <label>Approved:</label>
-                        <span>{{ approvedStatus || 'NotRequired' }}</span>
+                        <span>{{'-' }}</span>
                     </div>
                     <div class="info-row">
                         <label>Last Updated:</label>
-                        <span>{{ lastUpdated || '2021-03-11 10:57:20' }} by {{ lastUpdatedBy || 'recall_controller' }}</span>
+                        <span>{{ '-' }}</span>
                     </div>
                 </div>
             </div>
             
+            <!-- QC Report Tab -->
+            <div v-if="detailsTab === 'qc-report'" class="tab-content">
+                <QCReport />
+            </div>
+            
             <!-- Event Log Tab -->
-            <div v-if="detailsTab === 'event-log'" class="tab-content">
+            <!-- <div v-if="detailsTab === 'event-log'" class="tab-content">
                 <div class="event-log-area">
-                    <!-- <div class="loading-indicator">
+                    <div class="loading-indicator">
                         <div class="loading-circle">
                             <div class="spinner"></div>
                         </div>
                         <p>Loading...</p>
-                    </div> -->
+                    </div>
                 </div>
-            </div>
+            </div> -->
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useWellStore } from '../../store/wellStore';
+import QCReport from './QCReport.vue';
+
+// Initialize the well store
+const wellStore = useWellStore();
 
 // Props for receiving data from parent component
 interface Props {
@@ -80,18 +97,6 @@ interface Props {
     lastUpdated?: string;
     lastUpdatedBy?: string;
 }
-
-const props = withDefaults(defineProps<Props>(), {
-    dataSource: 'BAKER HUGHES',
-    region: '',
-    createdDate: '2021-03-11 10:57:20',
-    createdBy: 'recall_controller',
-    loadedDate: '2021-03-11 10:57:20',
-    loadedBy: 'recall_controller',
-    approvedStatus: 'NotRequired',
-    lastUpdated: '2021-03-11 10:57:20',
-    lastUpdatedBy: 'recall_controller'
-});
 
 // Tab management - local to this component
 const detailsTab = ref('metadata');

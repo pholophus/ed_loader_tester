@@ -23,8 +23,8 @@
             
             <!-- Workflow Progress -->
             <WorkflowProgress 
-                :current-stage="'publication'"
-                :completed-stages="['preparation', 'loading', 'quality-check', 'approval']"
+                :current-stage="wellStore.data.currentStage"
+                :completed-stages="wellStore.data.completedStages"
             />
         </header>
 
@@ -253,8 +253,10 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import WorkflowProgress from '../Components/WorkflowProgress.vue';
+import { useWellStore } from '../store/wellStore';
 
 const router = useRouter();
+const wellStore = useWellStore();
 
 // Publication state
 const isPublished = ref(false);
@@ -315,7 +317,11 @@ const publishDataset = () => {
     publishedDate.value = new Date().toLocaleString();
     publishedUrl.value = `https://osdu.example.com/datasets/OSDU_Demo_${Date.now()}`;
     
+    // Mark publication as completed in workflow
+    wellStore.addCompletedStage('publication');
+    
     console.log('Dataset published successfully!');
+    console.log('[Publication] Workflow completed, all stages done:', wellStore.data.completedStages);
 };
 
 const goToDashboard = () => {
@@ -328,7 +334,7 @@ const viewPublishedDataset = () => {
 
 const copyDatasetUrl = () => {
     navigator.clipboard.writeText(publishedUrl.value);
-    console.log('Dataset URL copied to clipboard');
+    // console.log('Dataset URL copied to clipboard');
 };
 </script>
 

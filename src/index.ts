@@ -180,8 +180,8 @@ const createWindow = (): void => {
     isDev ? path.join(__dirname, '../public') : path.join(process.resourcesPath, 'public'),
     'vendor/tabulator/tabulator.min.js'
   );
-  console.log('Tabulator JS Path:', tabulatorJsPath);
-  console.log('File exists:', fs.existsSync(tabulatorJsPath));
+  // console.log('Tabulator JS Path:', tabulatorJsPath);
+  // console.log('File exists:', fs.existsSync(tabulatorJsPath));
 };
 
 // Connect to MongoDB when the app is ready
@@ -537,8 +537,223 @@ ipcMain.handle('las:parseForPreview', async (_event, filePath: string) => {
   }
 });
 
+// New comprehensive LAS metadata extraction handler
+ipcMain.handle('las:extractMetadata', async (_event, filePath: string) => {
+  try {
+    const wellio = require('wellio');
+    const fileContent = await readSingleFile(filePath);
+    
+    if (!fileContent) {
+      return { error: 'Unable to read file content' };
+    }
+
+    const wellioJson = wellio.las2json(fileContent);
+    const fileStats = await fs.promises.stat(filePath);
+    const fileName = path.basename(filePath);
+    
+    // Extract comprehensive metadata
+    const metadata = {
+      // File information
+      fileName: fileName,
+      filePath: filePath,
+      fileSize: fileStats.size,
+      created: fileStats.birthtime,
+      loaded: new Date(),
+      lastUpdated: fileStats.mtime,
+      
+      // Data source information (can be customized based on your data source)
+      dataSource: 'BAKER HUGHES', // Default, can be extracted from file or set programmatically
+      
+      // Geographic information
+      region: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'REGI') || 'UNKNOWN',
+      country: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'CTRY') || 'AUSTRALIA', // Default based on your image
+      state: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'STAT') || 'UNKNOWN',
+      
+      // Asset and field information
+      asset: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'ASSE') || '',
+      fieldName: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'FLDN') || 
+                 extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'FIELD') || 'VOLVE',
+      
+      // Well identification
+      uwi: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'UWI') || 
+           extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'API') || '15_9-F-11B',
+      wellName: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'WELL') || '15_9-F-11B',
+      
+      // Operator information
+      operator: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'COMP') || 
+                extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'OPER') || 'ADVENTURE',
+      
+      // Geographic coordinates
+      surfaceLatitude: parseCoordinate(extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'LATI') || 
+                                      extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'LAT') || '-60802.85'),
+      surfaceLongitude: parseCoordinate(extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'LONG') || 
+                                       extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'LON') || '5840331'),
+      
+      // Well depth information
+      startDepth: parseFloat(extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'STRT') || '0'),
+      stopDepth: parseFloat(extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'STOP') || '0'),
+      step: parseFloat(extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'STEP') || '0'),
+      
+      // Service information
+      serviceCompany: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'SRVC') || 
+                     extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'COMP') || '',
+      logDate: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'DATE') || '',
+      
+      // Curve information
+      curves: extractCurveNames(wellioJson?.['CURVE INFORMATION BLOCK']),
+      curveCount: extractCurveNames(wellioJson?.['CURVE INFORMATION BLOCK']).length,
+      
+      // Processing status
+      approved: false, // Default, can be set based on your workflow
+      processed: true,
+      
+      // Additional metadata
+      nullValue: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'NULL') || '-999.25',
+      version: extractWellInfoValue(wellioJson?.['VERSION INFORMATION'], 'VERS') || '2.0',
+      wrap: extractWellInfoValue(wellioJson?.['VERSION INFORMATION'], 'WRAP') || 'NO',
+    };
+
+    return { success: true, metadata };
+
+  } catch (error) {
+    console.error('[LAS Metadata Extraction] Error:', error);
+    return { 
+      error: `Error extracting LAS metadata: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    };
+  }
+});
+
+// New comprehensive LAS data extraction handler
+ipcMain.handle('las:extractComprehensiveData', async (_event, filePath: string, includeLogData: boolean = false) => {
+  try {
+    const wellio = require('wellio');
+    const fileContent = await readSingleFile(filePath);
+    
+    if (!fileContent) {
+      return { error: 'Unable to read file content' };
+    }
+
+    const wellioJson = wellio.las2json(fileContent);
+    const fileStats = await fs.promises.stat(filePath);
+    const fileName = path.basename(filePath);
+    
+    // Extract comprehensive metadata directly
+    const metadata = {
+      // File information
+      fileName: fileName,
+      filePath: filePath,
+      fileSize: fileStats.size,
+      created: fileStats.birthtime,
+      loaded: new Date(),
+      lastUpdated: fileStats.mtime,
+      
+      // Data source information (can be customized based on your data source)
+      // dataSource: 'BAKER HUGHES', // Default, can be extracted from file or set programmatically
+      
+      // Geographic information
+      region: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'REGI') || '',
+      country: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'CTRY') || 
+        extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'COUNTRY') || 
+        extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'CNTRY') || '',
+      state: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'STAT') || '',
+      
+      // Asset and field information
+      asset: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'ASSE') || '',
+      fieldName: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'FLDN') || 
+                 extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'FIELD') || '',
+      
+      // Well identification
+      uwi: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'UWI') || 
+           extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'API') || '',
+      wellName: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'WELL') || '1',
+      
+      // Operator information
+      operator: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'COMP') || 
+                extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'OPER') || '',
+      
+      // Geographic coordinates
+      surfaceLatitude: parseCoordinate(extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'LATI') || 
+                                      extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'LAT') || ''),
+      surfaceLongitude: parseCoordinate(extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'LONG') || 
+                                       extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'LON') || ''),
+      
+      // Well depth information
+      startDepth: parseFloat(extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'STRT') || '0'),
+      stopDepth: parseFloat(extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'STOP') || '0'),
+      step: parseFloat(extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'STEP') || '0'),
+      
+      // Service information
+      serviceCompany: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'SRVC') || 
+                     extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'COMP') || '',
+      logDate: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'DATE') || '',
+      
+      // Curve information
+      curves: extractCurveNames(wellioJson?.['CURVE INFORMATION BLOCK']),
+      curveCount: extractCurveNames(wellioJson?.['CURVE INFORMATION BLOCK']).length,
+      
+      // Processing status
+      approved: false, // Default, can be set based on your workflow
+      processed: true,
+      
+      // Additional metadata
+      nullValue: extractWellInfoValue(wellioJson?.['WELL INFORMATION BLOCK'], 'NULL') || '-999.25',
+      version: extractWellInfoValue(wellioJson?.['VERSION INFORMATION'], 'VERS') || '2.0',
+      wrap: extractWellInfoValue(wellioJson?.['VERSION INFORMATION'], 'WRAP') || 'NO',
+    };
+
+    const comprehensiveData = {
+      metadata: metadata,
+      wellioJson: wellioJson,
+      
+      // Raw sections for detailed analysis
+      versionInfo: wellioJson?.['VERSION INFORMATION'] || {},
+      wellInfo: wellioJson?.['WELL INFORMATION BLOCK'] || {},
+      curveInfo: wellioJson?.['CURVE INFORMATION BLOCK'] || {},
+      parameterInfo: wellioJson?.['PARAMETER INFORMATION'] || {},
+      
+      // Log data (optional, can be large)
+      logData: includeLogData ? (wellioJson?.['CURVES'] || {}) : null,
+      
+      // Processing timestamp
+      extractedAt: new Date(),
+    };
+
+    return { success: true, data: comprehensiveData };
+
+  } catch (error) {
+    console.error('[LAS Comprehensive Extraction] Error:', error);
+    return { 
+      error: `Error extracting comprehensive LAS data: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    };
+  }
+});
+
+// New handler to get raw wellio JSON
+ipcMain.handle('las:parseToWellioJson', async (_event, filePath: string) => {
+  try {
+    const wellio = require('wellio');
+    const fileContent = await readSingleFile(filePath);
+    
+    if (!fileContent) {
+      return { error: 'Unable to read file content' };
+    }
+
+    const wellioJson = wellio.las2json(fileContent);
+    
+    return { success: true, wellioJson };
+
+  } catch (error) {
+    console.error('[LAS to Wellio JSON] Error:', error);
+    return { 
+      error: `Error converting LAS to Wellio JSON: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    };
+  }
+});
+
 // Helper function for extracting well info values
 function extractWellInfoValue(wellInfo: any, key: string): string | undefined {
+  if (!wellInfo) return undefined;
+  
   // Look for exact key match first
   if (wellInfo[key] && wellInfo[key].DATA) {
     return wellInfo[key].DATA;
@@ -554,9 +769,26 @@ function extractWellInfoValue(wellInfo: any, key: string): string | undefined {
   return undefined;
 }
 
-// ipcMain.handle('python:runCustom', async (_event, scriptPath: string, args: string[] = []) => {
-//   return runCustomPythonScript(scriptPath, args);
-// });
+// Helper function to extract curve names
+function extractCurveNames(curveInfo: any): string[] {
+  if (!curveInfo) return [];
+  
+  const curves: string[] = [];
+  Object.keys(curveInfo).forEach(key => {
+    if (curveInfo[key] && curveInfo[key].MNEM) {
+      curves.push(curveInfo[key].MNEM);
+    }
+  });
+  
+  return curves;
+}
+
+// Helper function to parse coordinates
+function parseCoordinate(value: string | undefined): number {
+  if (!value) return 0;
+  const parsed = parseFloat(value.replace(/[^\d.-]/g, ''));
+  return isNaN(parsed) ? 0 : parsed;
+}
 
 // MongoDB operations
 ipcMain.handle('mongo:find', async (_event, collectionName: string, query: any, sessionId?: string) => {
@@ -715,6 +947,114 @@ ipcMain.handle('fs:getFileStats', async (_event, filePath: string) => {
   } catch (error) {
     console.error('Error getting file stats:', error);
     throw error;
+  }
+});
+
+// New LAS depth-specific metadata extraction handler
+ipcMain.handle('las:extractDepthMetadata', async (_event, filePath: string) => {
+  try {
+    const wellio = require('wellio');
+    const fileContent = await readSingleFile(filePath);
+    
+    if (!fileContent) {
+      return { 
+        success: false,
+        error: 'Unable to read file content' 
+      };
+    }
+
+    const wellioJson = wellio.las2json(fileContent);
+    const wellInfoBlock = wellioJson?.['WELL INFORMATION BLOCK'];
+    const curveInfoBlock = wellioJson?.['CURVE INFORMATION BLOCK'];
+    
+    // Extract depth values
+    const startDepthValue = extractWellInfoValue(wellInfoBlock, 'STRT');
+    const stopDepthValue = extractWellInfoValue(wellInfoBlock, 'STOP');
+    const stepValue = extractWellInfoValue(wellInfoBlock, 'STEP');
+    
+    // Try to extract depth unit from the curve information or well information
+    // Common depth unit fields in LAS files
+    let depthUnit = '';
+    
+    // First, try to get unit from the depth curve (usually the first curve)
+    if (curveInfoBlock && Array.isArray(curveInfoBlock)) {
+      const depthCurve = curveInfoBlock[0]; // First curve is typically depth
+      if (depthCurve && depthCurve.unit) {
+        depthUnit = depthCurve.unit;
+      }
+    }
+    
+    // Fallback: try to extract from common unit fields in well info
+    if (!depthUnit) {
+      depthUnit = extractWellInfoValue(wellInfoBlock, 'UNIT') || 
+                  extractWellInfoValue(wellInfoBlock, 'STRT.UNIT') ||
+                  extractWellInfoValue(wellInfoBlock, 'DEPT.UNIT') ||
+                  'M'; // Default to meters
+    }
+    
+    // Clean up unit string (remove dots, extra spaces)
+    depthUnit = depthUnit.trim().replace('.', '');
+    
+    const depthData = {
+      topDepth: startDepthValue ? parseFloat(startDepthValue) : null,
+      topDepthUom: depthUnit,
+      baseDepth: stopDepthValue ? parseFloat(stopDepthValue) : null,
+      baseDepthUom: depthUnit, // Usually same unit as top depth
+      step: stepValue ? parseFloat(stepValue) : null,
+      stepUom: depthUnit // Usually same unit as depth
+    };
+
+    return { 
+      success: true, 
+      depthData 
+    };
+
+  } catch (error) {
+    console.error('[LAS Depth Metadata Extraction] Error:', error);
+    return { 
+      success: false,
+      error: `Error extracting LAS depth metadata: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    };
+  }
+});
+
+// New handler to count curves in LAS files
+ipcMain.handle('las:countCurves', async (_event, filePath: string) => {
+  try {
+    const wellio = require('wellio');
+    const fileContent = await readSingleFile(filePath);
+    
+    if (!fileContent) {
+      return { success: false, error: 'Unable to read file content' };
+    }
+
+    const wellioJson = wellio.las2json(fileContent);
+    const curveInfo = wellioJson?.['CURVE INFORMATION BLOCK'];
+    
+    if (!curveInfo) {
+      return { success: true, curveCount: 0, curves: [] };
+    }
+
+    // Extract curve names from the curve information block
+    const curves: string[] = [];
+    Object.keys(curveInfo).forEach(key => {
+      if (curveInfo[key] && curveInfo[key].MNEM) {
+        curves.push(curveInfo[key].MNEM);
+      }
+    });
+
+    return { 
+      success: true, 
+      curveCount: curves.length,
+      curves: curves
+    };
+
+  } catch (error) {
+    console.error('[LAS Curve Count] Error:', error);
+    return { 
+      success: false,
+      error: `Error counting curves in LAS file: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    };
   }
 });
 

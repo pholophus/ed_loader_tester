@@ -21,10 +21,10 @@
             </div>
             
             <!-- Workflow Progress -->
-            <!-- <WorkflowProgress 
-                :current-stage="'preparation'"
-                :completed-stages="[]"
-            /> -->
+            <WorkflowProgress 
+                :current-stage="wellStore.data.currentStage"
+                :completed-stages="wellStore.data.completedStages"
+            />
         </header>
 
         <main class="ingest-main">
@@ -87,18 +87,33 @@
                             <div class="form-row">
                                 <label>Target Well</label>
                                 <div class="select-with-search">
-                                    <select v-model="targetWell" class="form-select">
-                                        <option value="">Select a Well</option>
-                                        <option value="well-001">Well 001</option>
-                                        <option value="well-002">Well 002</option>
-                                        <option value="well-003">Well 003</option>
-                                    </select>
-                                    <button class="search-btn" @click="searchWells">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
-                                            <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2"/>
-                                        </svg>
-                                    </button>
+                                    <div class="searchable-select">
+                                        <input 
+                                            type="text" 
+                                            v-model="wellSearchQuery"
+                                            @focus="showWellDropdown = true"
+                                            @blur="hideWellDropdown"
+                                            @input="filterWells"
+                                            :placeholder="selectedWellName || (wellsLoading ? 'Loading wells...' : 'Search wells...')"
+                                            class="form-input"
+                                            :class="{ 'has-selection': selectedWellName }"
+                                            :disabled="wellsLoading"
+                                        />
+                                        <div v-if="showWellDropdown && filteredWells.length > 0" class="dropdown-list">
+                                            <div 
+                                                v-for="well in filteredWells" 
+                                                :key="well._id"
+                                                @mousedown="selectWell(well)"
+                                                class="dropdown-item"
+                                            >
+                                                <span class="well-name">{{ well.name || well.UWI || well.wellboreId || `Well ${well._id}` }}</span>
+                                                <span class="well-details">{{ well.UWI ? `UWI: ${well.UWI}` : '' }} {{ well.field ? `Field: ${well.field}` : '' }}</span>
+                                            </div>
+                                        </div>
+                                        <div v-if="showWellDropdown && filteredWells.length === 0 && wellSearchQuery.length > 0" class="dropdown-list">
+                                            <div class="dropdown-item no-results">No wells found</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -114,7 +129,7 @@
                             </div>
                         </div> -->
 
-                        <div class="metadata-section">
+                        <!-- <div class="metadata-section">
                             <div class="metadata-header">
                                 <label>Metadata File</label>
                                 <div class="metadata-actions">
@@ -126,7 +141,7 @@
                                     </button>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
 
                         <div class="options-section">
                             <h3>Options</h3>
@@ -164,14 +179,14 @@
                                 </div>
                             </div>
 
-                            <div class="form-group">
+                            <!-- <div class="form-group">
                                 <label>Process Priority</label>
                                 <select v-model="processPriority" class="form-select">
                                     <option value="normal">Normal</option>
                                     <option value="high">High</option>
                                     <option value="low">Low</option>
                                 </select>
-                            </div>
+                            </div> -->
                         </div>
                     </div>
                 </div>
@@ -261,12 +276,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useFileStore } from '../store/fileStore';
+// import { useFileStore } from '../store/fileStore';
+import { useWellStore } from '../store/wellStore';
+import { useWell } from '../Composables/useWell';
 import WorkflowProgress from '../Components/WorkflowProgress.vue';
 
 const route = useRoute();
 const router = useRouter();
-const fileStore = useFileStore();
+// const fileStore = useFileStore();
+const wellStore = useWellStore();
+const { fetch: fetchWells } = useWell();
 
 // Get selected target from route params or query
 const selectedTarget = ref(route.query.target as string || 'well');
@@ -280,6 +299,14 @@ const targetWell = ref('');
 const wellbore = ref('');
 const processPriority = ref('normal');
 const faultyFileAction = ref('quarantine');
+
+// Wells data
+const wells = ref<any[]>([]);
+const wellsLoading = ref(false);
+const wellSearchQuery = ref('');
+const filteredWells = ref<any[]>([]);
+const showWellDropdown = ref(false);
+const selectedWellName = ref('');
 
 // Options
 const options = ref({
@@ -377,7 +404,7 @@ const addFiles = (files: File[]) => {
             id: Math.random().toString(36),
             name: file.name,
             size: file.size,
-            progress: 100, // Simulate completed upload
+            progress: 100,
             path: (file as any).path || (file as any).webkitRelativePath || file.name // Capture file path if available
         });
     });
@@ -389,7 +416,7 @@ const addFilesFromPaths = (fileInfos: Array<{name: string, path: string, size: n
             id: Math.random().toString(36),
             name: fileInfo.name,
             size: fileInfo.size,
-            progress: 100, // Simulate completed upload
+            progress: 100,
             path: fileInfo.path
         });
     });
@@ -404,8 +431,6 @@ const onDrop = (e: DragEvent) => {
     e.preventDefault();
     const files = e.dataTransfer?.files;
     if (files) {
-        // Note: Drag and drop files won't have full file paths due to browser security restrictions
-        // Only the file name will be available
         console.warn('Note: Files added via drag-and-drop may not have full file paths available');
         addFiles(Array.from(files));
     }
@@ -427,17 +452,60 @@ const formatFileSize = (bytes: number) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-const searchWells = () => {
-    // console.log('Searching wells...');
+const filterWells = () => {
+    if (!wellSearchQuery.value.trim()) {
+        filteredWells.value = wells.value;
+        return;
+    }
+    
+    const query = wellSearchQuery.value.toLowerCase();
+    filteredWells.value = wells.value.filter(well => {
+        const name = (well.name || '').toLowerCase();
+        const uwi = (well.UWI || '').toLowerCase();
+        const wellboreId = (well.wellboreId || '').toLowerCase();
+        const field = (well.field || '').toLowerCase();
+        const operator = (well.operator || '').toLowerCase();
+        
+        return name.includes(query) || 
+               uwi.includes(query) || 
+               wellboreId.includes(query) || 
+               field.includes(query) || 
+               operator.includes(query);
+    });
 };
 
-const browseMetadata = () => {
-    // console.log('Browse metadata...');
+const selectWell = (well: any) => {
+    targetWell.value = well._id;
+    selectedWellName.value = well.name || well.UWI || well.wellboreId || `Well ${well._id}`;
+    wellSearchQuery.value = '';
+    showWellDropdown.value = false;
 };
 
-const downloadTemplate = () => {
-    // console.log('Download template...');
+const hideWellDropdown = () => {
+    setTimeout(() => {
+        showWellDropdown.value = false;
+    }, 200); // Delay to allow click event to fire
 };
+
+const searchWells = async () => {
+    try {
+        wellsLoading.value = true;
+        wells.value = await fetchWells();
+        filteredWells.value = wells.value;
+    } catch (error) {
+        console.error('Error searching wells:', error);
+    } finally {
+        wellsLoading.value = false;
+    }
+};
+
+// const browseMetadata = () => {
+//     // console.log('Browse metadata...');
+// };
+
+// const downloadTemplate = () => {
+//     // console.log('Download template...');
+// };
 
 const toggleSelectAll = () => {
     if (selectAllChecked.value) {
@@ -448,7 +516,21 @@ const toggleSelectAll = () => {
 };
 
 const prepareDataset = () => {
+    console.log("uploadedFiles.value.length ", uploadedFiles.value.length)
+    
     if (!canPrepareDataset.value) return;
+    
+    // Set well data if a well is selected
+    if (targetWell.value) {
+        const selectedWell = wells.value.find(well => well._id === targetWell.value);
+        if (selectedWell) {
+            wellStore.setWellData({
+                wellId: selectedWell._id,
+                wellName: selectedWell.name || selectedWell.UWI || selectedWell.wellboreId || `Well ${selectedWell._id}`,
+                UWI: selectedWell.UWI || ''
+            });
+        }
+    }
     
     // Store selected files in data store
     const filesToStore = uploadedFiles.value.map(file => ({
@@ -459,23 +541,16 @@ const prepareDataset = () => {
         path: file.path || file.name
     }));
 
-    console.log('[DataPreparation] Files to store:', filesToStore);
+    // console.log('[DataPreparation] Files to store:', filesToStore);
     
-    fileStore.setSelectedFiles(filesToStore);
+    wellStore.setSelectedFiles(filesToStore);
+    
+    // Advance workflow to loading stage and mark preparation as completed
+    wellStore.advanceWorkflow('loading', 'preparation');
     
     // Navigate to DataQC page with form data
     router.push({
         path: '/data-loading',
-        query: {
-            datasetName: datasetName.value,
-            datasetId: datasetId.value,
-            company: dataSource.value, // Using dataSource as company
-            createdBy: 'recall_controller',
-            uploadedDate: new Date().toLocaleString(),
-            totalSize: calculateTotalSize(),
-            description: description.value,
-            dataSource: dataSource.value
-        }
     });
 };
 
@@ -488,6 +563,11 @@ const calculateTotalSize = () => {
 // Lifecycle
 onMounted(() => {
     generateDatasetId();
+    searchWells();
+    
+    // Initialize workflow at preparation stage
+    wellStore.setCurrentStage('preparation');
+    wellStore.setCompletedStages([]);
 });
 </script>
 
@@ -627,6 +707,17 @@ onMounted(() => {
     border-color: #c4b5fd;
 }
 
+.form-input.has-selection {
+    color: #000000;
+    font-weight: 500;
+}
+
+.form-input.has-selection::placeholder {
+    color: #000000;
+    font-weight: 500;
+    opacity: 1;
+}
+
 .form-textarea {
     resize: vertical;
     min-height: 80px;
@@ -638,20 +729,62 @@ onMounted(() => {
     flex: 1;
 }
 
-.search-btn {
-    padding: 0.75rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 6px;
-    background: white;
-    color: #6b7280;
-    cursor: pointer;
-    transition: all 0.2s ease;
+.searchable-select {
+    position: relative;
+    flex: 1;
 }
 
-.search-btn:hover {
-    border-color: #8b5cf6;
+.dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.dropdown-item {
+    padding: 0.75rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background-color 0.2s ease;
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover {
     background: #faf5ff;
-    color: #8b5cf6;
+}
+
+.dropdown-item.no-results {
+    color: #6b7280;
+    cursor: default;
+    font-style: italic;
+}
+
+.dropdown-item.no-results:hover {
+    background: white;
+}
+
+.well-name {
+    display: block;
+    font-weight: 500;
+    color: #080a0b;
+    font-size: 0.85rem;
+}
+
+.well-details {
+    display: block;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
 }
 
 .metadata-section {

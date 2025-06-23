@@ -280,7 +280,7 @@ const uppyUploadRef = ref<InstanceType<typeof UppyUpload> | null>(null);
 
 // Event handlers
 const handleUploadComplete = (data: { file: any, response: any }) => {
-  console.log('Upload completed:', data.file.name);
+  // console.log('Upload completed:', data.file.name);
   completedFiles.value++;
   inProgressFiles.value = Math.max(0, inProgressFiles.value - 1);
   
@@ -289,7 +289,7 @@ const handleUploadComplete = (data: { file: any, response: any }) => {
 };
 
 const handleUploadProgress = (data: { file: any, progress: number }) => {
-  console.log('Upload progress:', data.file.name, data.progress);
+  // console.log('Upload progress:', data.file.name, data.progress);
   // Update in-progress count if needed
   if (data.progress === 0) {
     inProgressFiles.value++;
@@ -349,7 +349,7 @@ const viewProcessingQueue = () => {
 // Simple notification system (you might want to use a proper toast library)
 const showNotification = (message: string, type: 'success' | 'error' | 'info') => {
   // This is a simple implementation - consider using a proper notification library
-  console.log(`[${type.toUpperCase()}] ${message}`);
+  // console.log(`[${type.toUpperCase()}] ${message}`);
   
   // You could implement a toast notification system here
   // For now, we'll just use browser notifications if available

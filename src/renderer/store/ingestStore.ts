@@ -126,7 +126,7 @@ actions: {
   },
   finishDelete() {
     const selectedRows = this.OTMData.filter(row => row.selected);
-    console.log('Selected rows:', selectedRows);
+    // console.log('Selected rows:', selectedRows);
     this.OTMData = this.OTMData.filter(row => !row.selected);
     this.isDeleteMode = false;
   },

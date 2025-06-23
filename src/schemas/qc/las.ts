@@ -17,22 +17,41 @@ const baseLasSchema = z.object({
     extensionType: z.string().nullable().optional(),
     category: z.string().nullable().optional(),
     subcategory: z.string().nullable().optional(),
-    start_depth: z.number().nullable().optional(),
+    top_depth: z.number().nullable().optional(),
     top_depth_uom: z.string().nullable().optional(),
-    stop_depth: z.number().nullable().optional(),
+    base_depth: z.number().nullable().optional(),
     base_depth_uom: z.string().nullable().optional(),
-    description: z.string().nullable().optional(),
-    item_remarks: z.string().nullable().optional(),
+    // description: z.string().nullable().optional(),
+    // item_remarks: z.string().nullable().optional(),
     createdFor: z.string().nullable().optional(),
     createdBy: z.string().nullable().optional(),
     createdDate: z.string().nullable().optional(),
-    file_windows_path: z.string().nullable().optional(),
-    file_unix_path: z.string().nullable().optional(),
-    file_size_bytes: z.number().nullable().optional(),
+    // file_windows_path: z.string().nullable().optional(),
+    // file_unix_path: z.string().nullable().optional(),
+    // file_size_bytes: z.number().nullable().optional(),
 });
 
 // 2. All validation logic in .superRefine()
 export const lasSchema = baseLasSchema.superRefine((data, ctx) => {
+
+    // FILE NAME
+    if (isNullOrEmpty(data.file_name)) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'FILE NAME is null.',
+            path: ['file_name']
+        });
+    }
+
+    // EDAFY WELL ID
+    if (isNullOrEmpty(data.edafy_well_id)) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'EDAFY WELL ID is null.',
+            path: ['edafy_well_id']
+        });
+    }
+
     // CREATED BY
     if (isNullOrEmpty(data.createdBy)) {
         ctx.addIssue({
@@ -52,11 +71,11 @@ export const lasSchema = baseLasSchema.superRefine((data, ctx) => {
     }
 
     //TOP DEPTH
-    if(isNullOrEmpty(data.start_depth) && data.category === CATEGORIES.WELL_LOG){
+    if(isNullOrEmpty(data.top_depth) && data.category === CATEGORIES.WELL_LOG){
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: 'TOP DEPTH NEEDS TO BE POPULATED.',
-            path: ['start_depth']
+            path: ['top_depth']
         });
     }
 
@@ -70,11 +89,11 @@ export const lasSchema = baseLasSchema.superRefine((data, ctx) => {
     }
 
     //BASE DEPTH
-    if(isNullOrEmpty(data.stop_depth) && data.category === CATEGORIES.WELL_LOG){
+    if(isNullOrEmpty(data.base_depth) && data.category === CATEGORIES.WELL_LOG){
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: 'BASE DEPTH NEEDS TO BE POPULATED.',
-            path: ['stop_depth']
+            path: ['base_depth']
         });
     }
 
@@ -122,7 +141,6 @@ export const lasSchema = baseLasSchema.superRefine((data, ctx) => {
 
     // CATEGORY
     // const validCategories = Object.values(CATEGORIES).filter(c => c !== CATEGORIES.NULL);
-    
     if (isNullOrEmpty(data.category)) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -131,9 +149,6 @@ export const lasSchema = baseLasSchema.superRefine((data, ctx) => {
         });
     }
 
-    // SUBCATEGORY
-    // const validSubcategories = Object.values(SUBCATEGORIES).filter(sc => sc !== SUBCATEGORIES.NULL);
-    
     if (isNullOrEmpty(data.subcategory) ) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -142,9 +157,6 @@ export const lasSchema = baseLasSchema.superRefine((data, ctx) => {
         });
     }
 
-    // EXTENSION TYPE
-    // const validExtensionTypes = Object.values(EXTENSION_TYPES).filter(et => et !== EXTENSION_TYPES.NULL && et !== EXTENSION_TYPES.SEGY);
-    
     if (isNullOrEmpty(data.extensionType) ) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,

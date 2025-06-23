@@ -9,6 +9,10 @@ interface ElectronAPI {
   
   // LAS file operations
   parseLasForPreview: (filePath: string) => Promise<any>;
+  extractLasMetadata: (filePath: string) => Promise<any>;
+  extractLasDepthMetadata: (filePath: string) => Promise<any>;
+  extractLasComprehensiveData: (filePath: string, includeLogData?: boolean) => Promise<any>;
+  parseLasToWellioJson: (filePath: string) => Promise<any>;
   
   extractSingleFileSegyContent: (filePath: string) => Promise<any>;
   extractSegyContent: () => Promise<any>;
