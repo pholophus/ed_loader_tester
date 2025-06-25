@@ -10,7 +10,11 @@
                     Back to Preparation
                 </router-link>
                 <div class="header-actions">
-                    <button class="btn btn-primary" @click="proceedToQualityCheck">
+                    <button 
+                        class="btn btn-primary" 
+                        @click="proceedToQualityCheck" 
+                        :disabled="!canProceedToQualityCheck"
+                    >
                         Load
                     </button>
                 </div>
@@ -61,6 +65,7 @@
                                             @change="toggleAllFiles" /></th>
                                         <th>File Name</th>
                                         <th>Size</th>
+                                        <th>Well</th>
                                         <th>Category</th>
                                         <th>Sub Category</th>
                                         <!-- <th>Preparation</th>
@@ -77,6 +82,14 @@
                                         <td class="file-name">{{ file.name }}</td>
                                         <td>{{ formatFileSize(file.size) }}</td>
                                         <td>
+                                            <select class="entity-select" v-model="file.wellId">
+                                                <option value="">Select Well</option>
+                                                <option v-for="well in wellStore.data.well" :key="well.wellId" :value="well.wellId">
+                                                    {{ well.wellName }}
+                                                </option>
+                                            </select>
+                                        </td>
+                                        <td>
                                             <select class="entity-select" v-model="file.selectedDataTypeId" @change="onDataTypeChange(file, file.selectedDataTypeId || '')">
                                                 <option value="">Select Category</option>
                                                 <option v-for="dataType in activeDataTypes" :key="dataType._id" :value="dataType._id">
@@ -92,6 +105,7 @@
                                                 </option>
                                             </select>
                                         </td>
+
                                         <!-- <td>
                                             <select class="status-select" v-model="file.preparation">
                                                 <option value="All">All</option>
@@ -195,6 +209,11 @@
                                 <div class="form-group">
                                     <label>Sub Data Type</label>
                                     <span class="form-value">{{ selectedSubDataTypeName }}</span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Well</label>
+                                    <span class="form-value">{{ selectedWellName }}</span>
                                 </div>
 
                                 <div class="form-group">
@@ -347,6 +366,7 @@ import { useRouter } from 'vue-router';
 import { useWellStore } from '../store/wellStore';
 import { useDataType } from '../Composables/useDataType';
 import { useSubDataType } from '../Composables/useSubDataType';
+import { useFileData } from '../Composables/useFileData';
 import WorkflowProgress from '../Components/WorkflowProgress.vue';
 import ExtendedFileData from '../../schemas/ExtendedFileData';
 import { 
@@ -370,11 +390,17 @@ const wellStore = useWellStore();
 // Composables
 const { items: dataTypes, fetch: fetchDataTypes } = useDataType();
 const { items: subDataTypes, fetch: fetchSubDataTypes } = useSubDataType();
+const { 
+    fileDataMap, 
+    displayFiles, 
+    initializeFileData, 
+    updateFileData,
+    removeFile 
+} = useFileData({ includeLoadingFields: true });
 
 // State
 const activeTab = ref('metadata');
 const selectedFile = ref<ExtendedFileData | null>(null);
-const fileDataMap = ref<Map<string, ExtendedFileData>>(new Map());
 const checkedFiles = ref<Set<string>>(new Set());
 const editableFileName = ref('');
 const previewData = ref<LasPreviewData | null>(null);
@@ -385,41 +411,7 @@ const currentDepthMetadata = ref<LasDepthMetadata | null>(null);
 const isLoadingDepthMetadata = ref(false);
 const depthMetadataCache = ref<Map<string, LasDepthMetadata>>(new Map());
 
-// Initialize file data from store
-const initializeFileData = () => {
-    const newMap = new Map<string, ExtendedFileData>();
-    wellStore.data.wellMetadatas.forEach((file, index) => {
-        const fileId = file.id || `file-${index}-${Date.now()}`;
-        const fileName = file.name || 'unknown';
-        newMap.set(fileId, {
-            id: fileId,
-            name: fileName,
-            size: file.size || 0,
-            progress: file.progress || 0,
-            path: file.path,
-            selectedDataTypeId: file.dataTypeId || '',
-            selectedSubDataTypeId: file.subDataTypeId || '',
-            editedBy: file.editedBy || '',
-            createdBy: file.createdBy || '',
-            targetFileName: fileName,
-            fileFormat: file.fileFormat || getFileExtension(fileName).toUpperCase(),
-            createdFor: file.createdFor || '',
-            createdDate: file.createdDate || '',
-            topDepth: 0,
-            topDepthUoM: '',
-            baseDepth: 0,
-            baseDepthUoM: '',
-        } as ExtendedFileData);
-    });
-    fileDataMap.value = newMap;
-};
-
 // Computed properties
-const displayFiles = computed(() => {
-    return Array.from(fileDataMap.value.values());
-});
-
-// Computed properties for filtered data
 const activeDataTypes = computed(() => {
     
     if (!dataTypes.value) {
@@ -448,6 +440,14 @@ const selectedSubDataTypeName = computed(() => {
     }
     const subDataType = subDataTypes.value.find((sdt: any) => sdt._id === selectedFile.value?.selectedSubDataTypeId);
     return subDataType?.name || '';
+});
+
+const selectedWellName = computed(() => {
+    if (!selectedFile.value?.wellId || !wellStore.data.well.length) {
+        return '';
+    }
+    const well = wellStore.data.well.find((w: any) => w.wellId === selectedFile.value?.wellId);
+    return well?.wellName || '';
 });
 
 const getFilteredSubDataTypes = (dataTypeId: string) => {
@@ -561,6 +561,7 @@ const proceedToQualityCheck = () => {
         topDepthUoM: file.topDepthUoM,
         baseDepth: file.baseDepth,
         baseDepthUoM: file.baseDepthUoM,
+        wellId: file.wellId,
     }));
 
     // console.log('[DataLoading] Proceeding to quality check...');
@@ -577,34 +578,26 @@ const proceedToQualityCheck = () => {
 
 // Method to handle data type selection change
 const onDataTypeChange = (file: ExtendedFileData, dataTypeId: string) => {
-    const fileData = fileDataMap.value.get(file.id);
-    if (fileData) {
-        fileData.selectedDataTypeId = dataTypeId;
-        fileData.selectedSubDataTypeId = ''; // Reset sub data type when main data type changes
-        
-        // Update the map to trigger reactivity
-        fileDataMap.value.set(file.id, { ...fileData });
-        
-        // Update selected file if it's the current one
-        if (selectedFile.value?.id === file.id) {
-            selectedFile.value = fileDataMap.value.get(file.id) || null;
-        }
+    updateFileData(file.id, {
+        selectedDataTypeId: dataTypeId,
+        selectedSubDataTypeId: '', // Reset sub data type when main data type changes
+    });
+    
+    // Update selected file if it's the current one
+    if (selectedFile.value?.id === file.id) {
+        selectedFile.value = fileDataMap.value.get(file.id) || null;
     }
 };
 
 // Method to handle sub data type selection change
 const onSubDataTypeChange = (file: ExtendedFileData, subDataTypeId: string) => {
-    const fileData = fileDataMap.value.get(file.id);
-    if (fileData) {
-        fileData.selectedSubDataTypeId = subDataTypeId;
-        
-        // Update the map to trigger reactivity
-        fileDataMap.value.set(file.id, { ...fileData });
-        
-        // Update selected file if it's the current one
-        if (selectedFile.value?.id === file.id) {
-            selectedFile.value = fileDataMap.value.get(file.id) || null;
-        }
+    updateFileData(file.id, {
+        selectedSubDataTypeId: subDataTypeId,
+    });
+    
+    // Update selected file if it's the current one
+    if (selectedFile.value?.id === file.id) {
+        selectedFile.value = fileDataMap.value.get(file.id) || null;
     }
 };
 
@@ -614,14 +607,7 @@ const removeSelectedFile = () => {
     
     // Remove all checked files
     checkedFiles.value.forEach(fileId => {
-        // Remove from well store
-        const fileToRemove = fileDataMap.value.get(fileId);
-        if (fileToRemove) {
-            wellStore.removeSelectedFile(fileToRemove.name);
-        }
-        
-        // Remove from local file data map
-        fileDataMap.value.delete(fileId);
+        removeFile(fileId);
         
         // Clear selected file if it was one of the removed files
         if (selectedFile.value?.id === fileId) {
@@ -634,7 +620,7 @@ const removeSelectedFile = () => {
     
     // Auto-select the first remaining file if no file is currently selected
     if (!selectedFile.value) {
-        const remainingFiles = Array.from(fileDataMap.value.values());
+        const remainingFiles = displayFiles.value;
         if (remainingFiles.length > 0) {
             selectedFile.value = remainingFiles[0];
         }
@@ -644,7 +630,8 @@ const removeSelectedFile = () => {
 // Lifecycle
 onMounted(async () => {
 
-    console.log('[DataLoading] Well data:', wellStore.data);
+    // console.log('[DataLoading] Well data:', wellStore.data);
+    console.log('[DataLoading] Well data:', wellStore.data.well);
     // Initialize file data
     initializeFileData();
     
@@ -682,11 +669,13 @@ onMounted(async () => {
 
 const updateMetadata = () => {
     if (selectedFile.value) {
-        // Update target file name
-        selectedFile.value.targetFileName = editableFileName.value;
+        // Update target file name using the composable
+        updateFileData(selectedFile.value.id, {
+            targetFileName: editableFileName.value,
+        });
         
-        // Update the file data map to persist all changes (including category and subcategory)
-        fileDataMap.value.set(selectedFile.value.id, { ...selectedFile.value });
+        // Update the selected file reference
+        selectedFile.value = fileDataMap.value.get(selectedFile.value.id) || null;
     }
 };
 
@@ -737,20 +726,16 @@ const loadDepthMetadata = async (file: ExtendedFileData) => {
 
 // Helper function to update file data with depth metadata
 const updateFileWithDepthMetadata = (file: ExtendedFileData, depthData: LasDepthMetadata) => {
-    const fileData = fileDataMap.value.get(file.id);
-    if (fileData) {
-        fileData.topDepth = depthData.topDepth ?? 0;
-        fileData.topDepthUoM = depthData.topDepthUom || '';
-        fileData.baseDepth = depthData.baseDepth ?? 0;
-        fileData.baseDepthUoM = depthData.baseDepthUom || '';
-        
-        // Update the map to trigger reactivity
-        fileDataMap.value.set(file.id, { ...fileData });
-        
-        // Update selected file if it's the current one
-        if (selectedFile.value?.id === file.id) {
-            selectedFile.value = fileDataMap.value.get(file.id) || null;
-        }
+    updateFileData(file.id, {
+        topDepth: depthData.topDepth ?? 0,
+        topDepthUoM: depthData.topDepthUom || '',
+        baseDepth: depthData.baseDepth ?? 0,
+        baseDepthUoM: depthData.baseDepthUom || '',
+    });
+    
+    // Update selected file if it's the current one
+    if (selectedFile.value?.id === file.id) {
+        selectedFile.value = fileDataMap.value.get(file.id) || null;
     }
 };
 
@@ -811,6 +796,15 @@ const getSubDataTypeName = (subDataTypeId: string) => {
     console.log('[DataLoading] Sub data type name:', subDataType);
     return subDataType?.name || '';
 };
+
+// New computed property to check if all files have category, sub-category, and well selected
+const canProceedToQualityCheck = computed(() => {
+    return displayFiles.value.every(file => {
+        return file.selectedDataTypeId && file.selectedDataTypeId !== '' && 
+               file.selectedSubDataTypeId && file.selectedSubDataTypeId !== '' && 
+               file.wellId && file.wellId !== '';
+    });
+});
 </script>
 
 <style scoped>
@@ -962,36 +956,58 @@ const getSubDataTypeName = (subDataTypeId: string) => {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    overflow-x: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
 }
 
 .components-table {
     width: 100%;
     font-size: 0.75rem;
     border-collapse: collapse;
+    min-width: 800px;
+    background: white;
 }
 
 .components-table th {
-    background: #f9fafb;
-    padding: 0.5rem;
+    background: #f8fafc;
+    padding: 1rem 1.25rem;
     text-align: left;
     font-weight: 600;
     color: #374151;
-    border-bottom: 1px solid #e5e7eb;
-    font-size: 0.75rem;
+    border-bottom: 2px solid #e5e7eb;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .components-table td {
-    padding: 0.5rem;
+    padding: 1rem 1.25rem;
     border-bottom: 1px solid #f3f4f6;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
+    vertical-align: middle;
 }
 
-.components-table tr:hover {
+.components-table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.components-table tbody tr:hover {
     background: #f8fafc;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .components-table tr.selected {
     background: #dbeafe;
+    border-left: 3px solid #3b82f6;
+}
+
+.components-table tr.selected:hover {
+    background: #bfdbfe;
 }
 
 .file-name {
@@ -1005,33 +1021,38 @@ const getSubDataTypeName = (subDataTypeId: string) => {
 
 .entity-select,
 .status-select {
-    padding: 0.25rem;
+    padding: 0.5rem 0.75rem;
     border: 1px solid #d1d5db;
-    border-radius: 3px;
-    font-size: 0.75rem;
-    width: 80px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    width: 140px;
+    background: white;
+    transition: all 0.2s ease;
 }
 
-.status-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
+.entity-select:focus,
+.status-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.status-icon.completed {
-    color: #22c55e;
+.entity-select:disabled {
+    background: #f9fafb;
+    color: #9ca3af;
+    cursor: not-allowed;
 }
 
 .table-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem 1rem;
-    border-top: 1px solid #e5e7eb;
+    padding: 1rem 1.25rem;
+    border-top: 2px solid #e5e7eb;
     font-size: 0.875rem;
     color: #6b7280;
+    background: #f8fafc;
+    border-radius: 0 0 8px 8px;
 }
 
 .pagination {
@@ -1284,6 +1305,14 @@ const getSubDataTypeName = (subDataTypeId: string) => {
 
 .btn-primary:hover {
     background: #1e40af;
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #9ca3af;
+    transform: none;
+    box-shadow: none;
 }
 
 .btn-secondary {

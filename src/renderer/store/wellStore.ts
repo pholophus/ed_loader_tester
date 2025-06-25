@@ -31,7 +31,7 @@ interface Approval {
 }
 
 interface Dataset{
-    well: Well;
+    well: Well[];
     wellMetadatas: Metadata[],
     hasDoneQC: boolean;
     currentStage: WorkflowStage;
@@ -59,22 +59,13 @@ interface Metadata {
   baseDepth?: number;
   baseDepthUoM?: string;
   validationResult?: ValidationResult;
+  wellId?: string;
 }
-
-// export interface ValidationError {
-//   title: string;
-//   message: string;
-//   type: string;
-// }
 
 export const useWellStore = defineStore('wellData', {
   state: () => ({
     data: {
-      well: {
-        wellId: '',
-        wellName: '',
-        UWI: '',
-      },
+      well: [] as Well[],
       wellMetadatas: [] as Metadata[],
       hasDoneQC: false,
       currentStage: 'preparation' as WorkflowStage,
@@ -87,8 +78,16 @@ export const useWellStore = defineStore('wellData', {
   }),
   
   actions: {
-    setWellData(data: Well) {
-      this.data.well = data;
+    addWellData(data: Well) {
+      const existingWell = this.data.well.find(well => well.wellId === data.wellId);
+      if (existingWell) {
+        return; 
+      }
+      this.data.well.push(data);
+    },
+
+    removeWellData(wellId: string) {
+      this.data.well = this.data.well.filter(well => well.wellId !== wellId);
     },
 
     setSelectedFiles(files: FileData[]) {
@@ -116,6 +115,7 @@ export const useWellStore = defineStore('wellData', {
           topDepthUoM: metadatas[index].topDepthUoM,
           baseDepth: metadatas[index].baseDepth,
           baseDepthUoM: metadatas[index].baseDepthUoM,
+          wellId: metadatas[index].wellId,
         })
       }));
     },
@@ -180,23 +180,38 @@ export const useWellStore = defineStore('wellData', {
       // Reset workflow back to preparation stage
       // this.resetWorkflow();
     },
-    
-    // clearSelectedFiles() {
-    //   this.selectedFiles = [];
-    // },
-    
-    // updateFileLocation(fileId: string, path: string) {
-    //   const file = this.selectedFiles.find(f => f.id === fileId);
-    //   if (file) {
-    //     file.path = path;
-    //   }
-    // }
+
+    clearAllWells() {
+      this.data.well = [];
+    },
+
+    removeWell(wellId: string) {
+      this.data.well = this.data.well.filter(well => well.wellId !== wellId);
+    },
+
   },
   
   getters: {
-    // getSelectedFiles: (state) => state.selectedFiles,
-    // getSelectedFileCount: (state) => state.selectedFiles.length,
-    // getSelectedFileById: (state) => (id: string) => state.selectedFiles.find(file => file.id === id),
-    // getTotalSelectedSize: (state) => state.selectedFiles.reduce((total, file) => total + file.size, 0),
+    // Get wellMetadatas filtered by wellId
+    getWellMetadatasByWellId: (state) => (wellId: string) => {
+      return state.data.wellMetadatas.filter(metadata => metadata.wellId === wellId);
+    },
+    
+    // Get total file count for a specific well
+    getWellFileCount: (state) => (wellId: string) => {
+      return state.data.wellMetadatas.filter(metadata => metadata.wellId === wellId).length;
+    },
+    
+    // Get total file size for a specific well
+    getWellFileSize: (state) => (wellId: string) => {
+      return state.data.wellMetadatas
+        .filter(metadata => metadata.wellId === wellId)
+        .reduce((total, metadata) => total + (metadata.size || 0), 0);
+    },
+    
+    // Check if a well has any files
+    wellHasFiles: (state) => (wellId: string) => {
+      return state.data.wellMetadatas.some(metadata => metadata.wellId === wellId);
+    }
   }
 });

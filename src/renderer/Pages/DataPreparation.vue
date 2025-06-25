@@ -94,7 +94,7 @@
                                             @focus="showWellDropdown = true"
                                             @blur="hideWellDropdown"
                                             @input="filterWells"
-                                            :placeholder="selectedWellName || (wellsLoading ? 'Loading wells...' : 'Search wells...')"
+                                            :placeholder="(wellsLoading ? 'Loading wells...' : 'Search wells...')"
                                             class="form-input"
                                             :class="{ 'has-selection': selectedWellName }"
                                             :disabled="wellsLoading"
@@ -112,6 +112,52 @@
                                         </div>
                                         <div v-if="showWellDropdown && filteredWells.length === 0 && wellSearchQuery.length > 0" class="dropdown-list">
                                             <div class="dropdown-item no-results">No wells found</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Wells from Store -->
+                        <div class="form-group" v-if="selectedTarget === 'well' && wellStore.data.well.length > 0">
+                            <div class="form-row">
+                                <label>Selected Wells</label>
+                                <div class="wells-container">
+                                    <div class="wells-header">
+                                        <div class="wells-count">
+                                            {{ wellStore.data.well.length }} well{{ wellStore.data.well.length !== 1 ? 's' : '' }} selected
+                                        </div>
+                                        <button 
+                                            class="btn btn-link btn-sm clear-wells-btn"
+                                            @click="clearAllWells"
+                                            v-if="wellStore.data.well.length > 0"
+                                        >
+                                            Clear all
+                                        </button>
+                                    </div>
+                                    <div class="wells-grid">
+                                        <div 
+                                            v-for="well in wellStore.data.well" 
+                                            :key="well.wellId"
+                                            class="well-card"
+                                        >
+                                            <div class="well-card-content">
+                                                <div class="well-info">
+                                                    <div class="well-details">
+                                                        <span class="well-name">{{ well.wellName }}</span>
+                                                        <span class="well-uwi" v-if="well.UWI">{{ well.UWI }}</span>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    class="remove-well-btn"
+                                                    @click="removeWell(well.wellId)"
+                                                    title="Remove well"
+                                                >
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -479,6 +525,12 @@ const selectWell = (well: any) => {
     selectedWellName.value = well.name || well.UWI || well.wellboreId || `Well ${well._id}`;
     wellSearchQuery.value = '';
     showWellDropdown.value = false;
+
+    wellStore.addWellData({
+        wellId: well._id,
+        wellName: well.name || well.UWI || well.wellboreId || `Well ${well._id}`,
+        UWI: well.UWI || ''
+    });
 };
 
 const hideWellDropdown = () => {
@@ -521,16 +573,12 @@ const prepareDataset = () => {
     if (!canPrepareDataset.value) return;
     
     // Set well data if a well is selected
-    if (targetWell.value) {
-        const selectedWell = wells.value.find(well => well._id === targetWell.value);
-        if (selectedWell) {
-            wellStore.setWellData({
-                wellId: selectedWell._id,
-                wellName: selectedWell.name || selectedWell.UWI || selectedWell.wellboreId || `Well ${selectedWell._id}`,
-                UWI: selectedWell.UWI || ''
-            });
-        }
-    }
+    // if (targetWell.value) {
+    //     const selectedWell = wells.value.find(well => well._id === targetWell.value);
+    //     if (selectedWell) {
+            
+    //     }
+    // }
     
     // Store selected files in data store
     const filesToStore = uploadedFiles.value.map(file => ({
@@ -558,6 +606,14 @@ const calculateTotalSize = () => {
     if (uploadedFiles.value.length === 0) return '0 MB';
     const totalBytes = uploadedFiles.value.reduce((sum, file) => sum + file.size, 0);
     return formatFileSize(totalBytes);
+};
+
+const clearAllWells = () => {
+    wellStore.clearAllWells();
+};
+
+const removeWell = (wellId: string) => {
+    wellStore.removeWell(wellId);
 };
 
 // Lifecycle
@@ -713,7 +769,7 @@ onMounted(() => {
 }
 
 .form-input.has-selection::placeholder {
-    color: #000000;
+    color: #969696;
     font-weight: 500;
     opacity: 1;
 }
@@ -1101,5 +1157,131 @@ onMounted(() => {
         grid-template-columns: 30px 1fr 80px 120px;
         font-size: 0.8rem;
     }
+}
+
+/* Wells list styles */
+.wells-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: #fafafa;
+}
+
+.well-item {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f3f4f6;
+    background: white;
+    transition: background-color 0.2s ease;
+}
+
+.well-item:last-child {
+    border-bottom: none;
+}
+
+.well-item:hover {
+    background: #faf5ff;
+}
+
+.well-item .well-name {
+    font-weight: 500;
+    color: #1f2937;
+    font-size: 0.9rem;
+}
+
+.wells-container {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    background: #fafafa;
+}
+
+.wells-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.wells-count {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.wells-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.clear-wells-btn {
+    background: none;
+    color: #8b5cf6;
+    text-decoration: underline;
+    padding: 0;
+    font-size: 0.75rem;
+}
+
+.wells-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.well-card {
+    background: white;
+    border-radius: 8px;
+    padding: 0.75rem;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.well-card:hover {
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.08);
+    border-color: #e9d5ff;
+}
+
+.well-card-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.well-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.well-card-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.well-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.well-name {
+    font-weight: 500;
+    color: #1f2937;
+    font-size: 0.8rem;
+}
+
+.well-uwi {
+    font-size: 0.7rem;
+    color: #6b7280;
+}
+
+.remove-well-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
 }
 </style> 

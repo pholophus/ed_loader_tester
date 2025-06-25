@@ -12,7 +12,7 @@
                 </router-link>
                 <div class="header-actions">
                     <button v-if="wellStore.data.currentStage !== 'publication'" class="btn btn-primary" @click="proceedToQualityCheck"
-                        :disabled="wellStore.data.currentStage !== 'quality-check'">
+                        >
                         Quality Check
                     </button>
                     <button v-if="wellStore.data.currentStage == 'publication' && wellStore.data.approval.isApproved" class="btn btn-primary" @click="proceedToPublish">
@@ -81,7 +81,7 @@
                                 Dataset
                             </button>
                             <button class="tab" :class="{ active: activeTab === 'files' }" @click="activeTab = 'files'">
-                                Files ({{ files.length }})
+                                Files ({{ selectedWellId ? wellStore.getWellFileCount(selectedWellId) : files.length }})
                             </button>
                             <!-- <button class="tab" :class="{ active: activeTab === 'logs' }" @click="activeTab = 'logs'">
                                 Logs ({{ logs.length }})
@@ -95,14 +95,42 @@
                         <!-- Dataset Tab Content -->
                         <div v-if="activeTab === 'dataset'" class="tab-content">
                             <div class="dataset-info">
-                                <div class="info-row">
-                                    <label>Well Name:</label>
-                                    <span>{{ wellStore.data.well.wellName || 'N/A' }}</span>
+                                <!-- Wells List -->
+                                <div class="info-section">
+                                    <!-- <h3>Wells ({{ wellStore.data.well.length }})</h3> -->
+                                    <div v-if="wellStore.data.well.length === 0" class="no-wells">
+                                        No wells available
+                                    </div>
+                                    <div v-else class="wells-table-container">
+                                        <table class="wells-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Well Name</th>
+                                                    <th>Well ID</th>
+                                                    <th>UWI</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="well in wellStore.data.well" 
+                                                    :key="well.wellId"
+                                                    :class="{ 'selected-well': selectedWellId === well.wellId }"
+                                                    @click="selectWell(well.wellId)">
+                                                    <td class="well-name">{{ well.wellName }}</td>
+                                                    <td class="well-id-cell">{{ well.wellId }}</td>
+                                                    <td class="well-uwi">{{ well.UWI || 'N/A' }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        <div class="wells-count">
+                                            {{ wellStore.data.well.length }} well{{ wellStore.data.well.length !== 1 ? 's' : '' }}
+                                            <span v-if="selectedWellId" class="selected-well-indicator">
+                                                • {{ getSelectedWellName() }} selected
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="info-row">
-                                    <label>Well ID:</label>
-                                    <span>{{ wellStore.data.well.wellId || 'N/A' }}</span>
-                                </div>
+                                
+                                <!-- File Info -->
                                 <div class="info-row">
                                     <label>Total File Size:</label>
                                     <span>{{ totalWellFileSize }}</span>
@@ -132,78 +160,93 @@
 
                         <!-- Files Tab Content -->
                         <div v-if="activeTab === 'files'" class="tab-content">
-                            <div class="files-actions">
-                                <button class="btn btn-outline btn-sm" @click="removeSelectedFiles" 
-                                        :disabled="checkedFiles.size === 0">
-                                    Remove{{ checkedFiles.size > 0 ? ` (${checkedFiles.size})` : '' }}
-                                </button>
+                            <div v-if="!selectedWellId" class="no-well-selected">
+                                <div class="no-well-message">
+                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" class="no-well-icon">
+                                        <path d="M9 12L11 14L15 10" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <circle cx="12" cy="12" r="10" stroke="#9ca3af" stroke-width="2" fill="none"/>
+                                    </svg>
+                                    <h3>Select a Well</h3>
+                                    <p>Please select a well from the Dataset tab to view its files.</p>
+                                </div>
                             </div>
+                            
+                            <div v-else>
+                                <div class="files-actions">
+                                    <button class="btn btn-outline btn-sm" @click="removeSelectedFiles" 
+                                            :disabled="checkedFiles.size === 0">
+                                        Remove{{ checkedFiles.size > 0 ? ` (${checkedFiles.size})` : '' }}
+                                    </button>
+                                </div>
 
-                            <div class="table-container">
-                                <table class="components-table">
-                                    <thead>
-                                        <tr>
-                                            <th>
-                                                <input type="checkbox" 
-                                                       :checked="allFilesChecked" 
-                                                       :indeterminate="someFilesChecked"
-                                                       @change="toggleAllFiles" />
-                                            </th>
-                                            <th>File Name</th>
-                                            <th>Size</th>
-                                            <th>Category</th>
-                                            <th>Sub Category</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="(file, index) in files" :key="file.id" class="table-row"
-                                            @click="selectRow(index)"
-                                            
-                                        >
-                                            <td>
-                                                <input type="checkbox" 
-                                                       :checked="isFileChecked(file.id)" 
-                                                       @click="toggleFileCheck(file.id, $event)" />
-                                            </td>
-                                            <td class="file-name">{{ file.name }}</td>
-                                            <td>{{ formatFileSize(file.size) }}</td>
-                                            <td>
-                                                <select class="entity-select" 
-                                                        v-model="file.selectedDataTypeId" 
-                                                        @change="onDataTypeChange(file, file.selectedDataTypeId || '')"
-                                                        @click.stop>
-                                                    <option value="">Select Category</option>
-                                                    <option v-for="dataType in activeDataTypes" 
-                                                            :key="dataType._id" 
-                                                            :value="dataType._id">
-                                                        {{ dataType.name }}
-                                                    </option>
-                                                </select>
-                                            </td>
-                                            <td>
-                                                <select class="entity-select" 
-                                                        v-model="file.selectedSubDataTypeId" 
-                                                        :disabled="!file.selectedDataTypeId" 
-                                                        @change="onSubDataTypeChange(file, file.selectedSubDataTypeId || '')"
-                                                        @click.stop>
-                                                    <option value="">Select Sub Category</option>
-                                                    <option v-for="subDataType in getFilteredSubDataTypes(file.selectedDataTypeId || '')" 
-                                                            :key="subDataType._id" 
-                                                            :value="subDataType._id">
-                                                        {{ subDataType.name }}
-                                                    </option>
-                                                </select>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                <div class="table-container">
+                                    <table class="components-table">
+                                        <thead>
+                                            <tr>
+                                                <th>
+                                                    <input type="checkbox" 
+                                                           :checked="allFilesChecked" 
+                                                           :indeterminate="someFilesChecked"
+                                                           @change="toggleAllFiles" />
+                                                </th>
+                                                <th>File Name</th>
+                                                <th>Size</th>
+                                                <th>Category</th>
+                                                <th>Sub Category</th>
+                                                <th>Well</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(file, index) in files" :key="file.id" class="table-row"
+                                                @click="selectRow(index)"
+                                                
+                                            >
+                                                <td>
+                                                    <input type="checkbox" 
+                                                           :checked="isFileChecked(file.id)" 
+                                                           @click="toggleFileCheck(file.id, $event)" />
+                                                </td>
+                                                <td class="file-name">{{ file.name }}</td>
+                                                <td>{{ formatFileSize(file.size) }}</td>
+                                                <td>
+                                                    <select class="entity-select" 
+                                                            v-model="file.selectedDataTypeId" 
+                                                            @change="onDataTypeChange(file, file.selectedDataTypeId || '')"
+                                                            @click.stop>
+                                                        <option value="">Select Category</option>
+                                                        <option v-for="dataType in activeDataTypes" 
+                                                                :key="dataType._id" 
+                                                                :value="dataType._id">
+                                                            {{ dataType.name }}
+                                                        </option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <select class="entity-select" 
+                                                            v-model="file.selectedSubDataTypeId" 
+                                                            :disabled="!file.selectedDataTypeId" 
+                                                            @change="onSubDataTypeChange(file, file.selectedSubDataTypeId || '')"
+                                                            @click.stop>
+                                                        <option value="">Select Sub Category</option>
+                                                        <option v-for="subDataType in getFilteredSubDataTypes(file.selectedDataTypeId || '')" 
+                                                                :key="subDataType._id" 
+                                                                :value="subDataType._id">
+                                                            {{ subDataType.name }}
+                                                        </option>
+                                                    </select>
+                                                </td>
+                                                <td>{{ file.wellId }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
 
-                                <div class="table-footer">
-                                    <span>{{ files.length > 0 ? `1 - ${files.length} of ${files.length}` : '0' }} results</span>
-                                    <div class="pagination">
-                                        <button class="page-btn">‹</button>
-                                        <span>1</span>
-                                        <button class="page-btn">›</button>
+                                    <div class="table-footer">
+                                        <span>{{ files.length > 0 ? `1 - ${files.length} of ${files.length}` : '0' }} results</span>
+                                        <div class="pagination">
+                                            <button class="page-btn">‹</button>
+                                            <span>1</span>
+                                            <button class="page-btn">›</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -337,7 +380,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import DatasetDetails from './DataQC/DatasetDetails.vue';
 import FilesDetails from './DataQC/FilesDetails.vue';
@@ -346,6 +389,7 @@ import { useWellStore, ValidationResult } from '../store/wellStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useDataType } from '../Composables/useDataType';
 import { useSubDataType } from '../Composables/useSubDataType';
+import { useFileData } from '../Composables/useFileData';
 import { lasSchema } from '../../schemas/qc/las';
 import ExtendedFileData from '../../schemas/ExtendedFileData';
 
@@ -357,6 +401,13 @@ const settingsStore = useSettingsStore();
 // Composables
 const { items: dataTypes, fetch: fetchDataTypes } = useDataType();
 const { items: subDataTypes, fetch: fetchSubDataTypes } = useSubDataType();
+const { 
+    fileDataMap, 
+    initializeFileData, 
+    getFilesByWellId,
+    updateFileData,
+    removeFile 
+} = useFileData({ includeQCFields: true, defaultQualityStatus: 'success' });
 
 // Data from route or default values
 const datasetName = ref(route.query.datasetName as string || 'OSDU_Demo');
@@ -378,7 +429,7 @@ const uploadedDate = ref(route.query.uploadedDate as string || new Date().toISOS
 // const lastUpdatedBy = ref('recall_controller');
 
 // Tab management
-const activeTab = ref('files');
+const activeTab = ref('dataset');
 
 // Modal management
 const showApprovalModalDialog = ref(false);
@@ -386,7 +437,6 @@ const approvalComments = ref('');
 const showSuccessModal = ref(false);
 
 // File management
-const fileDataMap = ref<Map<string, ExtendedFileData>>(new Map());
 const checkedFiles = ref<Set<string>>(new Set());
 const selectAllFiles = ref(false);
 const selectedRowIndex = ref<number | null>(null);
@@ -394,40 +444,17 @@ const selectedRowIndex = ref<number | null>(null);
 // const validationResults = ref<Map<string, ValidationResult>>(new Map());
 // const selectedFile = ref<ExtendedFileData | null>(null);
 
-// Initialize file data from store
-const initializeFileData = () => {
-    const newMap = new Map<string, ExtendedFileData>();
-    wellStore.data.wellMetadatas.forEach((file, index) => {
-        const fileId = file.id || `file-${index}-${Date.now()}`;
-        const fileName = file.name || 'unknown';
-        newMap.set(fileId, {
-            id: fileId,
-            name: fileName,
-            size: file.size || 0,
-            progress: file.progress || 0,
-            path: file.path,
-            selected: false,
-            targetEntity: getFileExtension(fileName) === 'las' ? 'LOG' : 'BOREHOLE FILE',
-            selectedDataTypeId: file.dataTypeId || '',
-            selectedSubDataTypeId: file.subDataTypeId || '',
-            preparation: 'All',
-            qualityStatus: 'success', // Default to success for QC view
-            publication: 'All',
-            editedBy: file.editedBy || '',
-            createdBy: file.createdBy || '',
-            targetFileName: fileName,
-            fileFormat: file.fileFormat || getFileExtension(fileName).toUpperCase(),
-            topDepth: file.topDepth,
-            topDepthUoM: file.topDepthUoM,
-            stopDepth: file.baseDepth,
-            baseDepthUoM: file.baseDepthUoM,
-        } as ExtendedFileData);
-    });
-    fileDataMap.value = newMap;
-};
+// Well selection management
+const selectedWellId = ref<string | null>(null);
 
 // Computed properties
 const files = computed(() => {
+    // If a well is selected, filter files by wellId
+    if (selectedWellId.value) {
+        return getFilesByWellId(selectedWellId.value);
+    }
+    
+    // Otherwise return all files
     return Array.from(fileDataMap.value.values());
 });
 
@@ -547,11 +574,7 @@ const removeSelectedFiles = () => {
     if (checkedFiles.value.size === 0) return;
     
     checkedFiles.value.forEach(fileId => {
-        const fileToRemove = fileDataMap.value.get(fileId);
-        if (fileToRemove) {
-            wellStore.removeSelectedFile(fileToRemove.name);
-        }
-        fileDataMap.value.delete(fileId);
+        removeFile(fileId);
     });
     
     checkedFiles.value.clear();
@@ -559,20 +582,30 @@ const removeSelectedFiles = () => {
 };
 
 const onDataTypeChange = (file: ExtendedFileData, dataTypeId: string) => {
-    const fileData = fileDataMap.value.get(file.id);
-    if (fileData) {
-        fileData.selectedDataTypeId = dataTypeId;
-        fileData.selectedSubDataTypeId = '';
-        fileDataMap.value.set(file.id, { ...fileData });
-    }
+    updateFileData(file.id, {
+        selectedDataTypeId: dataTypeId,
+        selectedSubDataTypeId: '',
+    });
 };
 
 const onSubDataTypeChange = (file: ExtendedFileData, subDataTypeId: string) => {
-    const fileData = fileDataMap.value.get(file.id);
-    if (fileData) {
-        fileData.selectedSubDataTypeId = subDataTypeId;
-        fileDataMap.value.set(file.id, { ...fileData });
-    }
+    updateFileData(file.id, {
+        selectedSubDataTypeId: subDataTypeId,
+    });
+};
+
+// Well selection methods
+const selectWell = (wellId: string) => {
+    selectedWellId.value = wellId;
+    // Clear file selection when switching wells
+    checkedFiles.value.clear();
+    selectedRowIndex.value = null;
+};
+
+const getSelectedWellName = (): string => {
+    if (!selectedWellId.value) return '';
+    const well = wellStore.data.well.find(w => w.wellId === selectedWellId.value);
+    return well?.wellName || '';
 };
 
 // Validation Methods
@@ -581,8 +614,8 @@ const validateFileData = (file: ExtendedFileData): ValidationResult => {
         // Map file data to the expected schema format
         const validationData = {
             file_name: file.name,
-            edafy_well_id: wellStore.data.well.wellId,
-            well_name: wellStore.data.well.wellName,
+            edafy_well_id: file.wellId,
+            well_name: file.wellName,
             extensionType: file.fileFormat || getFileExtension(file.name).toUpperCase(),
             category: file.selectedDataTypeId, // This should map to CATEGORIES from las.ts
             subcategory: file.selectedSubDataTypeId, // This should map to SUBCATEGORIES from las.ts
@@ -636,7 +669,7 @@ const runValidationForAllFiles = () => {
 
     wellStore.clearFileValidationResults();
     
-    files.value.forEach(file => {
+    Array.from(fileDataMap.value.values()).forEach(file => {
         const result = validateFileData(file);
         // validationResults.value.set(file.id, result);
         
@@ -686,10 +719,10 @@ const closeApprovalModal = () => {
 };
 
 const approveDataset = () => {
-    console.log('[QC] Approving dataset with comments:', approvalComments.value);
+    // console.log('[QC] Approving dataset with comments:', approvalComments.value);
     wellStore.approveDataset(approvalComments.value);
-    console.log('[QC] Dataset approved, isApproved:', wellStore.data.approval.isApproved);
-    console.log('[QC] Current stage:', wellStore.data.currentStage);
+    // console.log('[QC] Dataset approved, isApproved:', wellStore.data.approval.isApproved);
+    // console.log('[QC] Current stage:', wellStore.data.currentStage);
     closeApprovalModal();
     
     // Show success modal after approval
@@ -717,7 +750,6 @@ const rejectDataset = () => {
 
 // Lifecycle
 onMounted(async () => {
-    console.log('[QC] Component mounted');
     
     // Initialize file data from store
     initializeFileData();
@@ -744,6 +776,22 @@ onMounted(async () => {
             wellStore.addCompletedStage('preparation');
         }
     }, 1000);
+});
+
+// Watch for activeTab changes to auto-select first file when files tab is activated
+watch(activeTab, (newTab) => {
+    if (newTab === 'files' && selectedWellId.value && files.value.length > 0) {
+        // Auto-select the first file when files tab is clicked
+        selectedRowIndex.value = 0;
+    }
+});
+
+// Watch for selectedWellId changes to auto-select first file when a well is selected
+watch(selectedWellId, (newWellId) => {
+    if (newWellId && activeTab.value === 'files' && files.value.length > 0) {
+        // Auto-select the first file when a well is selected and files tab is active
+        selectedRowIndex.value = 0;
+    }
 });
 </script>
 
@@ -1402,6 +1450,139 @@ onMounted(async () => {
 .success-btn {
     min-width: 120px;
     padding: 0.75rem 1.5rem;
+}
+
+/* Wells List Styles */
+.info-section {
+    margin-bottom: 1.5rem;
+}
+
+.info-section h3 {
+    color: #374151;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.no-wells {
+    color: #6b7280;
+    font-style: italic;
+    text-align: center;
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    font-size: 0.8rem;
+}
+
+.wells-table-container {
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.wells-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+
+.wells-table th,
+.wells-table td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.wells-table th {
+    background: #f9fafb;
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.wells-table tbody tr:hover {
+    background: #f8fafc;
+    cursor: pointer;
+}
+
+.wells-table tbody tr.selected-well {
+    background: #dbeafe !important;
+    border-left: 3px solid #3b82f6;
+}
+
+.wells-table tbody tr.selected-well:hover {
+    background: #bfdbfe !important;
+}
+
+.wells-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.well-name {
+    font-weight: 500;
+    color: #1e293b;
+}
+
+.well-id-cell {
+    font-weight: 500;
+    color: #64748b;
+    font-family: monospace;
+}
+
+.well-uwi {
+    font-weight: 400;
+    color: #6b7280;
+    font-family: monospace;
+}
+
+.wells-count {
+    margin-top: 0.5rem;
+    text-align: right;
+    font-size: 0.75rem;
+    color: #6b7280;
+    padding: 0.5rem 0.75rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+}
+
+.selected-well-indicator {
+    font-weight: 500;
+    color: #3b82f6;
+}
+
+/* No well selected styles */
+.no-well-selected {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+}
+
+.no-well-message {
+    text-align: center;
+    color: #6b7280;
+}
+
+.no-well-icon {
+    margin: 0 auto 1rem;
+    opacity: 0.5;
+}
+
+.no-well-message h3 {
+    color: #374151;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+}
+
+.no-well-message p {
+    color: #6b7280;
+    font-size: 0.9rem;
+    margin: 0;
 }
 
 @media (max-width: 1024px) {

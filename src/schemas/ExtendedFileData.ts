@@ -25,6 +25,9 @@ interface ExtendedFileData {
     baseDepth?: number;
     baseDepthUoM?: string;
 
+    // Well information
+    wellId?: string;
+    wellName?: string;
     // Errors
     validationResult?: ValidationResult;
     
