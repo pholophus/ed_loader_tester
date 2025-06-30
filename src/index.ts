@@ -2,7 +2,15 @@ import { app, BrowserWindow, ipcMain, protocol, net, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { connectMongo, closeMongo, findDocuments, insertDocument, updateDocument, deleteDocument, upsertDocument, startSession, getDb, getSession, endSession, insertManyDocuments, setDbNameAndReconnect } from './db/mongo';
-import { extractSegyContent, extractLasContent, extractOthersContent, extractSEGYFilesContent, extractSegySingleFileContent, extractSegyCoordinates } from './services/pythonService';
+import { 
+  extractSegySingleFileContent, 
+  extractSegyContent, 
+  extractLasContent, 
+  extractOthersContent, 
+  extractSEGYFilesContent, 
+  extractSegyCoordinates,
+  callBackendService
+} from './services/pythonService';
 import { openFolderDialog, readDirectory, fileExists, readSingleFile } from './services/fileService';
 import { startTusServer, stopTusServer, getTusServerUrl, TusServerConfig } from './services/tusServer';
 import { manualTraceHeaderExtractRequest } from './schemas/SegyTable';
@@ -442,6 +450,11 @@ ipcMain.handle('extract-segy-files-content', async (event, manualTraceHeaderExtr
 
 ipcMain.handle('python:extractSegyCoordinates', async (_event, fileConfigs: any[], srid: number, proj4_string: string) => {
   return extractSegyCoordinates(fileConfigs, srid, proj4_string);
+});
+
+// Generic backend service handler
+ipcMain.handle('backend:callService', async (_event, endpoint: string, params?: any) => {
+  return callBackendService(endpoint, params);
 });
 
 // LAS file preview handler

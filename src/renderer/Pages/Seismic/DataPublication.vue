@@ -253,7 +253,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import WorkflowProgress from '../Components/WorkflowProgress.vue';
-import { useWellStore } from '../store/wellStore';
+import { useWellStore } from '../../store/wellStore';
 
 const router = useRouter();
 const wellStore = useWellStore();

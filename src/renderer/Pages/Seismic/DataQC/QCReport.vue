@@ -173,7 +173,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue';
 import { useWellStore } from '@/store/wellStore';
-import { countLasCurves } from '../../../services/lasService';
+import { countLasCurves } from '../../../../services/lasService';
 
 interface QualityMetrics {
     metadata: string;

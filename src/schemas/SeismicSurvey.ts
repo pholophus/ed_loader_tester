@@ -11,7 +11,7 @@ export interface SeismicSurvey {
   shotBy?: number;
   surveyArea?: string;
   surveyAreaUom?: Date;
-  country?: Date;
+  country?: string;
   surveyAreaType?: number;
   recordedBy?: string;
   recordedOn?: string;

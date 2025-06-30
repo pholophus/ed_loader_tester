@@ -3,7 +3,7 @@
         <!-- Header -->
         <header class="page-header">
             <div class="header-nav">
-                <router-link to="/data-qc" class="back-button">
+                <router-link to="/well/data-qc" class="back-button">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                         <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
@@ -211,8 +211,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import WorkflowProgress from '../Components/WorkflowProgress.vue';
-import { useWellStore } from '../store/wellStore';
+import WorkflowProgress from '../../Components/WorkflowProgress.vue';
+import { useWellStore } from '../../store/wellStore';
 
 const router = useRouter();
 const wellStore = useWellStore();

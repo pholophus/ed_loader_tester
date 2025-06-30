@@ -71,6 +71,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Settings
   setDbName: (newDbName: string) => ipcRenderer.invoke('settings:setDbName', newDbName),
+
+  // Generic backend service call
+  callBackendService: (endpoint: string, params?: any) => 
+    ipcRenderer.invoke('backend:callService', endpoint, params),
 });
 
 // Expose MongoDB API separately

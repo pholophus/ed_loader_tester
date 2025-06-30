@@ -23,18 +23,18 @@
     </main>
 
     <!-- Footer -->
-    <footer class="border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <!-- <footer class="border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div class="container flex h-12 items-center justify-between px-4">
         <p class="text-xs text-muted-foreground">
           ED Loader v1.0.0
         </p>
-        <!-- <div class="flex items-center space-x-2">
+        <div class="flex items-center space-x-2">
           <Button variant="ghost" size="sm" @click="showDemo">
             View Demo
           </Button>
-        </div> -->
+        </div>
       </div>
-    </footer>
+    </footer> -->
   </div>
 </template>
 

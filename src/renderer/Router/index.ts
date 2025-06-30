@@ -3,16 +3,22 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 // Import your page components
 import Dashboard from '../Pages/Dashboard.vue';
 import Upload from '../Pages/Upload.vue';
-import DataPreparation from '../Pages/DataPreparation.vue';
-import DataQC from '../Pages/DataQC.vue';
-import DataLoading from '@/Pages/DataLoading.vue';
+import WellDataPreparation from '../Pages/Well/DataPreparation.vue';
+import SeismicDataPreparation from '../Pages/Seismic/DataPreparation.vue';
+import WellDataQC from '../Pages/Well/DataQC.vue';
+import SeismicDataQC from '../Pages/Seismic/DataQC.vue';
+import WellDataLoading from '../Pages/Well/DataLoading.vue';
+import SeismicDataLoading from '../Pages/Seismic/DataLoading.vue';
 
 const routes = [
   { path: '/', component: Dashboard },
   { path: '/upload', component: Upload },
-  { path: '/data-preparation', component: DataPreparation },
-  { path: '/data-loading', component: DataLoading },
-  { path: '/data-qc', component: DataQC },
+  { path: '/well/data-preparation', component: WellDataPreparation },
+  { path: '/well/data-loading', component: WellDataLoading },
+  { path: '/well/data-qc', component: WellDataQC },
+  { path: '/seismic/data-preparation', component: SeismicDataPreparation },
+  { path: '/seismic/data-loading', component: SeismicDataLoading },
+  { path: '/seismic/data-qc', component: SeismicDataQC },
 ];
 
 const router = createRouter({

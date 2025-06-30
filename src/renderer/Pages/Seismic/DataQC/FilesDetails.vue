@@ -164,7 +164,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { useWellStore } from '../../store/wellStore';
+import { useWellStore } from '../../../store/wellStore';
 import { 
     parseLasFileForPreview, 
     isLasFile, 
@@ -175,7 +175,7 @@ import {
     type LasPreviewData,
     type LasMetadata,
     type LasComprehensiveData
-} from '../../../services/lasService';
+} from '../../../../services/lasService';
 
 // Props for receiving data from parent component
 interface Props {

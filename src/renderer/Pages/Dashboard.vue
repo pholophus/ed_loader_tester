@@ -61,11 +61,18 @@ watch(selectedTarget, (newTarget) => {
     if (newTarget) {
         // Save to pinia store
         settingsStore.setSelectedTarget(newTarget);
-        
-        router.push({
-            path: '/data-preparation',
-            query: { target: newTarget }
-        });
+
+        if(newTarget === 'well') {
+            router.push({
+                path: '/well/data-preparation',
+                query: { target: newTarget }
+            });
+        } else if(newTarget === 'seismic') {
+            router.push({
+                path: '/seismic/data-preparation',
+                query: { target: newTarget }
+            });
+        }
     }
 });
 </script>

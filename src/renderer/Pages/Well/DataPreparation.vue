@@ -16,7 +16,7 @@
                 </div>
             </div>
             <div class="header-title">
-                <h1>{{ selectedTarget === 'well' ? 'Well Data' : 'Seismic Data' }} Ingest</h1>
+                <h1>Well Data Ingest</h1>
                 <p>Configure your dataset properties and upload files</p>
             </div>
             
@@ -83,7 +83,7 @@
                             </div>
                         </div> -->
 
-                        <div class="form-group" v-if="selectedTarget === 'well'">
+                        <div class="form-group">
                             <div class="form-row">
                                 <label>Target Well</label>
                                 <div class="select-with-search">
@@ -119,7 +119,7 @@
                         </div>
 
                         <!-- Wells from Store -->
-                        <div class="form-group" v-if="selectedTarget === 'well' && wellStore.data.well.length > 0">
+                        <div class="form-group" v-if="wellStore.data.well.length > 0">
                             <div class="form-row">
                                 <label>Selected Wells</label>
                                 <div class="wells-container">
@@ -323,9 +323,9 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 // import { useFileStore } from '../store/fileStore';
-import { useWellStore } from '../store/wellStore';
-import { useWell } from '../Composables/useWell';
-import WorkflowProgress from '../Components/WorkflowProgress.vue';
+import { useWellStore } from '../../store/wellStore';
+import { useWell } from '../../Composables/useWell';
+import WorkflowProgress from '../../Components/WorkflowProgress.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -598,7 +598,7 @@ const prepareDataset = () => {
     
     // Navigate to DataQC page with form data
     router.push({
-        path: '/data-loading',
+        path: '/well/data-loading',
     });
 };
 

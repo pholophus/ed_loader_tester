@@ -3,7 +3,7 @@
         <!-- Header -->
         <header class="page-header">
             <div class="header-nav">
-                <router-link to="/data-preparation" class="back-button">
+                <router-link to="/seismic/data-preparation" class="back-button">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                         <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
@@ -26,8 +26,8 @@
             
             <!-- Workflow Progress -->
             <WorkflowProgress 
-                :current-stage="wellStore.data.currentStage"
-                :completed-stages="wellStore.data.completedStages"
+                :current-stage="seismicStore.data.currentStage"
+                :completed-stages="seismicStore.data.completedStages"
             />
         </header>
 
@@ -49,9 +49,14 @@
                             </div>
                             <div class="panel-title-row">
                                 <h3 class="panel-title">Components</h3>
-                                <button class="btn btn-secondary remove-btn" @click="removeSelectedFile" :disabled="checkedFiles.size === 0">
-                                    Remove{{ checkedFiles.size > 0 ? ` (${checkedFiles.size})` : '' }}
-                                </button>
+                                <div class="panel-actions">
+                                    <button class="btn btn-secondary manual-extract-btn" @click="openManualExtractionModal">
+                                        Manual Extraction
+                                    </button>
+                                    <button class="btn btn-secondary remove-btn" @click="removeSelectedFile" :disabled="checkedFiles.size === 0">
+                                        Remove{{ checkedFiles.size > 0 ? ` (${checkedFiles.size})` : '' }}
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -65,27 +70,31 @@
                                             @change="toggleAllFiles" /></th>
                                         <th>File Name</th>
                                         <th>Size</th>
-                                        <th>Well</th>
+                                        <th v-if="seismicStore.data.isForUploadingFileForExistingSeismic">Line</th>
                                         <th>Category</th>
                                         <th>Sub Category</th>
-                                        <!-- <th>Preparation</th>
-                                        <th>Loading</th>
-                                        <th>Quality Check</th>
-                                        <th>Publication</th> -->
+                                        <th>First Field File</th>
+                                        <th>Last Field File</th>
+                                        <th>FSP</th>
+                                        <th>LSP</th>
+                                        <th>First CDP</th>
+                                        <th>Last CDP</th>
+                                        <th>InLine</th>
+                                        <th>XLine</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="file in displayFiles" :key="file.id" 
+                                    <tr v-for="file in paginatedFiles" :key="file.id" 
                                         :class="{ selected: selectedFile?.id === file.id }"
                                         @click="selectFile(file)">
                                         <td><input type="checkbox" :checked="isFileChecked(file.id)" @click="toggleFileCheck(file.id, $event)" /></td>
                                         <td class="file-name">{{ file.name }}</td>
                                         <td>{{ formatFileSize(file.size) }}</td>
-                                        <td>
+                                        <td v-if="seismicStore.data.isForUploadingFileForExistingSeismic">
                                             <select class="entity-select" v-model="file.wellId">
-                                                <option value="">Select Well</option>
-                                                <option v-for="well in wellStore.data.well" :key="well.wellId" :value="well.wellId">
-                                                    {{ well.wellName }}
+                                                <option value="">Select Line</option>
+                                                <option v-for="line in filteredSeismicLines" :key="line._id" :value="line._id">
+                                                    {{ line.name }}
                                                 </option>
                                             </select>
                                         </td>
@@ -105,44 +114,28 @@
                                                 </option>
                                             </select>
                                         </td>
-
-                                        <!-- <td>
-                                            <select class="status-select" v-model="file.preparation">
-                                                <option value="All">All</option>
-                                                <option value="A3">A3</option>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <div class="status-icon" :class="file.loadingStatus">
-                                                <svg v-if="file.loadingStatus === 'completed'" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                                    <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                </svg>
-                                                <div v-else-if="file.loadingStatus === 'loading'" class="loading-spinner small"></div>
-                                                <div v-else class="status-pending">⏳</div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <select class="status-select" v-model="file.qualityCheck">
-                                                <option value="All">All</option>
-                                                <option value="A3">A3</option>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <select class="status-select" v-model="file.publication">
-                                                <option value="All">All</option>
-                                                <option value="A3">A3</option>
-                                            </select>
-                                        </td> -->
                                     </tr>
                                 </tbody>
                             </table>
                             
                             <div class="table-footer">
-                                <span>{{ displayFiles.length > 0 ? `1 - ${displayFiles.length} of ${displayFiles.length}` : '0' }} results</span>
+                                <div class="footer-left">
+                                    <span>{{ paginationInfo }}</span>
+                                    <div class="items-per-page">
+                                        <label>Show:</label>
+                                        <select v-model="itemsPerPage" class="items-select">
+                                            <option :value="5">5</option>
+                                            <option :value="10">10</option>
+                                            <option :value="25">25</option>
+                                            <option :value="50">50</option>
+                                        </select>
+                                        <span>per page</span>
+                                    </div>
+                                </div>
                                 <div class="pagination">
-                                    <button class="page-btn">‹</button>
-                                    <span>1</span>
-                                    <button class="page-btn">›</button>
+                                    <button class="page-btn" @click="goToPreviousPage" :disabled="!canGoToPreviousPage">‹</button>
+                                    <span class="page-info">Page {{ currentPage }} of {{ totalPages || 1 }}</span>
+                                    <button class="page-btn" @click="goToNextPage" :disabled="!canGoToNextPage">›</button>
                                 </div>
                             </div>
                         </div>
@@ -212,68 +205,8 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label>Well</label>
-                                    <span class="form-value">{{ selectedWellName }}</span>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Top Depth </label>
-                                    <span class="form-value">
-                                        <template v-if="isLoadingDepthMetadata">
-                                            <div class="loading-spinner small"></div>
-                                        </template>
-                                        <template v-else-if="currentDepthMetadata?.topDepth !== null && currentDepthMetadata?.topDepth !== undefined">
-                                            {{ currentDepthMetadata.topDepth }}
-                                        </template>
-                                        <template v-else>
-                                            N/A
-                                        </template>
-                                    </span>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Top Depth UoM</label>
-                                    <span class="form-value">
-                                        <template v-if="isLoadingDepthMetadata">
-                                            <div class="loading-spinner small"></div>
-                                        </template>
-                                        <template v-else-if="currentDepthMetadata?.topDepthUom">
-                                            {{ currentDepthMetadata.topDepthUom }}
-                                        </template>
-                                        <template v-else>
-                                            N/A
-                                        </template>
-                                    </span>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Base Depth</label>
-                                    <span class="form-value">
-                                        <template v-if="isLoadingDepthMetadata">
-                                            <div class="loading-spinner small"></div>
-                                        </template>
-                                        <template v-else-if="currentDepthMetadata?.baseDepth !== null && currentDepthMetadata?.baseDepth !== undefined">
-                                            {{ currentDepthMetadata.baseDepth }}
-                                        </template>
-                                        <template v-else>
-                                            N/A
-                                        </template>
-                                    </span>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Base Depth UoM</label>
-                                    <span class="form-value">
-                                        <template v-if="isLoadingDepthMetadata">
-                                            <div class="loading-spinner small"></div>
-                                        </template>
-                                        <template v-else-if="currentDepthMetadata?.baseDepthUom">
-                                            {{ currentDepthMetadata.baseDepthUom }}
-                                        </template>
-                                        <template v-else>
-                                            N/A
-                                        </template>
-                                    </span>
+                                    <label>Line</label>
+                                    <span class="form-value">{{ selectedLineName }}</span>
                                 </div>
 
                             </div>
@@ -356,6 +289,101 @@
                 </div>
             </div>
         </main>
+
+        <!-- Manual Extraction Modal -->
+        <div v-if="showManualExtractionModal" class="modal-overlay" @click="closeManualExtractionModal">
+            <div class="modal-content" @click.stop>
+                <div class="modal-header">
+                    <h3>Manual Extraction</h3>
+                    <button class="modal-close" @click="closeManualExtractionModal">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="extraction-form">
+                        <div class="form-row">
+                            <div class="form-field">
+                                <input type="checkbox" id="ffid" v-model="extractionFields.ffid.enabled" class="field-checkbox">
+                                <label for="ffid" class="field-label">FFID</label>
+                                <input 
+                                    type="text" 
+                                    v-model="extractionFields.ffid.value" 
+                                    :disabled="!extractionFields.ffid.enabled"
+                                    class="field-input"
+                                    placeholder=""
+                                >
+                            </div>
+                            <div class="form-field">
+                                <input type="checkbox" id="il" v-model="extractionFields.il.enabled" class="field-checkbox">
+                                <label for="il" class="field-label">IL</label>
+                                <input 
+                                    type="text" 
+                                    v-model="extractionFields.il.value" 
+                                    :disabled="!extractionFields.il.enabled"
+                                    class="field-input"
+                                    placeholder=""
+                                >
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-field">
+                                <input type="checkbox" id="sp" v-model="extractionFields.sp.enabled" class="field-checkbox">
+                                <label for="sp" class="field-label">SP</label>
+                                <input 
+                                    type="text" 
+                                    v-model="extractionFields.sp.value" 
+                                    :disabled="!extractionFields.sp.enabled"
+                                    class="field-input"
+                                    placeholder=""
+                                >
+                            </div>
+                            <div class="form-field">
+                                <input type="checkbox" id="xl" v-model="extractionFields.xl.enabled" class="field-checkbox">
+                                <label for="xl" class="field-label">XL</label>
+                                <input 
+                                    type="text" 
+                                    v-model="extractionFields.xl.value" 
+                                    :disabled="!extractionFields.xl.enabled"
+                                    class="field-input"
+                                    placeholder=""
+                                >
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-field">
+                                <input type="checkbox" id="cdp" v-model="extractionFields.cdp.enabled" class="field-checkbox">
+                                <label for="cdp" class="field-label">CDP</label>
+                                <input 
+                                    type="text" 
+                                    v-model="extractionFields.cdp.value" 
+                                    :disabled="!extractionFields.cdp.enabled"
+                                    class="field-input"
+                                    placeholder=""
+                                >
+                            </div>
+                            <div class="form-field format-field">
+                                <label class="field-label">FORMAT</label>
+                                <select v-model="extractionFields.format" class="format-select">
+                                    <option value="">Select Format</option>
+                                    <option value="segy">SEG-Y</option>
+                                    <option value="segd">SEG-D</option>
+                                    <option value="ascii">ASCII</option>
+                                    <option value="binary">Binary</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @click="closeManualExtractionModal">Cancel</button>
+                    <button class="btn btn-primary" @click="performManualExtraction">Extract</button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -363,29 +391,29 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 // import { useFileStore } from '../store/fileStore';
-import { useWellStore } from '../store/wellStore';
-import { useDataType } from '../Composables/useDataType';
-import { useSubDataType } from '../Composables/useSubDataType';
-import { useFileData } from '../Composables/useFileData';
-import WorkflowProgress from '../Components/WorkflowProgress.vue';
-import ExtendedFileData from '../../schemas/ExtendedFileData';
+import { useSeismicStore } from '../../store/seismicStore';
+import { useDataType } from '../../Composables/useDataType';
+import { useSubDataType } from '../../Composables/useSubDataType';
+import { useFileData } from '../../Composables/useFileData';
+import { useSeismicLine } from '../../Composables/useSeismicLine';
+import { useSeismicSurveyLinePivot } from '../../Composables/useSeismicSurveyLinePivot';
+import WorkflowProgress from '../../Components/WorkflowProgress.vue';
+import ExtendedFileData from '../../../schemas/ExtendedFileData';
 import { 
     parseLasFileForPreview, 
     isLasFile, 
     extractLasMetadata,
     extractLasComprehensiveData,
     extractLasMetadataForDisplay,
-    extractLasDepthMetadata,
     parseLasToWellioJson,
     type LasPreviewData,
     type LasMetadata,
-    type LasComprehensiveData,
-    type LasDepthMetadata
-} from '../../services/lasService';
+    type LasComprehensiveData
+} from '../../../services/lasService';
 
 const router = useRouter();
 // const fileStore = useFileStore();
-const wellStore = useWellStore();
+const seismicStore = useSeismicStore();
 
 // Composables
 const { items: dataTypes, fetch: fetchDataTypes } = useDataType();
@@ -395,8 +423,16 @@ const {
     displayFiles, 
     initializeFileData, 
     updateFileData,
-    removeFile 
-} = useFileData({ includeLoadingFields: true });
+    removeFile,
+    getFilesByLineId
+} = useFileData({ 
+    includeLoadingFields: true,
+    storeType: 'seismic'
+});
+
+// Seismic line composables
+const { items: seismicLines, fetch: fetchSeismicLines } = useSeismicLine();
+const { items: surveyLinePivots, fetch: fetchSurveyLinePivots } = useSeismicSurveyLinePivot();
 
 // State
 const activeTab = ref('metadata');
@@ -405,11 +441,21 @@ const checkedFiles = ref<Set<string>>(new Set());
 const editableFileName = ref('');
 const previewData = ref<LasPreviewData | null>(null);
 const isLoadingPreview = ref(false);
+const showManualExtractionModal = ref(false);
 
-// LAS depth metadata state
-const currentDepthMetadata = ref<LasDepthMetadata | null>(null);
-const isLoadingDepthMetadata = ref(false);
-const depthMetadataCache = ref<Map<string, LasDepthMetadata>>(new Map());
+// Manual extraction form data
+const extractionFields = ref({
+    ffid: { enabled: false, value: '' },
+    il: { enabled: false, value: '' },
+    sp: { enabled: false, value: '' },
+    xl: { enabled: false, value: '' },
+    cdp: { enabled: false, value: '' },
+    format: ''
+});
+
+// Pagination state
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
 
 // Computed properties
 const activeDataTypes = computed(() => {
@@ -442,12 +488,31 @@ const selectedSubDataTypeName = computed(() => {
     return subDataType?.name || '';
 });
 
-const selectedWellName = computed(() => {
-    if (!selectedFile.value?.wellId || !wellStore.data.well.length) {
+const selectedLineName = computed(() => {
+    if (!selectedFile.value?.wellId || !filteredSeismicLines.value.length) {
         return '';
     }
-    const well = wellStore.data.well.find((w: any) => w.wellId === selectedFile.value?.wellId);
-    return well?.wellName || '';
+    const line = filteredSeismicLines.value.find((l: any) => l._id === selectedFile.value?.wellId);
+    return line?.name || '';
+});
+
+// Computed property to get lines filtered by current surveyId
+const filteredSeismicLines = computed(() => {
+    const currentSurveyId = seismicStore.data.survey.surveyId;
+    
+    if (!currentSurveyId || !surveyLinePivots.value || !seismicLines.value) {
+        return [];
+    }
+    
+    // Get line IDs associated with the current survey
+    const associatedLineIds = surveyLinePivots.value
+        .filter(pivot => pivot.surveyId === currentSurveyId)
+        .map(pivot => pivot.lineId);
+    
+    // Filter seismic lines to only include those associated with the survey
+    return seismicLines.value.filter(line => 
+        line._id && associatedLineIds.includes(line._id)
+    );
 });
 
 const getFilteredSubDataTypes = (dataTypeId: string) => {
@@ -458,6 +523,35 @@ const getFilteredSubDataTypes = (dataTypeId: string) => {
     
     return filtered;
 };
+
+// Pagination computed properties
+const totalPages = computed(() => {
+    return Math.ceil(displayFiles.value.length / itemsPerPage.value);
+});
+
+const paginatedFiles = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage.value;
+    const end = start + itemsPerPage.value;
+    return displayFiles.value.slice(start, end);
+});
+
+const paginationInfo = computed(() => {
+    if (displayFiles.value.length === 0) {
+        return '0 results';
+    }
+    
+    const start = (currentPage.value - 1) * itemsPerPage.value + 1;
+    const end = Math.min(currentPage.value * itemsPerPage.value, displayFiles.value.length);
+    return `${start} - ${end} of ${displayFiles.value.length} results`;
+});
+
+const canGoToPreviousPage = computed(() => {
+    return currentPage.value > 1;
+});
+
+const canGoToNextPage = computed(() => {
+    return currentPage.value < totalPages.value;
+});
 
 // Methods
 const formatFileSize = (bytes: number): string => {
@@ -479,19 +573,6 @@ const selectFile = (file: ExtendedFileData) => {
     
     // Clear previous preview data
     previewData.value = null;
-    
-    // Set depth metadata from cache if it's a LAS file
-    if (isLasFile(selectedFile.value.name)) {
-        const cached = depthMetadataCache.value.get(selectedFile.value.path || '');
-        if (cached) {
-            currentDepthMetadata.value = cached;
-        } else {
-            // If not in cache, load it
-            loadDepthMetadata(selectedFile.value);
-        }
-    } else {
-        currentDepthMetadata.value = null;
-    }
     
     // Load preview if it's a .las file and preview tab is active
     if (activeTab.value === 'preview' && isLasFile(selectedFile.value.name)) {
@@ -517,12 +598,13 @@ const isFileChecked = (fileId: string) => {
 
 // Computed property to check if all files are selected
 const allFilesChecked = computed(() => {
-    return displayFiles.value.length > 0 && displayFiles.value.every(file => checkedFiles.value.has(file.id));
+    return paginatedFiles.value.length > 0 && paginatedFiles.value.every(file => checkedFiles.value.has(file.id));
 });
 
 // Computed property to check if some (but not all) files are selected
 const someFilesChecked = computed(() => {
-    return checkedFiles.value.size > 0 && !allFilesChecked.value;
+    const checkedFilesOnCurrentPage = paginatedFiles.value.filter(file => checkedFiles.value.has(file.id)).length;
+    return checkedFilesOnCurrentPage > 0 && !allFilesChecked.value;
 });
 
 // Method to toggle all checkboxes
@@ -530,13 +612,15 @@ const toggleAllFiles = (event: Event) => {
     const target = event.target as HTMLInputElement;
     
     if (target.checked) {
-        // Check all files
-        displayFiles.value.forEach(file => {
+        // Check all files on current page
+        paginatedFiles.value.forEach(file => {
             checkedFiles.value.add(file.id);
         });
     } else {
-        // Uncheck all files
-        checkedFiles.value.clear();
+        // Uncheck all files on current page
+        paginatedFiles.value.forEach(file => {
+            checkedFiles.value.delete(file.id);
+        });
     }
 };
 
@@ -553,27 +637,23 @@ const proceedToQualityCheck = () => {
         createdFor: file.createdFor,
         createdDate: file.createdDate,
         fileFormat: file.fileFormat,
-        dataTypeId: file.selectedDataTypeId, // From Category dropdown (lines 80-94)
-        subDataTypeId: file.selectedSubDataTypeId, // From Sub Category dropdown (lines 80-94)
+        dataTypeId: file.selectedDataTypeId, // From Category dropdown
+        subDataTypeId: file.selectedSubDataTypeId, // From Sub Category dropdown
         dataTypeName: getDataTypeName(file.selectedDataTypeId || ''),
         subDataTypeName: getSubDataTypeName(file.selectedSubDataTypeId || ''),
-        topDepth: file.topDepth,
-        topDepthUoM: file.topDepthUoM,
-        baseDepth: file.baseDepth,
-        baseDepthUoM: file.baseDepthUoM,
-        wellId: file.wellId,
+        lineId: file.wellId, // For seismic data, wellId field actually contains lineId
     }));
 
-    // console.log('[DataLoading] Proceeding to quality check...');
+    console.log('[DataLoading] Proceeding to quality check...');
     console.log('[DataLoading] Metadatas:', metadatas);
     
-    // Update the well store with metadata
-    wellStore.setMetadatas(metadatas);
+    // Update the seismic store with metadata
+    seismicStore.setMetadatas(metadatas);
     
     // Advance workflow to quality-check stage and mark loading as completed
-    wellStore.advanceWorkflow('quality-check', 'loading');
+    seismicStore.advanceWorkflow('quality-check', 'loading');
     
-    router.push('/data-qc');
+    router.push('/seismic/data-qc');
 };
 
 // Method to handle data type selection change
@@ -630,40 +710,28 @@ const removeSelectedFile = () => {
 // Lifecycle
 onMounted(async () => {
 
-    // console.log('[DataLoading] Well data:', wellStore.data);
-    console.log('[DataLoading] Well data:', wellStore.data.well);
+    // console.log('[DataLoading] Well data:', seismicStore.data);
+    // console.log('[DataLoading] Well data:', seismicStore.data.well);
     // Initialize file data
     initializeFileData();
     
     // Fetch data types and sub data types
     try {
         await fetchDataTypes();
-        
         await fetchSubDataTypes();
+        
+        // Fetch seismic lines and survey-line relationships
+        await fetchSeismicLines();
+        await fetchSurveyLinePivots();
     } catch (error) {
         console.error('[DataLoading] Error fetching data:', error);
     }
-    
-    // Load depth metadata for all LAS files
-    const allFiles = Array.from(fileDataMap.value.values());
-    const lasFiles = allFiles.filter(file => isLasFile(file.name));
-    
-    // Load depth metadata for all LAS files in parallel
-    await Promise.all(lasFiles.map(file => loadDepthMetadata(file)));
     
     // Auto-select first file
     if (displayFiles.value.length > 0) {
         selectedFile.value = displayFiles.value[0];
         // Initialize editable filename
         editableFileName.value = selectedFile.value.targetFileName || selectedFile.value.name;
-        
-        // Depth metadata already loaded above, just set current metadata if it's a LAS file
-        if (isLasFile(selectedFile.value.name)) {
-            const cached = depthMetadataCache.value.get(selectedFile.value.path || '');
-            if (cached) {
-                currentDepthMetadata.value = cached;
-            }
-        }
     }
 });
 
@@ -682,60 +750,6 @@ const updateMetadata = () => {
 const resetFileName = () => {
     if (selectedFile.value) {
         editableFileName.value = selectedFile.value.targetFileName || selectedFile.value.name;
-    }
-};
-
-// Method to load LAS depth metadata
-const loadDepthMetadata = async (file: ExtendedFileData) => {
-    if (!file.path || !isLasFile(file.name)) {
-        currentDepthMetadata.value = null;
-        return;
-    }
-
-    // Check cache first
-    const cached = depthMetadataCache.value.get(file.path);
-    if (cached) {
-        currentDepthMetadata.value = cached;
-        // Update file data with cached metadata
-        updateFileWithDepthMetadata(file, cached);
-        return;
-    }
-
-    isLoadingDepthMetadata.value = true;
-    
-    try {
-        const result = await extractLasDepthMetadata(file.path);
-        
-        if (result.success && result.depthData) {
-            currentDepthMetadata.value = result.depthData;
-            // Cache the result
-            depthMetadataCache.value.set(file.path, result.depthData);
-            // Update file data with extracted metadata
-            updateFileWithDepthMetadata(file, result.depthData);
-        } else {
-            console.error('[DataLoading] Failed to extract depth metadata:', result.error);
-            currentDepthMetadata.value = null;
-        }
-    } catch (error) {
-        console.error('[DataLoading] Error loading depth metadata:', error);
-        currentDepthMetadata.value = null;
-    } finally {
-        isLoadingDepthMetadata.value = false;
-    }
-};
-
-// Helper function to update file data with depth metadata
-const updateFileWithDepthMetadata = (file: ExtendedFileData, depthData: LasDepthMetadata) => {
-    updateFileData(file.id, {
-        topDepth: depthData.topDepth ?? 0,
-        topDepthUoM: depthData.topDepthUom || '',
-        baseDepth: depthData.baseDepth ?? 0,
-        baseDepthUoM: depthData.baseDepthUom || '',
-    });
-    
-    // Update selected file if it's the current one
-    if (selectedFile.value?.id === file.id) {
-        selectedFile.value = fileDataMap.value.get(file.id) || null;
     }
 };
 
@@ -797,14 +811,67 @@ const getSubDataTypeName = (subDataTypeId: string) => {
     return subDataType?.name || '';
 };
 
-// New computed property to check if all files have category, sub-category, and well selected
+// New computed property to check if all files have category, sub-category, and line selected
 const canProceedToQualityCheck = computed(() => {
     return displayFiles.value.every(file => {
         return file.selectedDataTypeId && file.selectedDataTypeId !== '' && 
-               file.selectedSubDataTypeId && file.selectedSubDataTypeId !== '' && 
-               file.wellId && file.wellId !== '';
+               file.selectedSubDataTypeId && file.selectedSubDataTypeId !== '';
+        // Removed wellId requirement for seismic data
     });
 });
+
+// Pagination methods
+const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages.value) {
+        currentPage.value = page;
+    }
+};
+
+const goToPreviousPage = () => {
+    if (canGoToPreviousPage.value) {
+        currentPage.value--;
+    }
+};
+
+const goToNextPage = () => {
+    if (canGoToNextPage.value) {
+        currentPage.value++;
+    }
+};
+
+const resetPagination = () => {
+    currentPage.value = 1;
+};
+
+// Watch for changes in displayFiles to reset pagination
+watch(displayFiles, () => {
+    resetPagination();
+});
+
+// Watch for changes in itemsPerPage to adjust current page if needed
+watch(itemsPerPage, () => {
+    // If current page exceeds total pages after items per page change, reset to page 1
+    if (currentPage.value > totalPages.value && totalPages.value > 0) {
+        currentPage.value = 1;
+    }
+});
+
+// Manual extraction modal methods
+const openManualExtractionModal = () => {
+    showManualExtractionModal.value = true;
+};
+
+const closeManualExtractionModal = () => {
+    showManualExtractionModal.value = false;
+};
+
+const performManualExtraction = () => {
+    // TODO: Implement manual extraction logic
+    console.log('[DataLoading] Performing manual extraction...');
+    
+    // Close modal after extraction
+    closeManualExtractionModal();
+};
 </script>
 
 <style scoped>
@@ -914,6 +981,27 @@ const canProceedToQualityCheck = computed(() => {
     font-weight: 600;
     color: #1f2937;
     margin: 0;
+}
+
+.panel-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.manual-extract-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #d1d5db;
+    background: white;
+    color: #6b7280;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.manual-extract-btn:hover {
+    background: #e5e7eb;
 }
 
 .remove-btn {
@@ -1055,6 +1143,28 @@ const canProceedToQualityCheck = computed(() => {
     border-radius: 0 0 8px 8px;
 }
 
+.footer-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.items-per-page {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.items-select {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    background: white;
+    color: #374151;
+    min-width: 60px;
+}
+
 .pagination {
     display: flex;
     align-items: center;
@@ -1067,6 +1177,29 @@ const canProceedToQualityCheck = computed(() => {
     background: white;
     border-radius: 3px;
     cursor: pointer;
+    font-size: 0.875rem;
+    color: #374151;
+    transition: all 0.2s ease;
+}
+
+.page-btn:hover:not(:disabled) {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.page-btn:disabled {
+    background: #f9fafb;
+    color: #d1d5db;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.page-info {
+    font-size: 0.875rem;
+    color: #374151;
+    font-weight: 500;
+    padding: 0 0.5rem;
+    white-space: nowrap;
 }
 
 .details-content {
@@ -1376,6 +1509,138 @@ const canProceedToQualityCheck = computed(() => {
     outline: none;
     border-color: #3b82f6;
     box-shadow: 0 0 0 1px #3b82f6;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.modal-body {
+    padding: 1.5rem;
+    color: #374151;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    background: #f9fafb;
+}
+
+.extraction-form {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.form-row {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+}
+
+.form-field {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.field-checkbox {
+    margin: 0;
+    width: 16px;
+    height: 16px;
+}
+
+.field-label {
+    font-size: 0.875rem;
+    color: #374151;
+    font-weight: 500;
+    min-width: 40px;
+    text-align: left;
+}
+
+.field-input {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    flex: 1;
+    min-width: 120px;
+}
+
+.field-input:disabled {
+    background: #f9fafb;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.format-field {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.format-select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    flex: 1;
+    min-width: 140px;
+    background: white;
 }
 </style>
 

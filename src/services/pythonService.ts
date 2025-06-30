@@ -149,3 +149,11 @@ export function extractSegyCoordinates(fileConfigs: any[], srid: number, proj4_s
   };
   return runPythonScriptWithStdin('scripts/proj4_converter_segy.py', inputData);
 }
+
+export function callBackendService(endpoint: string, params: any = {}): any {
+  const requestData = {
+    endpoint,
+    params
+  };
+  return runPythonScriptWithStdin('scripts/electron_backend.py', requestData);
+}

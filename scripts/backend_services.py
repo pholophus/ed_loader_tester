@@ -16,6 +16,14 @@ except ImportError as e:
     LAS_AVAILABLE = False
     LAS_IMPORT_ERROR = str(e)
 
+# Import the SEGY 2D reader
+try:
+    from segy_2d_reader import get_seismic_data, get_ebcdic_header, get_file_metadata
+    SEGY_2D_AVAILABLE = True
+except ImportError as e:
+    SEGY_2D_AVAILABLE = False
+    SEGY_2D_IMPORT_ERROR = str(e)
+
 class CalculatorService:
     """Service for mathematical calculations"""
     
@@ -176,6 +184,60 @@ class LASService:
             "wellio_installed": LAS_AVAILABLE
         }
 
+class SegyService:
+    """Service for SEGY 2D file operations"""
+    
+    def __init__(self):
+        self.available = SEGY_2D_AVAILABLE
+        self.error_message = SEGY_2D_IMPORT_ERROR if not SEGY_2D_AVAILABLE else None
+    
+    def get_seismic_data(self, file_path, start_trace=0, end_trace=None):
+        """Get seismic data from SEGY file"""
+        if not self.available:
+            raise ValueError(f"SEGY 2D reader not available: {self.error_message}")
+        
+        try:
+            result = get_seismic_data(file_path, start_trace, end_trace)
+            if 'error' in result:
+                raise ValueError(result['error'])
+            return result
+        except Exception as e:
+            raise ValueError(f"SEGY seismic data extraction failed: {str(e)}")
+    
+    def get_ebcdic_header(self, file_path):
+        """Get EBCDIC header from SEGY file"""
+        if not self.available:
+            raise ValueError(f"SEGY 2D reader not available: {self.error_message}")
+        
+        try:
+            result = get_ebcdic_header(file_path)
+            if result.get('error'):
+                raise ValueError(result['error'])
+            return result
+        except Exception as e:
+            raise ValueError(f"SEGY EBCDIC header extraction failed: {str(e)}")
+    
+    def get_file_metadata(self, file_path):
+        """Get metadata from SEGY file"""
+        if not self.available:
+            raise ValueError(f"SEGY 2D reader not available: {self.error_message}")
+        
+        try:
+            result = get_file_metadata(file_path)
+            if result.get('error'):
+                raise ValueError(result['error'])
+            return result
+        except Exception as e:
+            raise ValueError(f"SEGY metadata extraction failed: {str(e)}")
+    
+    def get_status(self):
+        """Get SEGY service status"""
+        return {
+            "available": self.available,
+            "error": self.error_message,
+            "segyio_installed": SEGY_2D_AVAILABLE
+        }
+
 # Main service container
 class BackendServices:
     """Main service container that electron_backend.py will use"""
@@ -185,6 +247,7 @@ class BackendServices:
         self.data = DataService()
         self.file = FileService()
         self.las = LASService()
+        self.segy = SegyService()
     
     def ping(self):
         """Health check endpoint"""
@@ -291,4 +354,63 @@ class BackendServices:
             return {"las_status": status}
             
         except Exception as e:
-            raise ValueError(f"LAS status error: {str(e)}") 
+            raise ValueError(f"LAS status error: {str(e)}")
+    
+    def get_seismic_data(self, params):
+        """Get seismic data from SEGY file endpoint"""
+        try:
+            file_path = params.get('file_path')
+            if not file_path:
+                raise ValueError("Parameter 'file_path' is required")
+            
+            start_trace = params.get('start_trace', 0)
+            end_trace = params.get('end_trace')
+            
+            data = self.segy.get_seismic_data(file_path, start_trace, end_trace)
+            self.data.increment_request_count()
+            
+            return {"seismic_data": data}
+            
+        except Exception as e:
+            raise ValueError(f"Seismic data extraction error: {str(e)}")
+    
+    def get_segy_ebcdic_header(self, params):
+        """Get EBCDIC header from SEGY file endpoint"""
+        try:
+            file_path = params.get('file_path')
+            if not file_path:
+                raise ValueError("Parameter 'file_path' is required")
+            
+            header = self.segy.get_ebcdic_header(file_path)
+            self.data.increment_request_count()
+            
+            return {"ebcdic_header": header}
+            
+        except Exception as e:
+            raise ValueError(f"EBCDIC header extraction error: {str(e)}")
+    
+    def get_segy_metadata(self, params):
+        """Get metadata from SEGY file endpoint"""
+        try:
+            file_path = params.get('file_path')
+            if not file_path:
+                raise ValueError("Parameter 'file_path' is required")
+            
+            metadata = self.segy.get_file_metadata(file_path)
+            self.data.increment_request_count()
+            
+            return {"segy_metadata": metadata}
+            
+        except Exception as e:
+            raise ValueError(f"SEGY metadata extraction error: {str(e)}")
+    
+    def get_segy_status(self, params):
+        """Get SEGY service status endpoint"""
+        try:
+            status = self.segy.get_status()
+            self.data.increment_request_count()
+            
+            return {"segy_status": status}
+            
+        except Exception as e:
+            raise ValueError(f"SEGY status error: {str(e)}") 

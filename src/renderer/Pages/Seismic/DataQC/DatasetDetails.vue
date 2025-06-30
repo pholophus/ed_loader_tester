@@ -79,7 +79,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useWellStore } from '../../store/wellStore';
+import { useWellStore } from '../../../store/wellStore';
 import QCReport from './QCReport.vue';
 
 // Initialize the well store

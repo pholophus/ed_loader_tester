@@ -34,6 +34,14 @@ class ElectronBackend:
                 return self.services.get_las_summary(params)
             elif endpoint == 'get_las_status':
                 return self.services.get_las_status(params)
+            elif endpoint == 'get_seismic_data':
+                return self.services.get_seismic_data(params)
+            elif endpoint == 'get_segy_ebcdic_header':
+                return self.services.get_segy_ebcdic_header(params)
+            elif endpoint == 'get_segy_metadata':
+                return self.services.get_segy_metadata(params)
+            elif endpoint == 'get_segy_status':
+                return self.services.get_segy_status(params)
             elif endpoint == 'shutdown':
                 self.running = False
                 return {"message": "Shutting down..."}

@@ -3,7 +3,7 @@
         <!-- Header -->
         <header class="page-header">
             <div class="header-nav">
-                <router-link to="/data-loading" class="back-button">
+                <router-link to="/well/data-loading" class="back-button">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                         <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                             stroke-linejoin="round" />
@@ -384,14 +384,14 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import DatasetDetails from './DataQC/DatasetDetails.vue';
 import FilesDetails from './DataQC/FilesDetails.vue';
-import WorkflowProgress from '../Components/WorkflowProgress.vue';
-import { useWellStore, ValidationResult } from '../store/wellStore';
-import { useSettingsStore } from '../store/settingsStore';
-import { useDataType } from '../Composables/useDataType';
-import { useSubDataType } from '../Composables/useSubDataType';
-import { useFileData } from '../Composables/useFileData';
-import { lasSchema } from '../../schemas/qc/las';
-import ExtendedFileData from '../../schemas/ExtendedFileData';
+import WorkflowProgress from '../../Components/WorkflowProgress.vue';
+import { useWellStore, ValidationResult } from '../../store/wellStore';
+import { useSettingsStore } from '../../store/settingsStore';
+import { useDataType } from '../../Composables/useDataType';
+import { useSubDataType } from '../../Composables/useSubDataType';
+import { useFileData } from '../../Composables/useFileData';
+import { lasSchema } from '../../../schemas/qc/las';
+import ExtendedFileData from '../../../schemas/ExtendedFileData';
 
 const route = useRoute();
 const router = useRouter();
