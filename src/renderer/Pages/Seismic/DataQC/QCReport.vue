@@ -101,11 +101,11 @@
                             </div>
                         </th> -->
                         <th class="header-validation">QC VALIDATION</th>
-                        <th class="header-curves">CURVES</th>
+                        <th class="header-traces">TRACES</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="file in loadedFilesWithCurves" :key="file.id" class="table-row">
+                    <tr v-for="file in loadedSeismicFiles" :key="file.id" class="table-row">
                         <td class="cell-filename">{{ file.filename }}</td>
                         <!-- <td class="cell-recall">{{ file.recallEntity }}</td> -->
                         <!-- <td class="cell-quality">
@@ -162,7 +162,7 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="cell-curves">{{ file.curves }}</td>
+                        <td class="cell-traces">{{ file.traces }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -172,14 +172,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue';
-import { useWellStore } from '@/store/wellStore';
-import { countLasCurves } from '../../../../services/lasService';
-
-interface QualityMetrics {
-    metadata: string;
-    completeness: string;
-    child: string;
-}
+import { useSeismicStore } from '@/store/seismicStore';
 
 interface ValidationError {
     field: string;
@@ -192,105 +185,59 @@ interface ValidationStatus {
     errors: ValidationError[];
 }
 
-interface LoadedFile {
+interface SeismicFile {
     id: string;
     filename: string;
-    quality: QualityMetrics;
-    curves: string;
+    traces: string;
     validation: ValidationStatus;
 }
 
-interface DatasetInfo {
-    id: number;
-    name: string;
-    workflow: string;
-    source: string;
-    region: string;
-    country: string;
-    county: string;
-    filesCount: number;
-    logsCount: number;
-    size: string;
-    createdBy: string;
-    date: string;
-    editedBy: string;
-    loadedBy: string;
-    lastUpdate: string;
-    checkedBy: string;
-    loadedFiles: number;
-    stagingLogs: number;
-    loadedTapes: number;
-    notLoadedFiles: number;
-    notLoadedStagingLogs: number;
-    notLoadedTapes: number;
-    duplicateFilms: number;
-    duplicateWellFiles: number;
-    duplicateBoreholes: number;
-    duplicateCurves: number;
-    duplicateTapes: number;
-}
+const seismicStore = useSeismicStore();
 
-const wellStore = useWellStore();
-
-// Computed property to get dataset info with real data from wellStore
+// Computed property to get dataset info with real data from seismicStore
 const datasetInfo = computed(() => ({
-    id: 1051,
-    name: 'OODU',
-    workflow: 'INTERACTIVE',
-    source: 'BAKER HUGHES',
-    region: 'US',
-    country: 'AUSTRALIA',
-    county: 'UNKNOWN',
-    filesCount: wellStore.data.wellMetadatas.length,
-    logsCount: wellStore.data.wellMetadatas.length,
+    name: seismicStore.data.survey.name || 'Unknown Survey',
+    country: seismicStore.data.survey.country || 'Unknown',
+    filesCount: seismicStore.data.seismicMetadatas.length,
     size: calculateTotalSize(),
-    createdBy: wellStore.data.wellMetadatas[0]?.createdBy || 'recall_controller',
+    createdBy: seismicStore.data.seismicMetadatas[0]?.createdBy || 'recall_controller',
     date: '2021-03-11 10:57:20',
-    editedBy: wellStore.data.wellMetadatas[0]?.editedBy || 'recall_controller',
+    editedBy: seismicStore.data.seismicMetadatas[0]?.editedBy || 'recall_controller',
     loadedBy: 'recall_controller',
     lastUpdate: '2021-03-11 10:59:27',
     checkedBy: 'None',
-    loadedFiles: wellStore.data.wellMetadatas.length,
-    stagingLogs: 0,
-    loadedTapes: 2,
-    notLoadedFiles: 0,
-    notLoadedStagingLogs: 0,
-    notLoadedTapes: 0,
-    duplicateFilms: 0,
-    duplicateWellFiles: 0,
-    duplicateBoreholes: 0,
-    duplicateCurves: 0,
-    duplicateTapes: 0
+    loadedFiles: seismicStore.data.seismicMetadatas.length,
+
 }));
 
 // Helper function to calculate total size
 const calculateTotalSize = (): string => {
-    const totalBytes = wellStore.data.wellMetadatas.reduce((total, file) => total + (file.size || 0), 0);
+    const totalBytes = seismicStore.data.seismicMetadatas.reduce((total, file) => total + (file.size || 0), 0);
     const totalMB = (totalBytes / (1024 * 1024)).toFixed(1);
     return `${totalMB}MB`;
 };
 
-// Updated computed property that uses the cache
-const loadedFilesWithCurves = computed<LoadedFile[]>(() => {
-    return wellStore.data.wellMetadatas.map((metadata, index) => {
+// Computed property for seismic files
+const loadedSeismicFiles = computed<SeismicFile[]>(() => {
+    return seismicStore.data.seismicMetadatas.map((metadata, index) => {
         const fileId = metadata.id || metadata.name || '';
-        let curvesInfo = 'Available';
+        let tracesInfo = 'Seismic Data';
         
-        // Check if it's a LAS file
-        if (metadata.path && metadata.name && metadata.name.toLowerCase().endsWith('.las')) {
-            // Use cached curve count if available, otherwise show loading
-            curvesInfo = curveCountCache.value[fileId] || 'Loading...';
-            
-            // Trigger curve count loading if not in cache
-            if (!curveCountCache.value[fileId]) {
-                getCurveCount(metadata.path, fileId);
+        // Determine trace info based on file type
+        if (metadata.path && metadata.name) {
+            const fileName = metadata.name.toLowerCase();
+            if (fileName.endsWith('.segy') || fileName.endsWith('.sgy')) {
+                tracesInfo = 'Seismic Traces';
+            } else if (fileName.endsWith('.las')) {
+                tracesInfo = 'Well Log Data';
+            } else {
+                tracesInfo = metadata.dataTypeName || 'Seismic Data';
             }
         } else {
-            // For non-LAS files, use dataTypeName or default
-            curvesInfo = metadata.dataTypeName || 'Available';
+            tracesInfo = metadata.dataTypeName || 'Seismic Data';
         }
 
-        // Get real validation data from wellStore or create default
+        // Get validation data from seismicStore
         const validationData = metadata.validationResult || {
             isValid: false,
             errors: []
@@ -309,19 +256,11 @@ const loadedFilesWithCurves = computed<LoadedFile[]>(() => {
         return {
             id: fileId,
             filename: metadata.name || 'Unknown File',
-            quality: {
-                metadata: getRandomQuality(),
-                completeness: getRandomQuality(),
-                child: getRandomQuality()
-            },
-            curves: curvesInfo,
+            traces: tracesInfo,
             validation: validationStatus
         };
     });
 });
-
-// Store for curve counts to avoid repeated API calls
-const curveCountCache = ref<{[key: string]: string}>({});
 
 // Store for tracking expanded validation details
 const expandedValidations = ref<string[]>([]);
@@ -361,46 +300,6 @@ const getValidationStatusText = (status: string): string => {
             return 'WARNING';
         default:
             return 'PENDING';
-    }
-};
-
-// Function to get actual curve count for LAS files
-const getCurveCount = async (filePath: string, fileId: string) => {
-    try {
-        // Check if we already have this in cache
-        if (curveCountCache.value[fileId]) {
-            return;
-        }
-
-        const result = await countLasCurves(filePath);
-        
-        if (result.success && result.curveCount !== undefined) {
-            curveCountCache.value[fileId] = `${result.curveCount} curves`;
-        } else {
-            curveCountCache.value[fileId] = 'Error loading curves';
-        }
-    } catch (error) {
-        console.error('Error getting curve count for', filePath, error);
-        curveCountCache.value[fileId] = 'Error';
-    }
-};
-
-// Helper function to generate random quality values (replace with actual logic)
-const getRandomQuality = (): string => {
-    const qualities = ['GOOD', 'FAIR', 'POOR'];
-    return qualities[Math.floor(Math.random() * qualities.length)];
-};
-
-const getQualityClass = (quality: string): string => {
-    switch (quality.toLowerCase()) {
-        case 'good':
-            return 'quality-good';
-        case 'fair':
-            return 'quality-fair';
-        case 'poor':
-            return 'quality-poor';
-        default:
-            return '';
     }
 };
 </script>
@@ -572,7 +471,7 @@ const getQualityClass = (quality: string): string => {
     width: 25%;
 }
 
-.header-curves {
+.header-traces {
     width: 20%;
 }
 
@@ -765,7 +664,7 @@ const getQualityClass = (quality: string): string => {
     line-height: 1.4;
 }
 
-.cell-curves {
+.cell-traces {
     color: #64748b;
 }
 
@@ -816,7 +715,7 @@ const getQualityClass = (quality: string): string => {
     }
 
     .header-validation,
-    .header-curves {
+    .header-traces {
         width: auto;
     }
 

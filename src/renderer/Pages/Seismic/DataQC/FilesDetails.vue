@@ -33,47 +33,93 @@
                         <span class="form-value">{{ selectedMetadata.name || 'N/A' }}</span>
                     </div>
 
-                    <div class="form-group">
-                        <label>Edited By</label>
-                        <span class="form-value">{{ selectedMetadata?.editedBy }}</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Created By</label>
-                        <span class="form-value">{{ selectedMetadata?.createdBy }}</span>
-                    </div>
-
-                    <div class="form-group">
+                    <div v-if="selectedMetadata" class="form-group">
                         <label>File Size</label>
                         <span class="form-value">{{ selectedMetadata?.size ? formatFileSize(selectedMetadata.size) : 'N/A' }}</span>
                     </div>
 
-                    <div class="form-group">
+                    <div v-if="selectedMetadata" class="form-group">
                         <label>File Path</label>
                         <span class="form-value">{{ selectedMetadata?.path || 'N/A' }}</span>
                     </div>
 
-                    <div class="form-group">
+                    <div v-if="selectedMetadata" class="form-group">
                         <label>File Format</label>
-                        <span class="form-value">{{ selectedMetadata?.fileFormat}}</span>
+                        <span class="form-value">{{ selectedMetadata?.fileFormat || 'N/A' }}</span>
                     </div>
 
-                    <div class="form-group">
+                    <div v-if="selectedMetadata && seismicStore.data.isForUploadingFileForExistingSeismic" class="form-group">
+                        <label>Line ID</label>
+                        <span class="form-value">{{ selectedMetadata?.lineId || 'N/A' }}</span>
+                    </div>
+
+                    <div v-if="selectedMetadata" class="form-group">
                         <label>Data Type</label>
                         <span class="form-value">{{ selectedMetadata?.dataTypeName || 'Not selected' }}</span>
                     </div>
 
-                    <div class="form-group">
+                    <div v-if="selectedMetadata" class="form-group">
                         <label>Sub Data Type</label>
                         <span class="form-value">{{ selectedMetadata?.subDataTypeName || 'Not selected' }}</span>
                     </div>
 
-                    <div v-if="!selectedMetadata && selectedRowIndex !== null" class="form-group">
-                        <label>Status</label>
-                        <span class="form-value error">No metadata found for index {{ selectedRowIndex }}</span>
+                    <!-- Seismic-specific fields -->
+                    <div v-if="selectedMetadata?.first_field_file" class="form-group">
+                        <label>First Field File</label>
+                        <span class="form-value">{{ selectedMetadata.first_field_file }}</span>
                     </div>
 
-                    <div v-if="selectedRowIndex === null" class="form-group">
+                    <div v-if="selectedMetadata?.last_field_file" class="form-group">
+                        <label>Last Field File</label>
+                        <span class="form-value">{{ selectedMetadata.last_field_file }}</span>
+                    </div>
+
+                    <div v-if="selectedMetadata?.first_shot_point" class="form-group">
+                        <label>First Shot Point</label>
+                        <span class="form-value">{{ selectedMetadata.first_shot_point }}</span>
+                    </div>
+
+                    <div v-if="selectedMetadata?.last_shot_point" class="form-group">
+                        <label>Last Shot Point</label>
+                        <span class="form-value">{{ selectedMetadata.last_shot_point }}</span>
+                    </div>
+
+                    <div v-if="selectedMetadata?.first_cdp" class="form-group">
+                        <label>First CDP</label>
+                        <span class="form-value">{{ selectedMetadata.first_cdp }}</span>
+                    </div>
+
+                    <div v-if="selectedMetadata?.last_cdp" class="form-group">
+                        <label>Last CDP</label>
+                        <span class="form-value">{{ selectedMetadata.last_cdp }}</span>
+                    </div>
+
+                    <div v-if="selectedMetadata?.inline" class="form-group">
+                        <label>Inline</label>
+                        <span class="form-value">{{ selectedMetadata.inline }}</span>
+                    </div>
+
+                    <div v-if="selectedMetadata?.crossline" class="form-group">
+                        <label>Crossline</label>
+                        <span class="form-value">{{ selectedMetadata.crossline }}</span>
+                    </div>
+
+                    <div v-if="selectedMetadata" class="form-group">
+                        <label>Created By</label>
+                        <span class="form-value">{{ selectedMetadata?.createdBy || 'N/A' }}</span>
+                    </div>
+
+                    <div v-if="selectedMetadata" class="form-group">
+                        <label>Edited By</label>
+                        <span class="form-value">{{ selectedMetadata?.editedBy || 'N/A' }}</span>
+                    </div>
+
+                    <div v-if="!selectedMetadata && props.selectedFile" class="form-group">
+                        <label>Status</label>
+                        <span class="form-value error">No metadata found for file {{ props.selectedFile.name }}</span>
+                    </div>
+
+                    <div v-if="!props.selectedFile" class="form-group">
                         <label>Status</label>
                         <span class="form-value">Please select a file from the table</span>
                     </div>
@@ -94,42 +140,85 @@
                         </div>
                         
                         <div v-else-if="previewData" class="preview-data">
+                            <!-- EBCDIC Header Section for SEGY files -->
+                            <div v-if="'isEbcdicHeader' in previewData && previewData.isEbcdicHeader" class="ebcdic-header-section">
+                                <div class="ebcdic-header">
+                                    <h4>EBCDIC Header</h4>
+                                    <div class="ebcdic-content">
+                                        <pre>{{ previewData.asciiText }}</pre>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <!-- Metadata Section -->
                             <div v-if="previewData.metadata && Object.keys(previewData.metadata).length > 0" class="preview-metadata">
-                                <h4>File Information</h4>
+                                <h4>Seismic File Information</h4>
                                 <div class="metadata-grid">
-                                    <div v-if="previewData.metadata.wellName" class="metadata-item">
+                                    <div v-if="(previewData.metadata as any).firstFieldFile" class="metadata-item">
+                                        <label>First Field File:</label>
+                                        <span>{{ (previewData.metadata as any).firstFieldFile }}</span>
+                                    </div>
+                                    <div v-if="(previewData.metadata as any).lastFieldFile" class="metadata-item">
+                                        <label>Last Field File:</label>
+                                        <span>{{ (previewData.metadata as any).lastFieldFile }}</span>
+                                    </div>
+                                    <div v-if="(previewData.metadata as any).firstShotPoint" class="metadata-item">
+                                        <label>First Shot Point:</label>
+                                        <span>{{ (previewData.metadata as any).firstShotPoint }}</span>
+                                    </div>
+                                    <div v-if="(previewData.metadata as any).lastShotPoint" class="metadata-item">
+                                        <label>Last Shot Point:</label>
+                                        <span>{{ (previewData.metadata as any).lastShotPoint }}</span>
+                                    </div>
+                                    <div v-if="(previewData.metadata as any).firstCDP" class="metadata-item">
+                                        <label>First CDP:</label>
+                                        <span>{{ (previewData.metadata as any).firstCDP }}</span>
+                                    </div>
+                                    <div v-if="(previewData.metadata as any).lastCDP" class="metadata-item">
+                                        <label>Last CDP:</label>
+                                        <span>{{ (previewData.metadata as any).lastCDP }}</span>
+                                    </div>
+                                    <div v-if="(previewData.metadata as any).inline" class="metadata-item">
+                                        <label>Inline:</label>
+                                        <span>{{ (previewData.metadata as any).inline }}</span>
+                                    </div>
+                                    <div v-if="(previewData.metadata as any).crossline" class="metadata-item">
+                                        <label>Crossline:</label>
+                                        <span>{{ (previewData.metadata as any).crossline }}</span>
+                                    </div>
+                                    <!-- LAS-specific fields (for backward compatibility) -->
+                                    <div v-if="'wellName' in previewData.metadata && previewData.metadata.wellName" class="metadata-item">
                                         <label>Well Name:</label>
                                         <span>{{ previewData.metadata.wellName }}</span>
                                     </div>
-                                    <div v-if="previewData.metadata.location" class="metadata-item">
+                                    <div v-if="'location' in previewData.metadata && previewData.metadata.location" class="metadata-item">
                                         <label>Location:</label>
                                         <span>{{ previewData.metadata.location }}</span>
                                     </div>
-                                    <div v-if="previewData.metadata.uwi" class="metadata-item">
+                                    <div v-if="'uwi' in previewData.metadata && previewData.metadata.uwi" class="metadata-item">
                                         <label>UWI:</label>
                                         <span>{{ previewData.metadata.uwi }}</span>
                                     </div>
-                                    <div v-if="previewData.metadata.startDepth" class="metadata-item">
+                                    <div v-if="'startDepth' in previewData.metadata && previewData.metadata.startDepth" class="metadata-item">
                                         <label>Start Depth:</label>
                                         <span>{{ previewData.metadata.startDepth }}</span>
                                     </div>
-                                    <div v-if="previewData.metadata.stopDepth" class="metadata-item">
+                                    <div v-if="'stopDepth' in previewData.metadata && previewData.metadata.stopDepth" class="metadata-item">
                                         <label>Stop Depth:</label>
                                         <span>{{ previewData.metadata.stopDepth }}</span>
                                     </div>
-                                    <div v-if="previewData.metadata.step" class="metadata-item">
+                                    <div v-if="'step' in previewData.metadata && previewData.metadata.step" class="metadata-item">
                                         <label>Step:</label>
                                         <span>{{ previewData.metadata.step }}</span>
                                     </div>
-                                    <div v-if="previewData.metadata.curveCount" class="metadata-item">
+                                    <div v-if="'curveCount' in previewData.metadata && previewData.metadata.curveCount" class="metadata-item">
                                         <label>Curve Count:</label>
                                         <span>{{ previewData.metadata.curveCount }}</span>
                                     </div>
                                 </div>
                                 
-                                <!-- Curves List -->
-                                <div v-if="previewData.metadata.curves && previewData.metadata.curves.length > 0" class="curves-section">
+                                <!-- Curves List (for LAS files) -->
+                                <div v-if="'curves' in previewData.metadata && previewData.metadata.curves && previewData.metadata.curves.length > 0" class="curves-section">
                                     <h5>Available Curves</h5>
                                     <div class="curves-list">
                                         <span v-for="curve in previewData.metadata.curves" :key="curve" class="curve-tag">
@@ -164,7 +253,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { useWellStore } from '../../../store/wellStore';
+import { useSeismicStore } from '../../../store/seismicStore';
+import ExtendedFileData from '../../../../schemas/ExtendedFileData';
 import { 
     parseLasFileForPreview, 
     isLasFile, 
@@ -176,27 +266,29 @@ import {
     type LasMetadata,
     type LasComprehensiveData
 } from '../../../../services/lasService';
+import { parseSegyFileForPreview, type SegyPreviewData, isSegyFile } from '../../../../services/segyService';
 
 // Props for receiving data from parent component
 interface Props {
-    selectedRowIndex?: number | null;
+    selectedFile?: ExtendedFileData | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    selectedRowIndex: null,
+    selectedFile: null,
 });
 
-// Access well store
-const wellStore = useWellStore();
+// Access seismic store
+const seismicStore = useSeismicStore();
 
-// Computed property to get metadata based on selected row index
+// Computed property to get metadata based on selected file
 const selectedMetadata = computed(() => {
-    if (props.selectedRowIndex === null || props.selectedRowIndex === undefined) {
+    if (!props.selectedFile) {
         return null;
     }
     
-    const metadata = wellStore.data.wellMetadatas[props.selectedRowIndex];
-    console.log('Selected metadata from store:', metadata);
+    // Find the corresponding metadata in the seismic store
+    const metadata = seismicStore.data.seismicMetadatas.find(m => m.id === props.selectedFile?.id);
+    console.log('Selected metadata from seismic store:', metadata);
     return metadata || null;
 });
 
@@ -211,7 +303,7 @@ const formatFileSize = (bytes: number): string => {
 
 // Local reactive data
 const detailsTab = ref('metadata');
-const previewData = ref<LasPreviewData | null>(null);
+const previewData = ref<LasPreviewData | SegyPreviewData | null>(null);
 const isLoadingPreview = ref(false);
 
 // Utility function to get file extension
@@ -239,11 +331,52 @@ const loadFilePreview = async () => {
                     error: 'File path not available'
                 };
             }
+        } else if (isSegyFile(selectedMetadata.value.name || '')) {
+            // For SEGY files, use the SEGY preview service
+            const filePath = selectedMetadata.value.path;
+            if (filePath) {
+                previewData.value = await parseSegyFileForPreview(filePath);
+            } else {
+                previewData.value = {
+                    asciiText: '',
+                    metadata: {},
+                    error: 'File path not available'
+                };
+            }
         } else {
-            // For other file types, show a placeholder
+            // For other seismic file types, show basic file information
+            const fileExtension = getFileExtension(selectedMetadata.value.name || '').toUpperCase();
+            const seismicMetadata: any = {};
+            
+            // Add seismic-specific metadata if available
+            if (selectedMetadata.value.first_field_file) {
+                seismicMetadata.firstFieldFile = selectedMetadata.value.first_field_file;
+            }
+            if (selectedMetadata.value.last_field_file) {
+                seismicMetadata.lastFieldFile = selectedMetadata.value.last_field_file;
+            }
+            if (selectedMetadata.value.first_shot_point) {
+                seismicMetadata.firstShotPoint = selectedMetadata.value.first_shot_point;
+            }
+            if (selectedMetadata.value.last_shot_point) {
+                seismicMetadata.lastShotPoint = selectedMetadata.value.last_shot_point;
+            }
+            if (selectedMetadata.value.first_cdp) {
+                seismicMetadata.firstCDP = selectedMetadata.value.first_cdp;
+            }
+            if (selectedMetadata.value.last_cdp) {
+                seismicMetadata.lastCDP = selectedMetadata.value.last_cdp;
+            }
+            if (selectedMetadata.value.inline) {
+                seismicMetadata.inline = selectedMetadata.value.inline;
+            }
+            if (selectedMetadata.value.crossline) {
+                seismicMetadata.crossline = selectedMetadata.value.crossline;
+            }
+            
             previewData.value = {
-                asciiText: `Preview not available for ${selectedMetadata.value.name}.\nFile type: ${getFileExtension(selectedMetadata.value.name || '').toUpperCase()}`,
-                metadata: {},
+                asciiText: `Seismic File Preview\n\nFile: ${selectedMetadata.value.name}\nType: ${fileExtension}\nSize: ${formatFileSize(selectedMetadata.value.size || 0)}\n\nThis is a ${fileExtension} seismic file.\nDetailed preview is not available for this file type.`,
+                metadata: seismicMetadata,
             };
         }
     } catch (error) {
@@ -706,5 +839,65 @@ watch(selectedMetadata, () => {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* EBCDIC Header Styles */
+.ebcdic-header-section {
+    margin-bottom: 1.5rem;
+}
+
+.ebcdic-header {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.ebcdic-header h4 {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    background: #1e40af;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    border-bottom: 1px solid #1e40af;
+}
+
+.ebcdic-content {
+    max-height: 500px;
+    overflow-y: auto;
+    background: #ffffff;
+}
+
+.ebcdic-content pre {
+    margin: 0;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: #374151;
+    white-space: pre;
+    overflow-x: auto;
+    background: #ffffff;
+}
+
+/* Custom scrollbar for EBCDIC content */
+.ebcdic-content::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.ebcdic-content::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.ebcdic-content::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.ebcdic-content::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 </style>

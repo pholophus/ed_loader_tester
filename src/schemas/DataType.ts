@@ -1,6 +1,6 @@
 export interface DataType {
     _id: string;
-    name: string;
+    displayName: string;
     geophysic_type: string;
     isActive: boolean;
     createdBy: string;

@@ -20,25 +20,17 @@ interface ExtendedFileData {
     fileFormat?: string;
     
     // Depth information
-    topDepth?: number;
-    topDepthUoM?: string;
-    baseDepth?: number;
-    baseDepthUoM?: string;
+    // topDepth?: number;
+    // topDepthUoM?: string;
+    // baseDepth?: number;
+    // baseDepthUoM?: string;
 
-    // Well information
-    wellId?: string;
-    wellName?: string;
+    // // Well information
+    // wellId?: string;
+    // wellName?: string;
+    
     // Errors
     validationResult?: ValidationResult;
-    
-    // Legacy/optional properties (commented out in original interfaces)
-    // selected?: boolean;
-    // targetEntity?: string;
-    // preparation?: string;
-    // loadingStatus?: string;
-    // qualityCheck?: string;
-    // qualityStatus?: string;
-    // publication?: string;
 }
 
 export default ExtendedFileData; 

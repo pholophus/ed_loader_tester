@@ -47,22 +47,22 @@
                                 <span class="label">Date:</span>
                                 <span class="value">{{ datasetInfo.date }}</span>
                             </div>
-                            <div class="data-item">
+                            <!-- <div class="data-item">
                                 <span class="label">Edited By:</span>
                                 <span class="value">{{ datasetInfo.editedBy }}</span>
-                            </div>
+                            </div> -->
                             <div class="data-item">
                                 <span class="label">Loaded By:</span>
                                 <span class="value">{{ datasetInfo.loadedBy }}</span>
                             </div>
-                            <div class="data-item">
+                            <!-- <div class="data-item">
                                 <span class="label">Last Update:</span>
                                 <span class="value">{{ datasetInfo.lastUpdate }}</span>
-                            </div>
-                            <div class="data-item">
+                            </div> -->
+                            <!-- <div class="data-item">
                                 <span class="label">Checked By:</span>
                                 <span class="value">{{ datasetInfo.checkedBy }}</span>
-                            </div>
+                            </div> -->
                         </td>
                         <!-- <td class="data-cell loaded-info">
                             <div class="data-item">
@@ -234,33 +234,14 @@ const wellStore = useWellStore();
 
 // Computed property to get dataset info with real data from wellStore
 const datasetInfo = computed(() => ({
-    id: 1051,
-    name: 'OODU',
-    workflow: 'INTERACTIVE',
-    source: 'BAKER HUGHES',
-    region: 'US',
-    country: 'AUSTRALIA',
-    county: 'UNKNOWN',
+    date: new Date().toLocaleString(),
+    loadedBy: '',
     filesCount: wellStore.data.wellMetadatas.length,
     logsCount: wellStore.data.wellMetadatas.length,
     size: calculateTotalSize(),
     createdBy: wellStore.data.wellMetadatas[0]?.createdBy || 'recall_controller',
-    date: '2021-03-11 10:57:20',
     editedBy: wellStore.data.wellMetadatas[0]?.editedBy || 'recall_controller',
-    loadedBy: 'recall_controller',
-    lastUpdate: '2021-03-11 10:59:27',
-    checkedBy: 'None',
     loadedFiles: wellStore.data.wellMetadatas.length,
-    stagingLogs: 0,
-    loadedTapes: 2,
-    notLoadedFiles: 0,
-    notLoadedStagingLogs: 0,
-    notLoadedTapes: 0,
-    duplicateFilms: 0,
-    duplicateWellFiles: 0,
-    duplicateBoreholes: 0,
-    duplicateCurves: 0,
-    duplicateTapes: 0
 }));
 
 // Helper function to calculate total size
@@ -391,18 +372,18 @@ const getRandomQuality = (): string => {
     return qualities[Math.floor(Math.random() * qualities.length)];
 };
 
-const getQualityClass = (quality: string): string => {
-    switch (quality.toLowerCase()) {
-        case 'good':
-            return 'quality-good';
-        case 'fair':
-            return 'quality-fair';
-        case 'poor':
-            return 'quality-poor';
-        default:
-            return '';
-    }
-};
+// const getQualityClass = (quality: string): string => {
+//     switch (quality.toLowerCase()) {
+//         case 'good':
+//             return 'quality-good';
+//         case 'fair':
+//             return 'quality-fair';
+//         case 'poor':
+//             return 'quality-poor';
+//         default:
+//             return '';
+//     }
+// };
 </script>
 
 <style scoped>

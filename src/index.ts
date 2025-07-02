@@ -12,9 +12,10 @@ import {
   callBackendService
 } from './services/pythonService';
 import { openFolderDialog, readDirectory, fileExists, readSingleFile } from './services/fileService';
-import { startTusServer, stopTusServer, getTusServerUrl, TusServerConfig } from './services/tusServer';
+import { startTusServer, stopTusServer, getTusServerUrl, TusServerConfig, testFtpConnection } from './services/tusServer';
 import { manualTraceHeaderExtractRequest } from './schemas/SegyTable';
 import log from 'electron-log';
+import { FtpConfig, getDefaultFtpService, FtpTransferProgress, initializeDefaultFtpService } from './services/ftpService';
 
 // route console.log/warn/error to a file:
 
@@ -200,9 +201,34 @@ app.whenReady().then(async () => {
     console.error('Error connecting to MongoDB:', err);
   }
 
-  // Start Tus server for resumable uploads
+  // Start Tus server for resumable uploads with FTP integration
   try {
+    // FTP Configuration
+    const ftpConfig: FtpConfig = {
+      host: 'afed-vpn.synology.me',
+      username: 'userftp1',
+      password: '8YarSQFS',
+      port: 21,
+      secure: false,
+      remotePath: '/homes/public/ed_loader_test'
+    };
+
+    // Initialize the default FTP service
+    console.log('🔧 Initializing default FTP service...');
+    initializeDefaultFtpService(ftpConfig);
+
+    // Test FTP connection first
+    console.log('🧪 Testing FTP connection...');
+    const ftpTest = await testFtpConnection(ftpConfig);
+    if (ftpTest) {
+      console.log('✅ FTP connection test successful');
+    } else {
+      console.warn('⚠️ FTP connection test failed - FTP transfer will be disabled');
+    }
+
     const tusConfig: TusServerConfig = {
+      ftpConfig,
+      enableFtpTransfer: ftpTest, // Only enable if FTP test passed
       onUploadComplete: (file) => {
         console.log('📁 File upload completed:', file.originalName);
         // Send notification to renderer process
@@ -214,6 +240,30 @@ app.whenReady().then(async () => {
         // Send progress update to renderer process
         if (mainWindow) {
           mainWindow.webContents.send('upload-progress', { file, progress });
+        }
+      },
+      onFtpTransferStart: (file) => {
+        console.log('📤 FTP transfer started:', file.originalName);
+        if (mainWindow) {
+          mainWindow.webContents.send('ftp-transfer-start', file);
+        }
+      },
+      onFtpTransferProgress: (file, progress) => {
+        console.log(`📊 FTP transfer progress: ${file.originalName} - ${progress.percentage}%`);
+        if (mainWindow) {
+          mainWindow.webContents.send('ftp-transfer-progress', { file, progress });
+        }
+      },
+      onFtpTransferComplete: (file, remotePath) => {
+        console.log('✅ FTP transfer completed:', file.originalName, 'to', remotePath);
+        if (mainWindow) {
+          mainWindow.webContents.send('ftp-transfer-complete', { file, remotePath });
+        }
+      },
+      onFtpTransferError: (file, error) => {
+        console.error('❌ FTP transfer failed:', file.originalName, error);
+        if (mainWindow) {
+          mainWindow.webContents.send('ftp-transfer-error', { file, error });
         }
       }
     };
@@ -940,6 +990,100 @@ ipcMain.handle('tus:processUploadedFile', async (_event, filePath: string, origi
   } catch (error: any) {
     console.error('Error processing uploaded file:', error);
     return { error: error.message };
+  }
+});
+
+// FTP operations
+ipcMain.handle('ftp:testConnection', async (_event, ftpConfig: FtpConfig) => {
+  try {
+    const result = await testFtpConnection(ftpConfig);
+    return { success: result };
+  } catch (error: any) {
+    console.error('FTP test connection error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('ftp:getStatus', async () => {
+  try {
+    // Return current FTP configuration status
+    return {
+      configured: true,
+      host: 'afed-vpn.synology.me',
+      remotePath: '/homes/public',
+      enabled: true
+    };
+  } catch (error: any) {
+    return { configured: false, error: error.message };
+  }
+});
+
+// Upload file directly via FTP
+ipcMain.handle('ftp:uploadFile', async (_event, filePath: string, remoteFileName: string, metadata: any = {}) => {
+  try {
+    console.log(`🚀 FTP upload handler called for: ${remoteFileName}, path: ${filePath}`);
+    
+    const ftpService = getDefaultFtpService();
+    if (!ftpService) {
+      console.error('❌ FTP service not initialized');
+      return { success: false, error: 'FTP service not initialized' };
+    }
+
+    console.log('✅ FTP service found, starting upload...');
+
+    // Notify upload start
+    if (mainWindow) {
+      console.log('📢 Sending ftp-transfer-start event');
+      mainWindow.webContents.send('ftp-transfer-start', {
+        originalName: remoteFileName,
+        name: remoteFileName,
+        path: filePath,
+        metadata
+      });
+    }
+
+    console.log('📤 Calling ftpService.uploadFile...');
+    const result = await ftpService.uploadFile(
+      filePath,
+      remoteFileName,
+      (progress: FtpTransferProgress) => {
+        console.log(`📊 FTP progress: ${progress.percentage}% for ${remoteFileName}`);
+        // Send progress updates
+        if (mainWindow) {
+          mainWindow.webContents.send('ftp-transfer-progress', {
+            file: { originalName: remoteFileName, name: remoteFileName, path: filePath, metadata },
+            progress
+          });
+        }
+      }
+    );
+
+    console.log('📋 FTP upload result:', result);
+
+    if (result.success) {
+      console.log('✅ Upload successful, sending completion event');
+      // Notify completion
+      if (mainWindow) {
+        mainWindow.webContents.send('ftp-transfer-complete', {
+          file: { originalName: remoteFileName, name: remoteFileName, path: filePath, metadata },
+          remotePath: result.remotePath
+        });
+      }
+    } else {
+      console.log('❌ Upload failed, sending error event');
+      // Notify error
+      if (mainWindow) {
+        mainWindow.webContents.send('ftp-transfer-error', {
+          file: { originalName: remoteFileName, name: remoteFileName, path: filePath, metadata },
+          error: result.error
+        });
+      }
+    }
+
+    return result;
+  } catch (error: any) {
+    console.error('❌ Direct FTP upload error:', error);
+    return { success: false, error: error.message };
   }
 });
 

@@ -3,15 +3,23 @@ import * as fs from 'fs';
 import { app } from 'electron';
 import { createServer } from 'http';
 import { IncomingMessage, ServerResponse } from 'http';
+import { FtpService, FtpConfig, FtpTransferProgress, createFtpService } from './ftpService';
 
 let httpServer: any = null;
 let serverPort = 3001;
+let ftpService: FtpService | null = null;
 
 export interface TusServerConfig {
   uploadDir?: string;
   port?: number;
   onUploadComplete?: (file: any) => void;
   onUploadProgress?: (file: any, progress: number) => void;
+  onFtpTransferStart?: (file: any) => void;
+  onFtpTransferProgress?: (file: any, progress: FtpTransferProgress) => void;
+  onFtpTransferComplete?: (file: any, remotePath: string) => void;
+  onFtpTransferError?: (file: any, error: string) => void;
+  ftpConfig?: FtpConfig;
+  enableFtpTransfer?: boolean;
 }
 
 interface UploadInfo {
@@ -126,7 +134,7 @@ function handleTusRequest(req: IncomingMessage, res: ServerResponse, config: Tus
       chunks.push(chunk);
     });
     
-    req.on('end', () => {
+    req.on('end', async () => {
       const data = Buffer.concat(chunks);
       console.log(`📦 Received ${data.length} bytes`);
       
@@ -153,15 +161,21 @@ function handleTusRequest(req: IncomingMessage, res: ServerResponse, config: Tus
       if (uploadInfo.offset >= uploadInfo.size) {
         console.log('✅ Upload completed:', uploadId);
         
+        const fileInfo = {
+          id: uploadInfo.id,
+          path: uploadInfo.path,
+          size: uploadInfo.size,
+          metadata: uploadInfo.metadata,
+          originalName: uploadInfo.metadata.filename || uploadInfo.id
+        };
+
         if (config.onUploadComplete) {
-          const fileInfo = {
-            id: uploadInfo.id,
-            path: uploadInfo.path,
-            size: uploadInfo.size,
-            metadata: uploadInfo.metadata,
-            originalName: uploadInfo.metadata.filename || uploadInfo.id
-          };
           config.onUploadComplete(fileInfo);
+        }
+        
+        // Start FTP transfer if enabled
+        if (config.enableFtpTransfer && ftpService) {
+          await startFtpTransfer(fileInfo, config);
         }
         
         uploads.delete(uploadId);
@@ -199,6 +213,62 @@ function handleTusRequest(req: IncomingMessage, res: ServerResponse, config: Tus
   res.end();
 }
 
+async function startFtpTransfer(fileInfo: any, config: TusServerConfig): Promise<void> {
+  try {
+    console.log(`🚀 Starting FTP transfer for: ${fileInfo.originalName}`);
+    
+    if (config.onFtpTransferStart) {
+      config.onFtpTransferStart(fileInfo);
+    }
+
+    if (!ftpService) {
+      throw new Error('FTP service not initialized');
+    }
+
+    // Use original filename for remote file
+    const remoteFileName = fileInfo.originalName || fileInfo.id;
+    
+    const result = await ftpService.uploadFile(
+      fileInfo.path,
+      remoteFileName,
+      (progress) => {
+        console.log(`📊 FTP progress for ${remoteFileName}: ${progress.percentage}%`);
+        if (config.onFtpTransferProgress) {
+          config.onFtpTransferProgress(fileInfo, progress);
+        }
+      }
+    );
+
+    if (result.success) {
+      console.log(`✅ FTP transfer completed: ${result.remotePath}`);
+      
+      if (config.onFtpTransferComplete) {
+        config.onFtpTransferComplete(fileInfo, result.remotePath || '');
+      }
+
+      // Clean up local file after successful FTP transfer
+      try {
+        fs.unlinkSync(fileInfo.path);
+        console.log(`🗑️ Cleaned up local file: ${fileInfo.path}`);
+      } catch (cleanupError) {
+        console.warn('Warning: Could not clean up local file:', cleanupError);
+      }
+    } else {
+      console.error(`❌ FTP transfer failed: ${result.error}`);
+      
+      if (config.onFtpTransferError) {
+        config.onFtpTransferError(fileInfo, result.error || 'Unknown FTP error');
+      }
+    }
+  } catch (error: any) {
+    console.error('❌ FTP transfer error:', error);
+    
+    if (config.onFtpTransferError) {
+      config.onFtpTransferError(fileInfo, error.message || 'Unknown FTP error');
+    }
+  }
+}
+
 export function startTusServer(config: TusServerConfig = {}): Promise<number> {
   return new Promise((resolve, reject) => {
     const uploadDir = config.uploadDir || path.join(app.getPath('userData'), 'uploads');
@@ -206,6 +276,12 @@ export function startTusServer(config: TusServerConfig = {}): Promise<number> {
     // Ensure upload directory exists
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Initialize FTP service if config is provided
+    if (config.ftpConfig && config.enableFtpTransfer) {
+      ftpService = createFtpService(config.ftpConfig);
+      console.log('📡 FTP service initialized');
     }
     
     const port = config.port || serverPort;
@@ -217,6 +293,9 @@ export function startTusServer(config: TusServerConfig = {}): Promise<number> {
     httpServer.listen(port, () => {
       console.log(`🎯 Tus server started on port ${port}`);
       console.log(`📡 Upload endpoint: http://localhost:${port}/files`);
+      if (config.enableFtpTransfer) {
+        console.log('📤 FTP transfer enabled');
+      }
       serverPort = port;
       resolve(port);
     });
@@ -241,8 +320,26 @@ export function stopTusServer() {
     uploads.clear();
     console.log('🛑 Tus server stopped');
   }
+
+  // Disconnect FTP service
+  if (ftpService) {
+    ftpService.disconnect();
+    ftpService = null;
+    console.log('🔌 FTP service disconnected');
+  }
 }
 
 export function getTusServerUrl(): string {
   return `http://localhost:${serverPort}`;
+}
+
+export async function testFtpConnection(ftpConfig: FtpConfig): Promise<boolean> {
+  try {
+    const testService = createFtpService(ftpConfig);
+    const result = await testService.testConnection();
+    return result;
+  } catch (error) {
+    console.error('FTP test failed:', error);
+    return false;
+  }
 } 

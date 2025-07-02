@@ -16,7 +16,7 @@ import {
  * All rules are consolidated into a single schema definition.
  */
 
-// 1. Permissive base schema
+// 1. Base schema
 const baseSegySchema = z.object({
     file_name: z.string().nullable().optional(),
     edafy_seismic_id: z.string().nullable().optional(),
@@ -52,10 +52,10 @@ const baseSegySchema = z.object({
     file_size_bytes: z.number().nullable().optional(),
 });
 
-// 2. All validation logic in .superRefine()
+// 2. Validation schema
 export const segySchema = baseSegySchema.superRefine((data, ctx) => {
     // CREATED BY
-     if (isNullOrEmpty(data.createdBy)) {
+    if (isNullOrEmpty(data.createdBy)) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: 'CREATED BY is null.',
@@ -99,8 +99,8 @@ export const segySchema = baseSegySchema.superRefine((data, ctx) => {
         });
     }
 
-     // FFFID/category rule
-     if (data.category === CATEGORIES.FIELD && isNullOrEmpty(data.first_field_file)) {
+    // FFFID/category rule
+    if (data.category === CATEGORIES.FIELD && isNullOrEmpty(data.first_field_file)) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: 'FFFID is null.',
@@ -408,8 +408,6 @@ export const segySchema = baseSegySchema.superRefine((data, ctx) => {
     }
 
     // CATEGORY
-    // const validCategories = Object.values(CATEGORIES).filter(c => c !== CATEGORIES.NULL && c !== CATEGORIES.WELL_LOG);
-    
     if(isNullOrEmpty(data.category)) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -419,8 +417,6 @@ export const segySchema = baseSegySchema.superRefine((data, ctx) => {
     }
 
     // SUBCATEGORY
-    // const validSubcategories = Object.values(SUBCATEGORIES).filter(sc => sc !== SUBCATEGORIES.NULL);
-    
     if(isNullOrEmpty(data.subcategory)) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -430,8 +426,6 @@ export const segySchema = baseSegySchema.superRefine((data, ctx) => {
     }
 
     // EXTENSION TYPE
-    // const validExtensionTypes = Object.values(EXTENSION_TYPES).filter(et => et !== EXTENSION_TYPES.NULL && et !== EXTENSION_TYPES.LAS);
-    
     if (isNullOrEmpty(data.extensionType)) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,

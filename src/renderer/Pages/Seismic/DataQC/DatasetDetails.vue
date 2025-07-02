@@ -15,7 +15,7 @@
                 <button class="tab" :class="{ active: detailsTab === 'metadata' }" @click="detailsTab = 'metadata'">
                     Metadata
                 </button>
-                <button v-if="wellStore.data.hasDoneQC" class="tab" :class="{ active: detailsTab === 'qc-report' }" @click="detailsTab = 'qc-report'">
+                <button v-if="seismicStore.data.hasDoneQC" class="tab" :class="{ active: detailsTab === 'qc-report' }" @click="detailsTab = 'qc-report'">
                     QC Report
                 </button>
                 <!-- <button class="tab" :class="{ active: detailsTab === 'event-log' }" @click="detailsTab = 'event-log'">
@@ -27,16 +27,20 @@
             <div v-if="detailsTab === 'metadata'" class="tab-content">
                 <div class="metadata-info">
                     <div class="info-row">
-                        <label>Well Name:</label>
-                        <span>{{ wellStore.data.well.wellName || '-' }}</span>
+                        <label>Survey Name:</label>
+                        <span>{{ seismicStore.data.survey.name || '-' }}</span>
                     </div>
                     <div class="info-row">
-                        <label>UWI:</label>
-                        <span>{{ wellStore.data.well.UWI || '-' }}</span>
+                        <label>Country:</label>
+                        <span>{{ seismicStore.data.survey.country || '-' }}</span>
                     </div>
                     <div class="info-row">
-                        <label>Well EDAFY ID:</label>
-                        <span>{{ wellStore.data.well.wellId || '-' }}</span>
+                        <label>Survey EDAFY ID:</label>
+                        <span>{{ seismicStore.data.survey.surveyId || '-' }}</span>
+                    </div>
+                    <div class="info-row">
+                        <label>Dimension:</label>
+                        <span>{{ seismicStore.data.survey.dimension || '-' }}</span>
                     </div>
                     <div class="info-row">
                         <label>Created:</label>
@@ -79,11 +83,11 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useWellStore } from '../../../store/wellStore';
+import { useSeismicStore } from '../../../store/seismicStore';
 import QCReport from './QCReport.vue';
 
-// Initialize the well store
-const wellStore = useWellStore();
+// Initialize the seismic store
+const seismicStore = useSeismicStore();
 
 // Props for receiving data from parent component
 interface Props {

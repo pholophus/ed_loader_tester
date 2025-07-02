@@ -47,6 +47,19 @@ interface Metadata {
     subDataTypeName?: string;
     validationResult?: ValidationResult;
     lineId?: string;
+    first_field_file?: number;
+    last_field_file?: number;
+    first_shot_point?: number;
+    last_shot_point?: number;
+    first_cdp?: number;
+    last_cdp?: number;
+    inline?: number;
+    crossline?: number;
+    ffid_byte_position?: number;
+    sp_byte_position?: number;
+    cdp_byte_position?: number;
+    il_byte_position?: number;
+    xl_byte_position?: number;
 }
 
 interface Dataset {
@@ -59,6 +72,7 @@ interface Dataset {
     seismicMetadatas: Metadata[];
     isForCreatingNewSeismic: boolean;
     isForUploadingFileForExistingSeismic: boolean;
+    CRS: string;
 }
 
 interface FileData {
@@ -97,6 +111,10 @@ export const useSeismicStore = defineStore('seismicData', {
     }),
 
     actions: {
+        setCRS(crs: string) {
+            this.data.CRS = crs;
+        },
+
         addSurveyData(data: Survey) {
             this.data.survey = data;
         },
@@ -154,6 +172,40 @@ export const useSeismicStore = defineStore('seismicData', {
             const file = this.data.seismicMetadatas.find(f => f.id === fileId);
             if (file) {
                 file.validationResult = validationResult;
+            }
+        },
+
+        updateFileExtractionValues(fileId: string, values: {
+            first_field_file?: number;
+            last_field_file?: number;
+            first_shot_point?: number;
+            last_shot_point?: number;
+            first_cdp?: number;
+            last_cdp?: number;
+            inline?: number;
+            crossline?: number;
+            ffid_byte_position?: number;
+            sp_byte_position?: number;
+            cdp_byte_position?: number;
+            il_byte_position?: number;
+            xl_byte_position?: number;
+        }) {
+            const file = this.data.seismicMetadatas.find(f => f.id === fileId);
+            if (file) {
+                // Update only the provided values
+                if (values.first_field_file !== undefined) file.first_field_file = values.first_field_file;
+                if (values.last_field_file !== undefined) file.last_field_file = values.last_field_file;
+                if (values.first_shot_point !== undefined) file.first_shot_point = values.first_shot_point;
+                if (values.last_shot_point !== undefined) file.last_shot_point = values.last_shot_point;
+                if (values.first_cdp !== undefined) file.first_cdp = values.first_cdp;
+                if (values.last_cdp !== undefined) file.last_cdp = values.last_cdp;
+                if (values.inline !== undefined) file.inline = values.inline;
+                if (values.crossline !== undefined) file.crossline = values.crossline;
+                if (values.ffid_byte_position !== undefined) file.ffid_byte_position = values.ffid_byte_position;
+                if (values.sp_byte_position !== undefined) file.sp_byte_position = values.sp_byte_position;
+                if (values.cdp_byte_position !== undefined) file.cdp_byte_position = values.cdp_byte_position;
+                if (values.il_byte_position !== undefined) file.il_byte_position = values.il_byte_position;
+                if (values.xl_byte_position !== undefined) file.xl_byte_position = values.xl_byte_position;
             }
         },
 

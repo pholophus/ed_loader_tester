@@ -46,6 +46,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   processUploadedFile: (filePath: string, originalName: string, metadata: any) => 
     ipcRenderer.invoke('tus:processUploadedFile', filePath, originalName, metadata),
 
+  // FTP operations
+  testFtpConnection: (ftpConfig: any) => ipcRenderer.invoke('ftp:testConnection', ftpConfig),
+  getFtpStatus: () => ipcRenderer.invoke('ftp:getStatus'),
+  uploadFile: (filePath: string, remoteFileName: string, metadata?: any) => 
+    ipcRenderer.invoke('ftp:uploadFile', filePath, remoteFileName, metadata),
+
   // Upload event listeners
   onUploadComplete: (callback: (file: any) => void) => {
     ipcRenderer.on('upload-complete', (_event, file) => {
@@ -57,9 +63,36 @@ contextBridge.exposeInMainWorld('electronAPI', {
       callback(data);
     });
   },
+  
+  // FTP transfer event listeners
+  onFtpTransferStart: (callback: (file: any) => void) => {
+    ipcRenderer.on('ftp-transfer-start', (_event, file) => {
+      callback(file);
+    });
+  },
+  onFtpTransferProgress: (callback: (data: { file: any, progress: any }) => void) => {
+    ipcRenderer.on('ftp-transfer-progress', (_event, data) => {
+      callback(data);
+    });
+  },
+  onFtpTransferComplete: (callback: (data: { file: any, remotePath: string }) => void) => {
+    ipcRenderer.on('ftp-transfer-complete', (_event, data) => {
+      callback(data);
+    });
+  },
+  onFtpTransferError: (callback: (data: { file: any, error: string }) => void) => {
+    ipcRenderer.on('ftp-transfer-error', (_event, data) => {
+      callback(data);
+    });
+  },
+  
   removeUploadListeners: () => {
     ipcRenderer.removeAllListeners('upload-complete');
     ipcRenderer.removeAllListeners('upload-progress');
+    ipcRenderer.removeAllListeners('ftp-transfer-start');
+    ipcRenderer.removeAllListeners('ftp-transfer-progress');
+    ipcRenderer.removeAllListeners('ftp-transfer-complete');
+    ipcRenderer.removeAllListeners('ftp-transfer-error');
   },
 
   // Deep linking handler

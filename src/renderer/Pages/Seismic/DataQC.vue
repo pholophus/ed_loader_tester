@@ -11,11 +11,11 @@
                     Back
                 </router-link>
                 <div class="header-actions">
-                    <button v-if="wellStore.data.currentStage !== 'publication'" class="btn btn-primary" @click="proceedToQualityCheck"
+                    <button v-if="seismicStore.data.currentStage !== 'publication'" class="btn btn-primary" @click="proceedToQualityCheck"
                         >
                         Quality Check
                     </button>
-                    <button v-if="wellStore.data.currentStage == 'publication' && wellStore.data.approval.isApproved" class="btn btn-primary" @click="proceedToPublish">
+                    <button v-if="seismicStore.data.currentStage == 'publication' && seismicStore.data.approval.isApproved" class="btn btn-primary" @click="proceedToPublish">
                         Publish
                     </button>
                 </div>
@@ -27,16 +27,16 @@
                         <span class="company">Company: - </span>
                         <span class="created-by">Created By: - </span>
                         <span class="uploaded">Uploaded: {{ uploadedDate }}</span>
-                        <span class="size">Size: {{ totalWellFileSize }}</span>
+                        <span class="size">Size: {{ totalSeismicFileSize }}</span>
                     </div>
                 </div>
             </div>
 
             <!-- Workflow Progress -->
-            <WorkflowProgress :current-stage="wellStore.data.currentStage" :completed-stages="wellStore.data.completedStages" />
+            <WorkflowProgress :current-stage="seismicStore.data.currentStage" :completed-stages="seismicStore.data.completedStages" />
 
             <!-- Approval Notice -->
-            <div v-if="settingsStore.options.publishAuto == false && wellStore.data.currentStage == 'approval'" class="approval-notice">
+            <div v-if="settingsStore.options.publishAuto == false && seismicStore.data.currentStage == 'approval'" class="approval-notice">
                 <div class="approval-content">
                     <span class="approval-text">Publication of this dataset requires your approval</span>
                     <div class="approval-actions">
@@ -81,7 +81,7 @@
                                 Dataset
                             </button>
                             <button class="tab" :class="{ active: activeTab === 'files' }" @click="activeTab = 'files'">
-                                Files ({{ selectedWellId ? wellStore.getWellFileCount(selectedWellId) : files.length }})
+                                Files ({{ selectedLineId ? seismicStore.getSeismicFileCount(selectedLineId) : files.length }})
                             </button>
                             <!-- <button class="tab" :class="{ active: activeTab === 'logs' }" @click="activeTab = 'logs'">
                                 Logs ({{ logs.length }})
@@ -98,7 +98,7 @@
                                 <!-- Wells List -->
                                 <div class="info-section">
                                     <!-- <h3>Wells ({{ wellStore.data.well.length }})</h3> -->
-                                    <div v-if="wellStore.data.well.length === 0" class="no-wells">
+                                    <!-- <div v-if="wellStore.data.well.length === 0" class="no-wells">
                                         No wells available
                                     </div>
                                     <div v-else class="wells-table-container">
@@ -113,8 +113,8 @@
                                             <tbody>
                                                 <tr v-for="well in wellStore.data.well" 
                                                     :key="well.wellId"
-                                                    :class="{ 'selected-well': selectedWellId === well.wellId }"
-                                                    @click="selectWell(well.wellId)">
+                                                    :class="{ 'selected-well': selectedLineId === well.wellId }"
+                                                    @click="selectLine(well.wellId)">
                                                     <td class="well-name">{{ well.wellName }}</td>
                                                     <td class="well-id-cell">{{ well.wellId }}</td>
                                                     <td class="well-uwi">{{ well.UWI || 'N/A' }}</td>
@@ -123,17 +123,71 @@
                                         </table>
                                         <div class="wells-count">
                                             {{ wellStore.data.well.length }} well{{ wellStore.data.well.length !== 1 ? 's' : '' }}
-                                            <span v-if="selectedWellId" class="selected-well-indicator">
-                                                • {{ getSelectedWellName() }} selected
+                                            <span v-if="selectedLineId" class="selected-well-indicator">
+                                                • {{ getSelectedLineName() }} selected
                                             </span>
+                                        </div>
+                                    </div> -->
+                                    <!-- <div v-if="seismicStore.data.line.length === 0" class="no-lines">
+                                        No lines available
+                                    </div>
+                                    <div v-else class="lines-table-container">
+                                        <table class="lines-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Line Name</th>
+                                                    <th>Line ID</th>
+                                                    <th>Survey</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="line in seismicStore.data.line" 
+                                                    :key="line.lineId"
+                                                    :class="{ 'selected-line': selectedLineId === line.lineId }"
+                                                    @click="selectLine(line.lineId)">
+                                                    <td class="line-name">{{ line.name }}</td>
+                                                    <td class="line-id-cell">{{ line.lineId }}</td>
+                                                    <td class="line-survey">{{ seismicStore.data.survey.name || 'N/A' }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        <div class="lines-count">
+                                            {{ seismicStore.data.line.length }} line{{ seismicStore.data.line.length !== 1 ? 's' : '' }}
+                                            <span v-if="selectedLineId" class="selected-line-indicator">
+                                                • {{ getSelectedLineName() }} selected
+                                            </span>
+                                        </div>
+                                    </div> -->
+                                    <div v-if="seismicStore.data.isForCreatingNewSeismic">
+                                        <div class="survey-details">
+                                            <!-- <h3>Survey Details</h3> -->
+                                            <div class="survey-info">
+                                                <div class="info-row">
+                                                    <label>Survey Name:</label>
+                                                    <span>{{ seismicStore.data.survey.name || 'Not specified' }}</span>
+                                                </div>
+                                                <div class="info-row">
+                                                    <label>Country:</label>
+                                                    <span>{{ seismicStore.data.survey.country || 'Not specified' }}</span>
+                                                </div>
+                                                <div class="info-row">
+                                                    <label>Dimension:</label>
+                                                    <span>{{ seismicStore.data.survey.dimension || 'Not specified' }}</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <!-- File Info -->
-                                <div class="info-row">
+                                <!-- <div class="info-row">
                                     <label>Total File Size:</label>
                                     <span>{{ totalWellFileSize }}</span>
+                                </div> -->
+                                <!-- File Info -->
+                                <div class="info-row">
+                                    <label>Total File Size:</label>
+                                    <span>{{ totalSeismicFileSize }}</span>
                                 </div>
                             </div>
 
@@ -160,7 +214,7 @@
 
                         <!-- Files Tab Content -->
                         <div v-if="activeTab === 'files'" class="tab-content">
-                            <div v-if="!selectedWellId" class="no-well-selected">
+                            <div v-if="seismicStore.data.isForUploadingFileForExistingSeismic && !selectedLineId" class="no-well-selected">
                                 <div class="no-well-message">
                                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" class="no-well-icon">
                                         <path d="M9 12L11 14L15 10" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -180,72 +234,107 @@
                                 </div>
 
                                 <div class="table-container">
-                                    <table class="components-table">
-                                        <thead>
-                                            <tr>
-                                                <th>
-                                                    <input type="checkbox" 
-                                                           :checked="allFilesChecked" 
-                                                           :indeterminate="someFilesChecked"
-                                                           @change="toggleAllFiles" />
-                                                </th>
-                                                <th>File Name</th>
-                                                <th>Size</th>
-                                                <th>Category</th>
-                                                <th>Sub Category</th>
-                                                <th>Well</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="(file, index) in files" :key="file.id" class="table-row"
-                                                @click="selectRow(index)"
-                                                
-                                            >
-                                                <td>
-                                                    <input type="checkbox" 
-                                                           :checked="isFileChecked(file.id)" 
-                                                           @click="toggleFileCheck(file.id, $event)" />
-                                                </td>
-                                                <td class="file-name">{{ file.name }}</td>
-                                                <td>{{ formatFileSize(file.size) }}</td>
-                                                <td>
-                                                    <select class="entity-select" 
-                                                            v-model="file.selectedDataTypeId" 
-                                                            @change="onDataTypeChange(file, file.selectedDataTypeId || '')"
-                                                            @click.stop>
-                                                        <option value="">Select Category</option>
-                                                        <option v-for="dataType in activeDataTypes" 
-                                                                :key="dataType._id" 
-                                                                :value="dataType._id">
-                                                            {{ dataType.name }}
-                                                        </option>
-                                                    </select>
-                                                </td>
-                                                <td>
-                                                    <select class="entity-select" 
-                                                            v-model="file.selectedSubDataTypeId" 
-                                                            :disabled="!file.selectedDataTypeId" 
-                                                            @change="onSubDataTypeChange(file, file.selectedSubDataTypeId || '')"
-                                                            @click.stop>
-                                                        <option value="">Select Sub Category</option>
-                                                        <option v-for="subDataType in getFilteredSubDataTypes(file.selectedDataTypeId || '')" 
-                                                                :key="subDataType._id" 
-                                                                :value="subDataType._id">
-                                                            {{ subDataType.name }}
-                                                        </option>
-                                                    </select>
-                                                </td>
-                                                <td>{{ file.wellId }}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-
+                                    <div class="table-scroll-wrapper">
+                                        <table class="components-table">
+                                            <thead>
+                                                <tr>
+                                                    <th><input type="checkbox" 
+                                                        :checked="allFilesChecked" 
+                                                        :indeterminate="someFilesChecked"
+                                                        @change="toggleAllFiles" /></th>
+                                                    <th>File Name</th>
+                                                    <th>Size</th>
+                                                    <th v-if="seismicStore.data.isForUploadingFileForExistingSeismic">Line</th>
+                                                    <th>Category</th>
+                                                    <th>Sub Category</th>
+                                                    <th>First Field File</th>
+                                                    <th>Last Field File</th>
+                                                    <th>FSP</th>
+                                                    <th>LSP</th>
+                                                    <th>First CDP</th>
+                                                    <th>Last CDP</th>
+                                                    <th>InLine</th>
+                                                    <th>XLine</th>
+                                                    <th>Validation Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="file in paginatedFiles" :key="file.id" 
+                                                    :class="{ 
+                                                        selected: selectedFile?.id === file.id,
+                                                        'validation-error': getValidationStatus(file.id) === 'error',
+                                                        'validation-success': getValidationStatus(file.id) === 'success'
+                                                    }"
+                                                    @click="selectFile(file)">
+                                                    <td><input type="checkbox" :checked="isFileChecked(file.id)" @click="toggleFileCheck(file.id, $event)" /></td>
+                                                    <td class="file-name">{{ file.name }}</td>
+                                                    <td>{{ formatFileSize(file.size) }}</td>
+                                                    <td v-if="seismicStore.data.isForUploadingFileForExistingSeismic">
+                                                        <select class="entity-select" v-model="(file as SeismicDataQCFileData).wellId">
+                                                            <option value="">Select Line</option>
+                                                            <option v-for="line in seismicStore.data.line" :key="line.lineId" :value="line.lineId">
+                                                                {{ line.name }}
+                                                            </option>
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <select class="entity-select" v-model="file.selectedDataTypeId" @change="onDataTypeChange(file, file.selectedDataTypeId || '')">
+                                                            <option value="">Select Category</option>
+                                                            <option v-for="dataType in activeDataTypes" :key="dataType._id" :value="dataType._id">
+                                                                {{ dataType.displayName }}
+                                                            </option>
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <select class="entity-select" v-model="file.selectedSubDataTypeId" :disabled="!file.selectedDataTypeId" @change="onSubDataTypeChange(file, file.selectedSubDataTypeId || '')">
+                                                            <option value="">Select Sub Category</option>
+                                                            <option v-for="subDataType in getFilteredSubDataTypes(file.selectedDataTypeId || '')" :key="subDataType._id" :value="subDataType._id">
+                                                                {{ subDataType.displayName }}
+                                                            </option>
+                                                        </select>
+                                                    </td>
+                                                    <td>{{ getExtractedValue(file, 'first_trace', 'Ffid') }}</td>
+                                                    <td>{{ getExtractedValue(file, 'last_trace', 'Ffid') }}</td>
+                                                    <td>{{ getExtractedValue(file, 'first_trace', 'Sp') }}</td>
+                                                    <td>{{ getExtractedValue(file, 'last_trace', 'Sp') }}</td>
+                                                    <td>{{ getExtractedValue(file, 'first_trace', 'Cdp') }}</td>
+                                                    <td>{{ getExtractedValue(file, 'last_trace', 'Cdp') }}</td>
+                                                    <td>{{ getExtractedValue(file, 'first_trace', 'Il') }}</td>
+                                                    <td>{{ getExtractedValue(file, 'first_trace', 'Xl') }}</td>
+                                                    <td>
+                                                        <div class="status-icon" 
+                                                             :class="{ 
+                                                                 success: getValidationStatus(file.id) === 'success',
+                                                                 error: getValidationStatus(file.id) === 'error'
+                                                             }">
+                                                            <span v-if="getValidationStatus(file.id) === 'success'">✓</span>
+                                                            <span v-else-if="getValidationStatus(file.id) === 'error'">✗</span>
+                                                            <span v-else>-</span>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
                                     <div class="table-footer">
-                                        <span>{{ files.length > 0 ? `1 - ${files.length} of ${files.length}` : '0' }} results</span>
+                                        <div class="footer-left">
+                                            <span>{{ paginationInfo }}</span>
+                                            <div class="items-per-page">
+                                                <label>Show:</label>
+                                                <select v-model="itemsPerPage" class="items-select">
+                                                    <option :value="5">5</option>
+                                                    <option :value="10">10</option>
+                                                    <option :value="25">25</option>
+                                                    <option :value="50">50</option>
+                                                </select>
+                                                <span>per page</span>
+                                            </div>
+                                        </div>
                                         <div class="pagination">
-                                            <button class="page-btn">‹</button>
-                                            <span>1</span>
-                                            <button class="page-btn">›</button>
+                                            <button class="page-btn" @click="goToPreviousPage" :disabled="!canGoToPreviousPage">‹</button>
+                                            <span class="page-info">Page {{ currentPage }} of {{ totalPages || 1 }}</span>
+                                            <button class="page-btn" @click="goToNextPage" :disabled="!canGoToNextPage">›</button>
                                         </div>
                                     </div>
                                 </div>
@@ -320,7 +409,7 @@
 
                 <!-- Details Panel -->
                 <DatasetDetails v-if="activeTab === 'dataset'"/>
-                <FilesDetails v-if="activeTab === 'files' && selectedRowIndex !== null" :selected-row-index="selectedRowIndex"/>
+                <FilesDetails v-if="activeTab === 'files' && selectedFile !== null" :selected-file="selectedFile"/>
             </div>
         </main>
 
@@ -385,17 +474,76 @@ import { useRoute, useRouter } from 'vue-router';
 import DatasetDetails from './DataQC/DatasetDetails.vue';
 import FilesDetails from './DataQC/FilesDetails.vue';
 import WorkflowProgress from '../../Components/WorkflowProgress.vue';
-import { useWellStore, ValidationResult } from '../../store/wellStore';
+// import { useWellStore, ValidationResult } from '../../store/wellStore';
+import { useSeismicStore, ValidationResult } from '../../store/seismicStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useDataType } from '../../Composables/useDataType';
 import { useSubDataType } from '../../Composables/useSubDataType';
 import { useFileData } from '../../Composables/useFileData';
-import { lasSchema } from '../../../schemas/qc/las';
+import { segySchema } from '../../../schemas/qc/segy';
 import ExtendedFileData from '../../../schemas/ExtendedFileData';
+
+// Extended interface for seismic data QC with additional properties
+interface SeismicDataQCFileData extends ExtendedFileData {
+    // Survey and seismic identification
+    surveyId?: string;
+    seismicId?: string;
+    seismicName?: string;
+    
+    // File properties
+    dimension?: string;
+    description?: string;
+    itemRemarks?: string;
+    
+    // Seismic trace data
+    firstFieldFile?: number;
+    lastFieldFile?: number;
+    fsp?: number;
+    lsp?: number;
+    fcdp?: number;
+    lcdp?: number;
+    inline?: number;
+    xline?: number;
+    
+    // Trace information
+    firstTrc?: number;
+    lastTrc?: number;
+    ntraces?: number;
+    
+    // Sample data
+    sampleType?: string;
+    sampleRate?: number;
+    sampleRateUom?: string;
+    recordLength?: number;
+    recordLengthUom?: string;
+    
+    // File paths
+    fileWindowsPath?: string;
+    fileUnixPath?: string;
+    
+    // Bin spacing
+    binSpacing?: number;
+    
+    // Well/Line ID (reusing wellId for line selection in seismic context)
+    wellId?: string;
+}
+
+import { 
+    parseLasFileForPreview, 
+    isLasFile, 
+    extractLasMetadata,
+    extractLasComprehensiveData,
+    extractLasMetadataForDisplay,
+    parseLasToWellioJson,
+    type LasPreviewData,
+    type LasMetadata,
+    type LasComprehensiveData
+} from '../../../services/lasService';
 
 const route = useRoute();
 const router = useRouter();
-const wellStore = useWellStore();
+// const wellStore = useWellStore();
+const seismicStore = useSeismicStore();
 const settingsStore = useSettingsStore();
 
 // Composables
@@ -404,10 +552,10 @@ const { items: subDataTypes, fetch: fetchSubDataTypes } = useSubDataType();
 const { 
     fileDataMap, 
     initializeFileData, 
-    getFilesByWellId,
+    getFilesByLineId,
     updateFileData,
     removeFile 
-} = useFileData({ includeQCFields: true, defaultQualityStatus: 'success' });
+} = useFileData({ includeQCFields: true, defaultQualityStatus: 'success', storeType: 'seismic' });
 
 // Data from route or default values
 const datasetName = ref(route.query.datasetName as string || 'OSDU_Demo');
@@ -440,18 +588,21 @@ const showSuccessModal = ref(false);
 const checkedFiles = ref<Set<string>>(new Set());
 const selectAllFiles = ref(false);
 const selectedRowIndex = ref<number | null>(null);
-// Store validation results for each file
-// const validationResults = ref<Map<string, ValidationResult>>(new Map());
-// const selectedFile = ref<ExtendedFileData | null>(null);
+const selectedFile = ref<SeismicDataQCFileData | null>(null);
+const editableFileName = ref('');
 
 // Well selection management
-const selectedWellId = ref<string | null>(null);
+const selectedLineId = ref<string>('');
+
+// Pagination state
+const currentPage = ref<number>(1);
+const itemsPerPage = ref<number>(10);
 
 // Computed properties
 const files = computed(() => {
     // If a well is selected, filter files by wellId
-    if (selectedWellId.value) {
-        return getFilesByWellId(selectedWellId.value);
+    if (selectedLineId.value) {
+        return getFilesByLineId(selectedLineId.value);
     }
     
     // Otherwise return all files
@@ -499,8 +650,22 @@ const someFilesChecked = computed(() => {
 // }));
 
 // Calculate total file size from well store
-const totalWellFileSize = computed(() => {
-    const totalBytes = wellStore.data.wellMetadatas.reduce((total, metadata) => {
+// const totalWellFileSize = computed(() => {
+//     const totalBytes = wellStore.data.wellMetadatas.reduce((total, metadata) => {
+//         return total + (metadata.size || 0);
+//     }, 0);
+
+//     // Convert bytes to human readable format
+//     if (totalBytes === 0) return '0 B';
+//     const k = 1024;
+//     const sizes = ['B', 'KB', 'MB', 'GB'];
+//     const i = Math.floor(Math.log(totalBytes) / Math.log(k));
+//     return parseFloat((totalBytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+// });
+
+// Calculate total file size from seismic store
+const totalSeismicFileSize = computed(() => {
+    const totalBytes = seismicStore.data.seismicMetadatas.reduce((total, metadata) => {
         return total + (metadata.size || 0);
     }, 0);
 
@@ -595,68 +760,100 @@ const onSubDataTypeChange = (file: ExtendedFileData, subDataTypeId: string) => {
 };
 
 // Well selection methods
-const selectWell = (wellId: string) => {
-    selectedWellId.value = wellId;
+const selectLine = (lineId: string) => {
+    selectedLineId.value = lineId;
     // Clear file selection when switching wells
     checkedFiles.value.clear();
     selectedRowIndex.value = null;
 };
 
-const getSelectedWellName = (): string => {
-    if (!selectedWellId.value) return '';
-    const well = wellStore.data.well.find(w => w.wellId === selectedWellId.value);
-    return well?.wellName || '';
+const getSelectedLineName = (wellId: string | undefined): string => {
+    if (!wellId) return '';
+    // In seismic context, wellId maps to lineId
+    const line = seismicStore.data.line.find(l => l.lineId === wellId);
+    return line?.name || '';
 };
 
 // Validation Methods
-const validateFileData = (file: ExtendedFileData): ValidationResult => {
+const validateFileData = async (file: SeismicDataQCFileData): Promise<void> => {
+    console.log('[DataQC] Validating file:', file.name);
+    
+    if (!file.path) {
+        console.error('[DataQC] No file path provided for validation');
+        return;
+    }
+
+    const seismicFile = file as SeismicDataQCFileData;
+    
     try {
-        // Map file data to the expected schema format
+        // Prepare validation data
         const validationData = {
             file_name: file.name,
-            edafy_well_id: file.wellId,
-            well_name: file.wellName,
+            edafy_seismic_id: seismicFile.seismicId, // Use seismicId property
+            seismic_name: seismicFile.seismicName, // Use seismicName property
             extensionType: file.fileFormat || getFileExtension(file.name).toUpperCase(),
-            category: file.selectedDataTypeId, // This should map to CATEGORIES from las.ts
-            subcategory: file.selectedSubDataTypeId, // This should map to SUBCATEGORIES from las.ts
-            top_depth: file.topDepth, // These would need to come from actual file parsing
-            top_depth_uom: file.topDepthUoM,
-            base_depth: file.baseDepth,
-            base_depth_uom: file.baseDepthUoM,
+            category: file.selectedDataTypeId,
+            subcategory: file.selectedSubDataTypeId,
+            dimension: seismicFile.dimension,
+            description: seismicFile.description,
+            item_remarks: seismicFile.itemRemarks,
             createdFor: file.createdFor,
             createdBy: file.createdBy,
             createdDate: file.createdDate,
+            first_field_file: seismicFile.firstFieldFile,
+            last_field_file: seismicFile.lastFieldFile,
+            fsp: seismicFile.fsp,
+            lsp: seismicFile.lsp,
+            fcdp: seismicFile.fcdp,
+            lcdp: seismicFile.lcdp,
+            inline: seismicFile.inline,
+            xline: seismicFile.xline,
+            bin_spacing: seismicFile.binSpacing,
+            first_trc: seismicFile.firstTrc,
+            last_trc: seismicFile.lastTrc,
+            ntraces: seismicFile.ntraces,
+            sample_type: seismicFile.sampleType,
+            sample_rate: seismicFile.sampleRate,
+            sample_rate_uom: seismicFile.sampleRateUom,
+            record_length: seismicFile.recordLength,
+            record_length_uom: seismicFile.recordLengthUom,
+            file_windows_path: seismicFile.fileWindowsPath,
+            file_unix_path: seismicFile.fileUnixPath,
+            file_size_bytes: file.size
         };
 
-        const result = lasSchema.safeParse(validationData);
+        const result = segySchema.safeParse(validationData);
         
         if (result.success) {
             console.log('[Validation] File passed validation:', file.name);
-            return {
+            // Store validation result in seismic store
+            seismicStore.updateFileValidationResult(file.id, {
                 isValid: true,
                 errors: []
-            };
+            });
         } else {
             console.log('[Validation] File failed validation:', file.name, result.error.issues);
-            return {
+            // Store validation result in seismic store
+            seismicStore.updateFileValidationResult(file.id, {
                 isValid: false,
                 errors: result.error.issues.map(issue => ({
                     title: issue.path.join('.') || 'Validation Error',
                     message: issue.message,
                     type: 'error'
                 }))
-            };
+            });
         }
     } catch (error) {
         console.error('[Validation] Error validating file:', file.name, error);
-        return {
+        // Store validation result in seismic store
+        seismicStore.updateFileValidationResult(file.id, {
             isValid: false,
             errors: [{
                 title: 'General Error',
                 message: 'Validation error occurred',
                 type: 'error'
             }]
-        };
+        });
     }
 };
 
@@ -666,16 +863,9 @@ const validateFileData = (file: ExtendedFileData): ValidationResult => {
 
 const runValidationForAllFiles = () => {
     console.log('[QC] Starting quality check validation...');
-
-    wellStore.clearFileValidationResults();
     
     Array.from(fileDataMap.value.values()).forEach(file => {
-        const result = validateFileData(file);
-        // validationResults.value.set(file.id, result);
-        
-        console.log('[QC] File:', file.name, 'Validation Result:', result);
-        // Store validation result in wellStore
-        wellStore.updateFileValidationResult(file.id, result);
+        validateFileData(file);
     });
 };
 
@@ -687,12 +877,12 @@ const proceedToQualityCheck = async () => {
         await runValidationForAllFiles();
         
         // Set that QC has been done
-        wellStore.setHasDoneQC(true);
+        seismicStore.setHasDoneQC(true);
         
         // Advance workflow to approval stage and mark quality-check as completed
-        wellStore.advanceWorkflow('approval', 'quality-check');
+        seismicStore.advanceWorkflow('approval', 'quality-check');
         
-        console.log('[QC] Stage updated to approval, completed stages:', wellStore.data.completedStages);
+        console.log('[QC] Stage updated to approval, completed stages:', seismicStore.data.completedStages);
         
         // Navigate to approval page
         // router.push('/data-approval');
@@ -709,7 +899,7 @@ const proceedToPublish = async () => {
 };
 
 const showApprovalModal = () => {
-    approvalComments.value = wellStore.data.approval.comments || '';
+    approvalComments.value = seismicStore.data.approval.comments || '';
     showApprovalModalDialog.value = true;
 };
 
@@ -720,7 +910,7 @@ const closeApprovalModal = () => {
 
 const approveDataset = () => {
     // console.log('[QC] Approving dataset with comments:', approvalComments.value);
-    wellStore.approveDataset(approvalComments.value);
+    seismicStore.approveDataset(approvalComments.value);
     // console.log('[QC] Dataset approved, isApproved:', wellStore.data.approval.isApproved);
     // console.log('[QC] Current stage:', wellStore.data.currentStage);
     closeApprovalModal();
@@ -737,9 +927,9 @@ const closeSuccessModal = () => {
 
 const rejectDataset = () => {
     console.log('[QC] Rejecting dataset...');
-    wellStore.rejectDataset();
-    console.log('[QC] Dataset rejected, isApproved:', wellStore.data.approval.isApproved);
-    console.log('[QC] Current stage:', wellStore.data.currentStage);
+    seismicStore.rejectDataset();
+    console.log('[QC] Dataset rejected, isApproved:', seismicStore.data.approval.isApproved);
+    console.log('[QC] Current stage:', seismicStore.data.currentStage);
 };
 
 // const toggleSelectAllFiles = () => {
@@ -747,6 +937,84 @@ const rejectDataset = () => {
 //         file.selected = selectAllFiles.value;
 //     });
 // };
+
+// Computed properties for pagination
+const paginatedFiles = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage.value;
+    const end = start + itemsPerPage.value;
+    return files.value.slice(start, end);
+});
+
+const totalPages = computed(() => {
+    return Math.ceil(files.value.length / itemsPerPage.value);
+});
+
+const canGoToPreviousPage = computed(() => {
+    return currentPage.value > 1;
+});
+
+const canGoToNextPage = computed(() => {
+    return currentPage.value < totalPages.value;
+});
+
+const paginationInfo = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage.value + 1;
+    const end = Math.min(currentPage.value * itemsPerPage.value, files.value.length);
+    return files.value.length > 0 ? `${start} - ${end} of ${files.value.length}` : '0';
+});
+
+// Pagination methods
+const goToNextPage = () => {
+    if (canGoToNextPage.value) {
+        currentPage.value++;
+    }
+};
+
+const goToPreviousPage = () => {
+    if (canGoToPreviousPage.value) {
+        currentPage.value--;
+    }
+};
+
+// File selection methods
+const selectFile = (file: ExtendedFileData) => {
+    selectedFile.value = file;
+};
+
+// Validation status method
+const getValidationStatus = (fileId: string): 'success' | 'error' | 'pending' => {
+    const file = seismicStore.data.seismicMetadatas.find(f => f.id === fileId);
+    if (!file?.validationResult) return 'pending';
+    return file.validationResult.isValid ? 'success' : 'error';
+};
+
+// Extracted value method for seismic data
+const getExtractedValue = (file: ExtendedFileData, trace: string, field: string): string => {
+    // Find the file metadata in the seismic store
+    const fileMetadata = seismicStore.data.seismicMetadatas.find(f => f.id === file.id);
+    if (!fileMetadata) return '';
+    
+    // Map the trace and field combination to the flattened property names
+    const fieldMap: Record<string, string> = {
+        'first_trace_Ffid': 'first_field_file',
+        'last_trace_Ffid': 'last_field_file',
+        'first_trace_Sp': 'first_shot_point',
+        'last_trace_Sp': 'last_shot_point',
+        'first_trace_Cdp': 'first_cdp',
+        'last_trace_Cdp': 'last_cdp',
+        'first_trace_Il': 'inline',
+        'first_trace_Xl': 'crossline'
+    };
+    
+    const key = `${trace}_${field}`;
+    const propertyName = fieldMap[key];
+    
+    if (propertyName && fileMetadata[propertyName as keyof typeof fileMetadata] !== undefined) {
+        return fileMetadata[propertyName as keyof typeof fileMetadata]?.toString() || '';
+    }
+    
+    return '';
+};
 
 // Lifecycle
 onMounted(async () => {
@@ -763,32 +1031,32 @@ onMounted(async () => {
     }
     
     // Set the current stage to quality-check if coming from loading
-    if (wellStore.data.currentStage === 'loading') {
-        wellStore.setCurrentStage('quality-check');
-        if (!wellStore.data.completedStages.includes('loading')) {
-            wellStore.addCompletedStage('loading');
+    if (seismicStore.data.currentStage === 'loading') {
+        seismicStore.setCurrentStage('quality-check');
+        if (!seismicStore.data.completedStages.includes('loading')) {
+            seismicStore.addCompletedStage('loading');
         }
     }
     
     setTimeout(() => {
-        if (wellStore.data.currentStage === 'preparation') {
-            wellStore.setCurrentStage('loading');
-            wellStore.addCompletedStage('preparation');
+        if (seismicStore.data.currentStage === 'preparation') {
+            seismicStore.setCurrentStage('loading');
+            seismicStore.addCompletedStage('preparation');
         }
     }, 1000);
 });
 
 // Watch for activeTab changes to auto-select first file when files tab is activated
 watch(activeTab, (newTab) => {
-    if (newTab === 'files' && selectedWellId.value && files.value.length > 0) {
+    if (newTab === 'files' && selectedLineId.value && files.value.length > 0) {
         // Auto-select the first file when files tab is clicked
         selectedRowIndex.value = 0;
     }
 });
 
-// Watch for selectedWellId changes to auto-select first file when a well is selected
-watch(selectedWellId, (newWellId) => {
-    if (newWellId && activeTab.value === 'files' && files.value.length > 0) {
+// Watch for selectedLineId changes to auto-select first file when a well is selected
+watch(selectedLineId, (newLineId) => {
+    if (newLineId && activeTab.value === 'files' && files.value.length > 0) {
         // Auto-select the first file when a well is selected and files tab is active
         selectedRowIndex.value = 0;
     }
@@ -859,8 +1127,13 @@ watch(selectedWellId, (newWellId) => {
 
 .qc-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr; /* Equal width for both panels */
     gap: 1.5rem;
+}
+
+.components-panel {
+    width: 100%; /* Full width of its grid column */
+    overflow-x: auto; /* Enable horizontal scrolling */
 }
 
 .panel-card {
@@ -971,108 +1244,115 @@ watch(selectedWellId, (newWellId) => {
 }
 
 .table-container {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    overflow: hidden;
     margin-bottom: 1rem;
     width: 100%;
+}
+
+.table-scroll-wrapper {
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px 8px 0 0;
+    border-bottom: none;
+    background: white;
+    max-height: calc(100% - 60px); /* Account for footer height */
+    width: 100%;
+}
+
+/* Custom scrollbar styling */
+.table-scroll-wrapper::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+}
+
+.table-scroll-wrapper::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.table-scroll-wrapper::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
 .components-table {
     width: 100%;
     font-size: 0.75rem;
     border-collapse: collapse;
-    table-layout: fixed;
+    min-width: 1600px; /* Increased minimum width to accommodate all seismic columns */
+    background: white;
+    border: none;
 }
 
 .components-table th {
-    background: #f9fafb;
-    padding: 0.4rem 0.3rem;
+    background: #f8fafc;
+    padding: 1rem 1.25rem;
     text-align: left;
     font-weight: 600;
     color: #374151;
-    border-bottom: 1px solid #e5e7eb;
-    font-size: 0.7rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    border-bottom: 2px solid #e5e7eb;
+    font-size: 0.8rem;
     white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    min-width: 120px; /* Ensure consistent minimum column width */
+}
+
+.components-table th:first-child {
+    min-width: 50px; /* Smaller width for checkbox column */
+}
+
+.components-table th:nth-child(2) {
+    min-width: 200px; /* File name column gets more space */
 }
 
 .components-table td {
-    padding: 0.4rem 0.3rem;
+    padding: 1rem 1.25rem;
     border-bottom: 1px solid #f3f4f6;
-    font-size: 0.7rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 0.8rem;
+    vertical-align: middle;
     white-space: nowrap;
+    min-width: 120px;
 }
 
-.components-table th:nth-child(1),
-.components-table td:nth-child(1) {
-    width: 30px;
-    padding: 0.4rem 0.2rem;
+.components-table td:first-child {
+    min-width: 50px;
 }
 
-.components-table th:nth-child(2),
 .components-table td:nth-child(2) {
-    width: 45%;
     min-width: 200px;
 }
 
-.components-table th:nth-child(3),
-.components-table td:nth-child(3) {
-    width: 15%;
-    min-width: 80px;
+.components-table tbody tr {
+    transition: all 0.2s ease;
 }
 
-.components-table th:nth-child(4),
-.components-table td:nth-child(4) {
-    width: 20%;
-    min-width: 120px;
-}
-
-.components-table th:nth-child(5),
-.components-table td:nth-child(5) {
-    width: 20%;
-    min-width: 120px;
-}
-
-.components-table th:nth-child(6),
-.components-table td:nth-child(6) {
-    width: 8%;
-    min-width: 60px;
-}
-
-.components-table th:nth-child(7),
-.components-table td:nth-child(7) {
-    width: 8%;
-    min-width: 60px;
-}
-
-.components-table th:nth-child(8),
-.components-table td:nth-child(8) {
-    width: 10%;
-    min-width: 70px;
-}
-
-.components-table th:nth-child(9),
-.components-table td:nth-child(9) {
-    width: 9%;
-    min-width: 60px;
-}
-
-.components-table tr:hover {
+.components-table tbody tr:hover {
     background: #f8fafc;
-    cursor: pointer;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .components-table tr.selected {
-    background: #dbeafe !important;
+    background: #dbeafe;
     border-left: 3px solid #3b82f6;
 }
 
 .components-table tr.selected:hover {
-    background: #bfdbfe !important;
+    background: #bfdbfe;
 }
 
 .components-table tr.validation-error {
@@ -1096,20 +1376,26 @@ watch(selectedWellId, (newWellId) => {
 .file-name {
     font-weight: 500;
     color: #1f2937;
+    max-width: 200px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .entity-select {
-    padding: 0.2rem 0.3rem;
+    padding: 0.5rem 0.75rem;
     border: 1px solid #d1d5db;
-    border-radius: 3px;
-    font-size: 0.7rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    width: 140px;
     background: white;
-    color: #374151;
-    width: 100%;
-    max-width: 100%;
+    transition: all 0.2s ease;
+}
+
+.entity-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .entity-select:disabled {
@@ -1118,21 +1404,41 @@ watch(selectedWellId, (newWellId) => {
     cursor: not-allowed;
 }
 
-.entity-select:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 1px #3b82f6;
-}
-
 .table-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem 1rem;
-    border-top: 1px solid #e5e7eb;
+    padding: 1rem 1.25rem;
+    border: 1px solid #e5e7eb;
+    border-top: none;
     font-size: 0.875rem;
     color: #6b7280;
     background: #f8fafc;
+    border-radius: 0 0 8px 8px;
+    min-height: 60px;
+    flex-shrink: 0;
+}
+
+.footer-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.items-per-page {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.items-select {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    background: white;
+    color: #374151;
+    min-width: 60px;
 }
 
 .pagination {
@@ -1147,25 +1453,41 @@ watch(selectedWellId, (newWellId) => {
     background: white;
     border-radius: 3px;
     cursor: pointer;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
+    color: #374151;
+    transition: all 0.2s ease;
 }
 
-.page-btn:hover {
+.page-btn:hover:not(:disabled) {
     background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.page-btn:disabled {
+    background: #f9fafb;
+    color: #d1d5db;
+    cursor: not-allowed;
 }
 
 .status-icon {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto;
+    font-size: 0.75rem;
+    font-weight: bold;
 }
 
 .status-icon.success {
     background: #22c55e;
+    color: white;
+}
+
+.status-icon.error {
+    background: #ef4444;
     color: white;
 }
 
@@ -1466,6 +1788,52 @@ watch(selectedWellId, (newWellId) => {
     border-bottom: 1px solid #e2e8f0;
 }
 
+/* Survey Details Styles */
+.survey-details {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.survey-details h3 {
+    color: #374151;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.survey-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.survey-info .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0;
+}
+
+.survey-info .info-row label {
+    color: #64748b;
+    font-weight: 500;
+    font-size: 0.8rem;
+    min-width: 100px;
+}
+
+.survey-info .info-row span {
+    color: #1f2937;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-align: right;
+    flex: 1;
+}
+
 .no-wells {
     color: #6b7280;
     font-style: italic;
@@ -1589,6 +1957,11 @@ watch(selectedWellId, (newWellId) => {
     .qc-grid {
         grid-template-columns: 1fr;
         gap: 1.5rem;
+    }
+
+    .components-panel {
+        width: 100%; /* Full width on mobile */
+        overflow-x: auto; /* Keep horizontal scrolling */
     }
 
     .workflow-progress {

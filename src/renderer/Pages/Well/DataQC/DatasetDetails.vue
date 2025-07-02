@@ -86,17 +86,17 @@ import QCReport from './QCReport.vue';
 const wellStore = useWellStore();
 
 // Props for receiving data from parent component
-interface Props {
-    dataSource?: string;
-    region?: string;
-    createdDate?: string;
-    createdBy?: string;
-    loadedDate?: string;
-    loadedBy?: string;
-    approvedStatus?: string;
-    lastUpdated?: string;
-    lastUpdatedBy?: string;
-}
+// interface Props {
+//     dataSource?: string;
+//     region?: string;
+//     createdDate?: string;
+//     createdBy?: string;
+//     loadedDate?: string;
+//     loadedBy?: string;
+//     approvedStatus?: string;
+//     lastUpdated?: string;
+//     lastUpdatedBy?: string;
+// }
 
 // Tab management - local to this component
 const detailsTab = ref('metadata');

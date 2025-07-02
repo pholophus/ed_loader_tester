@@ -37,6 +37,7 @@ interface Dataset{
     currentStage: WorkflowStage;
     completedStages: WorkflowStage[];
     approval: Approval;
+    CRS: string;
 }
 
 interface Metadata {
@@ -78,6 +79,10 @@ export const useWellStore = defineStore('wellData', {
   }),
   
   actions: {
+    setCRS(crs: string) {
+      this.data.CRS = crs;
+    },
+
     addWellData(data: Well) {
       const existingWell = this.data.well.find(well => well.wellId === data.wellId);
       if (existingWell) {

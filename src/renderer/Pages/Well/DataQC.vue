@@ -217,7 +217,7 @@
                                                         <option v-for="dataType in activeDataTypes" 
                                                                 :key="dataType._id" 
                                                                 :value="dataType._id">
-                                                            {{ dataType.name }}
+                                                            {{ dataType.displayName }}
                                                         </option>
                                                     </select>
                                                 </td>
@@ -231,11 +231,11 @@
                                                         <option v-for="subDataType in getFilteredSubDataTypes(file.selectedDataTypeId || '')" 
                                                                 :key="subDataType._id" 
                                                                 :value="subDataType._id">
-                                                            {{ subDataType.name }}
+                                                            {{ subDataType.displayName }}
                                                         </option>
                                                     </select>
                                                 </td>
-                                                <td>{{ file.wellId }}</td>
+                                                <td>{{ (file as DataQCFileData).wellId }}</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -376,11 +376,58 @@
                 </div>
             </div>
         </div>
+
+        <!-- Publish Modal -->
+        <div v-if="showPublishModal" class="modal-overlay">
+            <div class="publish-modal-container">
+                <div class="publish-modal-content">
+                    <div v-if="publishStatus === 'uploading'" class="upload-progress">
+                        <div class="upload-icon">
+                            <div class="spinner-large"></div>
+                        </div>
+                        <h3 class="upload-title">Publishing Dataset</h3>
+                        <p class="upload-subtitle">Uploading files to FTP server...</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" :style="{ width: publishProgress + '%' }"></div>
+                        </div>
+                        <div class="progress-info">
+                            <span class="progress-percent">{{ Math.round(publishProgress) }}%</span>
+                            <span v-if="currentUploadingFile" class="current-file">{{ currentUploadingFile }}</span>
+                        </div>
+                    </div>
+                    
+                    <div v-if="publishStatus === 'completed'" class="upload-success">
+                        <div class="success-icon">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" fill="#22c55e"/>
+                                <path d="M9 12L11 14L15 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h3 class="success-title">Dataset Published</h3>
+                        <p class="success-subtitle">All files have been successfully uploaded to the FTP server.</p>
+                    </div>
+                    
+                    <div v-if="publishStatus === 'error'" class="upload-error">
+                        <div class="error-icon">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" fill="#ef4444"/>
+                                <path d="M15 9L9 15M9 9L15 15" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h3 class="error-title">Upload Failed</h3>
+                        <p class="error-subtitle">{{ publishError }}</p>
+                        <button class="btn btn-primary" @click="showPublishModal = false">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import DatasetDetails from './DataQC/DatasetDetails.vue';
 import FilesDetails from './DataQC/FilesDetails.vue';
@@ -392,6 +439,19 @@ import { useSubDataType } from '../../Composables/useSubDataType';
 import { useFileData } from '../../Composables/useFileData';
 import { lasSchema } from '../../../schemas/qc/las';
 import ExtendedFileData from '../../../schemas/ExtendedFileData';
+
+// Extended interface for DataQC-specific properties
+interface DataQCFileData extends ExtendedFileData {
+    // Depth information
+    topDepth?: number;
+    topDepthUoM?: string;
+    baseDepth?: number;
+    baseDepthUoM?: string;
+    
+    // Well information
+    wellId?: string;
+    wellName?: string;
+}
 
 const route = useRoute();
 const router = useRouter();
@@ -435,6 +495,13 @@ const activeTab = ref('dataset');
 const showApprovalModalDialog = ref(false);
 const approvalComments = ref('');
 const showSuccessModal = ref(false);
+
+// Publish modal management
+const showPublishModal = ref(false);
+const publishStatus = ref<'uploading' | 'completed' | 'error'>('uploading');
+const publishProgress = ref(0);
+const currentUploadingFile = ref('');
+const publishError = ref('');
 
 // File management
 const checkedFiles = ref<Set<string>>(new Set());
@@ -581,14 +648,14 @@ const removeSelectedFiles = () => {
     selectAllFiles.value = false;
 };
 
-const onDataTypeChange = (file: ExtendedFileData, dataTypeId: string) => {
+const onDataTypeChange = (file: DataQCFileData, dataTypeId: string) => {
     updateFileData(file.id, {
         selectedDataTypeId: dataTypeId,
         selectedSubDataTypeId: '',
     });
 };
 
-const onSubDataTypeChange = (file: ExtendedFileData, subDataTypeId: string) => {
+const onSubDataTypeChange = (file: DataQCFileData, subDataTypeId: string) => {
     updateFileData(file.id, {
         selectedSubDataTypeId: subDataTypeId,
     });
@@ -609,7 +676,7 @@ const getSelectedWellName = (): string => {
 };
 
 // Validation Methods
-const validateFileData = (file: ExtendedFileData): ValidationResult => {
+const validateFileData = (file: DataQCFileData): ValidationResult => {
     try {
         // Map file data to the expected schema format
         const validationData = {
@@ -704,8 +771,115 @@ const proceedToQualityCheck = async () => {
 const proceedToPublish = async () => {
     console.log('[QC] Starting publish process...');
     
-    // Navigate to publication page
-    // router.push('/data-publication');
+    try {
+        // Show publishing progress
+        showPublishModal.value = true;
+        publishStatus.value = 'uploading';
+        publishProgress.value = 0;
+        
+        // Get all files to upload
+        const filesToUpload = Array.from(fileDataMap.value.values());
+        let completedFiles = 0;
+        
+        console.log(`[QC] Publishing ${filesToUpload.length} files via FTP`);
+        
+        // Test FTP connection using the configuration from main process
+        const ftpStatus = await window.electronAPI.getFtpStatus();
+        if (!ftpStatus.configured || !ftpStatus.enabled) {
+            publishStatus.value = 'error';
+            publishError.value = 'FTP is not configured or enabled';
+            return;
+        }
+        
+        console.log('[QC] FTP is configured and ready');
+        
+        // Set up event listeners for FTP transfer
+        window.electronAPI.onFtpTransferStart((file: any) => {
+            console.log(`[QC] FTP transfer started for: ${file.originalName || file.name}`);
+            currentUploadingFile.value = file.originalName || file.name || file.id;
+        });
+        
+        window.electronAPI.onFtpTransferProgress((data: { file: any, progress: any }) => {
+            console.log(`[QC] FTP progress: ${data.progress.percentage}% for ${data.file.originalName || data.file.name}`);
+            const overallProgress = ((completedFiles / filesToUpload.length) * 100) + 
+                                  ((data.progress.percentage / 100) * (100 / filesToUpload.length));
+            publishProgress.value = Math.min(overallProgress, 100);
+        });
+        
+        window.electronAPI.onFtpTransferComplete((data: { file: any, remotePath: string }) => {
+            console.log(`[QC] FTP transfer completed: ${data.remotePath}`);
+            completedFiles++;
+            publishProgress.value = (completedFiles / filesToUpload.length) * 100;
+            
+            if (completedFiles >= filesToUpload.length) {
+                // All files uploaded successfully
+                publishStatus.value = 'completed';
+                console.log('[QC] All files published successfully');
+                
+                // Update workflow: mark publication as completed
+                wellStore.addCompletedStage('publication');
+                console.log('[QC] Publication stage marked as completed');
+                
+                setTimeout(() => {
+                    showPublishModal.value = false;
+                    // Reset states
+                    publishStatus.value = 'uploading';
+                    publishProgress.value = 0;
+                    currentUploadingFile.value = '';
+                }, 2000);
+            }
+        });
+        
+        window.electronAPI.onFtpTransferError((data: { file: any, error: string }) => {
+            console.error(`[QC] FTP transfer error for ${data.file.originalName || data.file.name}:`, data.error);
+            publishStatus.value = 'error';
+            publishError.value = `Failed to upload ${data.file.originalName || data.file.name}: ${data.error}`;
+        });
+        
+        // Upload files to FTP server
+        console.log('[QC] Starting FTP upload process...');
+        
+        for (let i = 0; i < filesToUpload.length; i++) {
+            const file = filesToUpload[i];
+            currentUploadingFile.value = file.name;
+            
+            try {
+                // Use the real FTP upload function
+                if (!file.path) {
+                    throw new Error(`File path is missing for ${file.name}`);
+                }
+                await window.electronAPI.uploadFile(file.path, file.name);
+                completedFiles++;
+                publishProgress.value = ((completedFiles / filesToUpload.length) * 100);
+                console.log(`[QC] Upload complete for: ${file.name} ${file.path}`);
+            } catch (error: any) {
+                console.error(`[QC] Upload failed for ${file.name}:`, error);
+                throw new Error(`Failed to upload ${file.name}: ${error.message || error}`);
+            }
+        }
+        
+        // Mark as completed
+        publishStatus.value = 'completed';
+        publishProgress.value = 100;
+        console.log('[QC] All files published successfully');
+        
+        // Update workflow: mark publication as completed
+        wellStore.addCompletedStage('publication');
+        console.log('[QC] Publication stage marked as completed');
+        
+        setTimeout(() => {
+            showPublishModal.value = false;
+            // Reset states
+            publishStatus.value = 'uploading';
+            publishProgress.value = 0;
+            currentUploadingFile.value = '';
+        }, 2000);
+        
+    } catch (error: any) {
+        console.error('[QC] Error during publish process:', error);
+        publishStatus.value = 'error';
+        publishError.value = error.message || 'Unknown error during publishing';
+    }
 };
 
 const showApprovalModal = () => {
@@ -792,6 +966,11 @@ watch(selectedWellId, (newWellId) => {
         // Auto-select the first file when a well is selected and files tab is active
         selectedRowIndex.value = 0;
     }
+});
+
+// Cleanup function
+onUnmounted(() => {
+    // Cleanup code if needed
 });
 </script>
 
@@ -1583,6 +1762,171 @@ watch(selectedWellId, (newWellId) => {
     color: #6b7280;
     font-size: 0.9rem;
     margin: 0;
+}
+
+@media (max-width: 1024px) {
+    .qc-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .workflow-progress {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .table-header,
+    .table-row {
+        grid-template-columns: 30px 1fr 60px 80px 60px 60px 60px 60px;
+        font-size: 0.75rem;
+    }
+
+    .dataset-meta {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .modal-container {
+        width: 95%;
+        margin: 1rem;
+    }
+
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: 1rem;
+    }
+
+    .modal-footer {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .modal-footer .btn {
+        width: 100%;
+    }
+
+    .success-modal-container {
+        width: 95%;
+        max-width: 300px;
+    }
+
+    .success-modal-content {
+        padding: 1.5rem 1rem;
+    }
+
+    .success-title {
+        font-size: 1.1rem;
+    }
+}
+
+/* Publish Modal Styles */
+.publish-modal-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    width: 90%;
+    max-width: 400px;
+    overflow: hidden;
+    transform: scale(1);
+    transition: all 0.3s ease;
+}
+
+.publish-modal-content {
+    padding: 2rem 1.5rem 1.5rem 1.5rem;
+    text-align: center;
+}
+
+.upload-progress,
+.upload-success,
+.upload-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.upload-icon {
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.spinner-large {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #e5e7eb;
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.upload-title,
+.success-title,
+.error-title {
+    color: #0f172a;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+}
+
+.upload-subtitle,
+.success-subtitle,
+.error-subtitle {
+    color: #6b7280;
+    font-size: 0.9rem;
+    margin: 0 0 1.5rem 0;
+    line-height: 1.4;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    font-size: 0.8rem;
+}
+
+.progress-percent {
+    font-weight: 600;
+    color: #374151;
+}
+
+.current-file {
+    color: #6b7280;
+    font-style: italic;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.error-icon {
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 @media (max-width: 1024px) {

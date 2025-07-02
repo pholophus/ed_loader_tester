@@ -25,9 +25,21 @@ interface ElectronAPI {
   getTusServerUrl: () => Promise<string>;
   processUploadedFile: (filePath: string, originalName: string, metadata: any) => Promise<any>;
   
+  // FTP operations
+  testFtpConnection: (ftpConfig: any) => Promise<any>;
+  getFtpStatus: () => Promise<any>;
+  uploadFile: (filePath: string, remoteFileName: string, metadata?: any) => Promise<any>;
+  
   // Upload event listeners
   onUploadComplete: (callback: (file: any) => void) => void;
   onUploadProgress: (callback: (data: { file: any, progress: number }) => void) => void;
+  
+  // FTP transfer event listeners
+  onFtpTransferStart: (callback: (file: any) => void) => void;
+  onFtpTransferProgress: (callback: (data: { file: any, progress: any }) => void) => void;
+  onFtpTransferComplete: (callback: (data: { file: any, remotePath: string }) => void) => void;
+  onFtpTransferError: (callback: (data: { file: any, error: string }) => void) => void;
+  
   removeUploadListeners: () => void;
   
   onDeepLink: (callback: (url: string) => void) => void;

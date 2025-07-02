@@ -77,12 +77,12 @@
                                 <tbody>
                                     <tr v-for="file in displayFiles" :key="file.id" 
                                         :class="{ selected: selectedFile?.id === file.id }"
-                                        @click="selectFile(file)">
+                                        @click="selectFile(file as DataLoadingFileData)">
                                         <td><input type="checkbox" :checked="isFileChecked(file.id)" @click="toggleFileCheck(file.id, $event)" /></td>
                                         <td class="file-name">{{ file.name }}</td>
                                         <td>{{ formatFileSize(file.size) }}</td>
                                         <td>
-                                            <select class="entity-select" v-model="file.wellId">
+                                            <select class="entity-select" v-model="(file as DataLoadingFileData).wellId">
                                                 <option value="">Select Well</option>
                                                 <option v-for="well in wellStore.data.well" :key="well.wellId" :value="well.wellId">
                                                     {{ well.wellName }}
@@ -90,18 +90,18 @@
                                             </select>
                                         </td>
                                         <td>
-                                            <select class="entity-select" v-model="file.selectedDataTypeId" @change="onDataTypeChange(file, file.selectedDataTypeId || '')">
+                                            <select class="entity-select" v-model="file.selectedDataTypeId" @change="onDataTypeChange(file as DataLoadingFileData, file.selectedDataTypeId || '')">
                                                 <option value="">Select Category</option>
                                                 <option v-for="dataType in activeDataTypes" :key="dataType._id" :value="dataType._id">
-                                                    {{ dataType.name }}
+                                                    {{ dataType.displayName }}
                                                 </option>
                                             </select>
                                         </td>
                                         <td>
-                                            <select class="entity-select" v-model="file.selectedSubDataTypeId" :disabled="!file.selectedDataTypeId" @change="onSubDataTypeChange(file, file.selectedSubDataTypeId || '')">
+                                            <select class="entity-select" v-model="file.selectedSubDataTypeId" :disabled="!file.selectedDataTypeId" @change="onSubDataTypeChange(file as DataLoadingFileData, file.selectedSubDataTypeId || '')">
                                                 <option value="">Select Sub Category</option>
                                                 <option v-for="subDataType in getFilteredSubDataTypes(file.selectedDataTypeId || '')" :key="subDataType._id" :value="subDataType._id">
-                                                    {{ subDataType.name }}
+                                                    {{ subDataType.displayName }}
                                                 </option>
                                             </select>
                                         </td>
@@ -400,7 +400,7 @@ const {
 
 // State
 const activeTab = ref('metadata');
-const selectedFile = ref<ExtendedFileData | null>(null);
+const selectedFile = ref<DataLoadingFileData | null>(null);
 const checkedFiles = ref<Set<string>>(new Set());
 const editableFileName = ref('');
 const previewData = ref<LasPreviewData | null>(null);
@@ -410,6 +410,19 @@ const isLoadingPreview = ref(false);
 const currentDepthMetadata = ref<LasDepthMetadata | null>(null);
 const isLoadingDepthMetadata = ref(false);
 const depthMetadataCache = ref<Map<string, LasDepthMetadata>>(new Map());
+
+// Extended interface for DataLoading-specific properties
+interface DataLoadingFileData extends ExtendedFileData {
+    // Depth information
+    topDepth?: number;
+    topDepthUoM?: string;
+    baseDepth?: number;
+    baseDepthUoM?: string;
+    
+    // Well information
+    wellId?: string;
+    wellName?: string;
+}
 
 // Computed properties
 const activeDataTypes = computed(() => {
@@ -431,7 +444,7 @@ const selectedDataTypeName = computed(() => {
         return '';
     }
     const dataType = dataTypes.value.find((dt: any) => dt._id === selectedFile.value?.selectedDataTypeId);
-    return dataType?.name || '';
+    return dataType?.displayName || '';
 });
 
 const selectedSubDataTypeName = computed(() => {
@@ -439,14 +452,14 @@ const selectedSubDataTypeName = computed(() => {
         return '';
     }
     const subDataType = subDataTypes.value.find((sdt: any) => sdt._id === selectedFile.value?.selectedSubDataTypeId);
-    return subDataType?.name || '';
+    return subDataType?.displayName || '';
 });
 
 const selectedWellName = computed(() => {
-    if (!selectedFile.value?.wellId || !wellStore.data.well.length) {
+    if (!(selectedFile.value as DataLoadingFileData)?.wellId || !wellStore.data.well.length) {
         return '';
     }
-    const well = wellStore.data.well.find((w: any) => w.wellId === selectedFile.value?.wellId);
+    const well = wellStore.data.well.find((w: any) => w.wellId === (selectedFile.value as DataLoadingFileData)?.wellId);
     return well?.wellName || '';
 });
 
@@ -472,7 +485,7 @@ const getFileExtension = (filename: string): string => {
     return filename.split('.').pop()?.toLowerCase() || '';
 };
 
-const selectFile = (file: ExtendedFileData) => {
+const selectFile = (file: DataLoadingFileData) => {
     selectedFile.value = fileDataMap.value.get(file.id) || file;
     // Initialize editable filename with the selected file's target filename
     editableFileName.value = selectedFile.value.targetFileName || selectedFile.value.name;
@@ -547,22 +560,25 @@ const proceedToQualityCheck = () => {
     }
     
     // Prepare metadata from all files in fileDataMap with the most current values
-    const metadatas = Array.from(fileDataMap.value.values()).map(file => ({
-        editedBy: file.editedBy,
-        createdBy: file.createdBy,
-        createdFor: file.createdFor,
-        createdDate: file.createdDate,
-        fileFormat: file.fileFormat,
-        dataTypeId: file.selectedDataTypeId, // From Category dropdown (lines 80-94)
-        subDataTypeId: file.selectedSubDataTypeId, // From Sub Category dropdown (lines 80-94)
-        dataTypeName: getDataTypeName(file.selectedDataTypeId || ''),
-        subDataTypeName: getSubDataTypeName(file.selectedSubDataTypeId || ''),
-        topDepth: file.topDepth,
-        topDepthUoM: file.topDepthUoM,
-        baseDepth: file.baseDepth,
-        baseDepthUoM: file.baseDepthUoM,
-        wellId: file.wellId,
-    }));
+    const metadatas = Array.from(fileDataMap.value.values()).map(file => {
+        const loadingFile = file as DataLoadingFileData;
+        return {
+            editedBy: loadingFile.editedBy,
+            createdBy: loadingFile.createdBy,
+            createdFor: loadingFile.createdFor,
+            createdDate: loadingFile.createdDate,
+            fileFormat: loadingFile.fileFormat,
+            dataTypeId: loadingFile.selectedDataTypeId, // From Category dropdown (lines 80-94)
+            subDataTypeId: loadingFile.selectedSubDataTypeId, // From Sub Category dropdown (lines 80-94)
+            dataTypeName: getDataTypeName(loadingFile.selectedDataTypeId || ''),
+            subDataTypeName: getSubDataTypeName(loadingFile.selectedSubDataTypeId || ''),
+            topDepth: loadingFile.topDepth,
+            topDepthUoM: loadingFile.topDepthUoM,
+            baseDepth: loadingFile.baseDepth,
+            baseDepthUoM: loadingFile.baseDepthUoM,
+            wellId: loadingFile.wellId,
+        };
+    });
 
     // console.log('[DataLoading] Proceeding to quality check...');
     console.log('[DataLoading] Metadatas:', metadatas);
@@ -577,7 +593,7 @@ const proceedToQualityCheck = () => {
 };
 
 // Method to handle data type selection change
-const onDataTypeChange = (file: ExtendedFileData, dataTypeId: string) => {
+const onDataTypeChange = (file: DataLoadingFileData, dataTypeId: string) => {
     updateFileData(file.id, {
         selectedDataTypeId: dataTypeId,
         selectedSubDataTypeId: '', // Reset sub data type when main data type changes
@@ -590,7 +606,7 @@ const onDataTypeChange = (file: ExtendedFileData, dataTypeId: string) => {
 };
 
 // Method to handle sub data type selection change
-const onSubDataTypeChange = (file: ExtendedFileData, subDataTypeId: string) => {
+const onSubDataTypeChange = (file: DataLoadingFileData, subDataTypeId: string) => {
     updateFileData(file.id, {
         selectedSubDataTypeId: subDataTypeId,
     });
@@ -686,7 +702,7 @@ const resetFileName = () => {
 };
 
 // Method to load LAS depth metadata
-const loadDepthMetadata = async (file: ExtendedFileData) => {
+const loadDepthMetadata = async (file: DataLoadingFileData) => {
     if (!file.path || !isLasFile(file.name)) {
         currentDepthMetadata.value = null;
         return;
@@ -725,13 +741,13 @@ const loadDepthMetadata = async (file: ExtendedFileData) => {
 };
 
 // Helper function to update file data with depth metadata
-const updateFileWithDepthMetadata = (file: ExtendedFileData, depthData: LasDepthMetadata) => {
+const updateFileWithDepthMetadata = (file: DataLoadingFileData, depthData: LasDepthMetadata) => {
     updateFileData(file.id, {
         topDepth: depthData.topDepth ?? 0,
         topDepthUoM: depthData.topDepthUom || '',
         baseDepth: depthData.baseDepth ?? 0,
         baseDepthUoM: depthData.baseDepthUom || '',
-    });
+    } as Partial<DataLoadingFileData>);
     
     // Update selected file if it's the current one
     if (selectedFile.value?.id === file.id) {
@@ -788,21 +804,22 @@ watch(activeTab, (newTab) => {
 const getDataTypeName = (dataTypeId: string) => {
     const dataType = dataTypes.value?.find((dt: any) => dt._id === dataTypeId);
     console.log('[DataLoading] Data type name:', dataType);
-    return dataType?.name || '';
+    return dataType?.displayName || '';
 };
 
 const getSubDataTypeName = (subDataTypeId: string) => {
     const subDataType = subDataTypes.value?.find((sdt: any) => sdt._id === subDataTypeId);
     console.log('[DataLoading] Sub data type name:', subDataType);
-    return subDataType?.name || '';
+    return subDataType?.displayName || '';
 };
 
 // New computed property to check if all files have category, sub-category, and well selected
 const canProceedToQualityCheck = computed(() => {
     return displayFiles.value.every(file => {
-        return file.selectedDataTypeId && file.selectedDataTypeId !== '' && 
-               file.selectedSubDataTypeId && file.selectedSubDataTypeId !== '' && 
-               file.wellId && file.wellId !== '';
+        const loadingFile = file as DataLoadingFileData;
+        return loadingFile.selectedDataTypeId && loadingFile.selectedDataTypeId !== '' && 
+               loadingFile.selectedSubDataTypeId && loadingFile.selectedSubDataTypeId !== '' && 
+               loadingFile.wellId && loadingFile.wellId !== '';
     });
 });
 </script>

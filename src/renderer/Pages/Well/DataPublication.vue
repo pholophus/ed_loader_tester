@@ -252,7 +252,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import WorkflowProgress from '../Components/WorkflowProgress.vue';
+import WorkflowProgress from '../../Components/WorkflowProgress.vue';
 import { useWellStore } from '../../store/wellStore';
 
 const router = useRouter();
@@ -319,6 +319,7 @@ const publishDataset = () => {
     
     // Mark publication as completed in workflow
     wellStore.addCompletedStage('publication');
+    
     
     console.log('Dataset published successfully!');
     console.log('[Publication] Workflow completed, all stages done:', wellStore.data.completedStages);

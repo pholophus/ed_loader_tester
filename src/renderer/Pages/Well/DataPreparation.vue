@@ -118,6 +118,41 @@
                             </div>
                         </div>
 
+                        <div class="form-group">
+                            <div class="form-row">
+                                <label>Coordinate Reference System (CRS)</label>
+                                <div class="select-with-search">
+                                    <div class="searchable-select">
+                                        <input 
+                                            type="text" 
+                                            v-model="crsSearchQuery"
+                                            @focus="showCrsDropdown = true"
+                                            @blur="hideCrsDropdown"
+                                            @input="filterCrs"
+                                            :placeholder="(crsLoading ? 'Loading CRS...' : 'Search coordinate reference systems...')"
+                                            class="form-input"
+                                            :class="{ 'has-selection': selectedCrsId }"
+                                            :disabled="crsLoading"
+                                        />
+                                        <div v-if="showCrsDropdown && filteredCrs.length > 0" class="dropdown-list">
+                                            <div 
+                                                v-for="crs in filteredCrs" 
+                                                :key="crs._id"
+                                                @mousedown="selectCrs(crs)"
+                                                class="dropdown-item"
+                                            >
+                                                <span class="crs-name">{{ crs.name || crs.code || `CRS ${crs._id}` }}</span>
+                                                <span class="crs-details">{{ crs.code ? `Code: ${crs.code}` : '' }} {{ crs.authority ? `Authority: ${crs.authority}` : '' }}</span>
+                                            </div>
+                                        </div>
+                                        <div v-if="showCrsDropdown && filteredCrs.length === 0 && crsSearchQuery.length > 0" class="dropdown-list">
+                                            <div class="dropdown-item no-results">No CRS found</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Wells from Store -->
                         <div class="form-group" v-if="wellStore.data.well.length > 0">
                             <div class="form-row">
@@ -325,6 +360,7 @@ import { useRoute, useRouter } from 'vue-router';
 // import { useFileStore } from '../store/fileStore';
 import { useWellStore } from '../../store/wellStore';
 import { useWell } from '../../Composables/useWell';
+import { useCRS } from '../../Composables/useCRS';
 import WorkflowProgress from '../../Components/WorkflowProgress.vue';
 
 const route = useRoute();
@@ -332,6 +368,7 @@ const router = useRouter();
 // const fileStore = useFileStore();
 const wellStore = useWellStore();
 const { fetch: fetchWells } = useWell();
+const { fetch: fetchCrs } = useCRS();
 
 // Get selected target from route params or query
 const selectedTarget = ref(route.query.target as string || 'well');
@@ -353,6 +390,14 @@ const wellSearchQuery = ref('');
 const filteredWells = ref<any[]>([]);
 const showWellDropdown = ref(false);
 const selectedWellName = ref('');
+
+// CRS data
+const crs = ref<any[]>([]);
+const crsLoading = ref(false);
+const crsSearchQuery = ref('');
+const filteredCrs = ref<any[]>([]);
+const showCrsDropdown = ref(false);
+const selectedCrsId = ref('');
 
 // Options
 const options = ref({
@@ -551,13 +596,46 @@ const searchWells = async () => {
     }
 };
 
-// const browseMetadata = () => {
-//     // console.log('Browse metadata...');
-// };
+const filterCrs = () => {
+    if (!crsSearchQuery.value.trim()) {
+        filteredCrs.value = crs.value;
+        return;
+    }
+    
+    const query = crsSearchQuery.value.toLowerCase();
+    filteredCrs.value = crs.value.filter(crsItem => {
+        const name = (crsItem.name || '').toLowerCase();
+        
+        return name.includes(query) 
+    });
+};
 
-// const downloadTemplate = () => {
-//     // console.log('Download template...');
-// };
+const selectCrs = (crsItem: any) => {
+    selectedCrsId.value = crsItem._id;
+    crsSearchQuery.value = crsItem.name || crsItem.code || `CRS ${crsItem._id}`;
+    showCrsDropdown.value = false;
+    
+    // Store selected CRS data if needed
+    // wellStore.setCrsData(crsItem);
+};
+
+const hideCrsDropdown = () => {
+    setTimeout(() => {
+        showCrsDropdown.value = false;
+    }, 200); // Delay to allow click event to fire
+};
+
+const searchCrs = async () => {
+    try {
+        crsLoading.value = true;
+        crs.value = await fetchCrs();
+        filteredCrs.value = crs.value;
+    } catch (error) {
+        console.error('Error searching CRS:', error);
+    } finally {
+        crsLoading.value = false;
+    }
+};
 
 const toggleSelectAll = () => {
     if (selectAllChecked.value) {
@@ -595,6 +673,8 @@ const prepareDataset = () => {
     
     // Advance workflow to loading stage and mark preparation as completed
     wellStore.advanceWorkflow('loading', 'preparation');
+
+    wellStore.setCRS(selectedCrsId.value);
     
     // Navigate to DataQC page with form data
     router.push({
@@ -620,6 +700,7 @@ const removeWell = (wellId: string) => {
 onMounted(() => {
     generateDatasetId();
     searchWells();
+    searchCrs();
     
     // Initialize workflow at preparation stage
     wellStore.setCurrentStage('preparation');
@@ -1283,5 +1364,19 @@ onMounted(() => {
     border: none;
     padding: 0;
     cursor: pointer;
+}
+
+.crs-name {
+    display: block;
+    font-weight: 500;
+    color: #080a0b;
+    font-size: 0.85rem;
+}
+
+.crs-details {
+    display: block;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
 }
 </style> 

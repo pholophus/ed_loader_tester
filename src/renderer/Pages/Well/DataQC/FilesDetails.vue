@@ -18,8 +18,8 @@
             <!-- Metadata Tab -->
             <div v-if="detailsTab === 'metadata'" class="tab-content">
                 <div class="header-actions">
-                    <button class="btn btn-primary btn-sm">Update</button>
-                    <button class="btn btn-outline btn-sm">Reset</button>
+                    <!-- <button class="btn btn-primary btn-sm">Update</button>
+                    <button class="btn btn-outline btn-sm">Reset</button> -->
                 </div>
                 <div class="file-metadata">
                     <!-- Selected Row Info -->

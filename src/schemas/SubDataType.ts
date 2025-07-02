@@ -1,6 +1,6 @@
 export interface SubDataType {
     _id: string; 
-    name: string;
+    displayName: string;
     dataTypeId: string; 
     isActive: boolean;
     createdBy: string;
