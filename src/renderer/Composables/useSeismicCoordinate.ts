@@ -1,9 +1,9 @@
 import SeismicCoordinate from '../../schemas/SeismicCoordinate';
-import { useMongo } from './useMongo';
+import { useApi } from './useApi';
 import mongoose from 'mongoose';
 
 export const useSeismicCoordinate = () => {
-    const { insert, insertMany, ...rest } = useMongo<SeismicCoordinate>('seismiccoordinates');
+    const { insert, insertMany, ...rest } = useApi<SeismicCoordinate>('seismic-polygon/coordinates');
     
     // Function to create an empty SeismicCoordinate object
     // const createEmptyLine = (): SeismicCoordinate => ({

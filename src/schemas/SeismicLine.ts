@@ -28,4 +28,19 @@ export interface SeismicLine {
     crewName?: string;
     createdAt?: Date;
     updatedAt?: Date;
+    firstCDP?: number;
+    lastCDP?: number;
+    firstField?: number;
+    lastField?: number;
+    firstShot?: number;
+    lastShot?: number;
+    compositeName?: string;
+    recordLength?: number;
+    recordLengthUom?: string;
+    createdBy?: string;
+    createdOn?: Date;
+    sampleRate?: number;
+    sampleRateUom?: string;
+    changedBy?: string;
+    changedOn?: Date;
 }

@@ -1,9 +1,9 @@
 import { SeismicSurvey } from '../../schemas/SeismicSurvey';
-import { useMongo } from './useMongo';
+import { useApi } from './useApi';
 import { ref } from 'vue';
 
 export const useSeismicSurvey = () => {
-    const baseCrud = useMongo<SeismicSurvey>('seismicsurveys');
+    const baseCrud = useApi<SeismicSurvey>('seismic-survey');
     
     // Function to create an empty SeismicSurvey object
     const createEmptySurvey = (): SeismicSurvey => ({

@@ -1,6 +1,6 @@
 import CRS from '../../schemas/CRS';
-import { useMongo } from './useMongo'; // adjust path as needed
+import { useApi } from './useApi'; // Changed from useMongo to useApi
 
 export function useCRS() {
-  return useMongo<CRS>('crs');
+  return useApi<CRS>('crs'); // Now uses API endpoint http://localhost:3000/api/crs
 }

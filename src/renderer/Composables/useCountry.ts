@@ -1,6 +1,6 @@
 import { Country } from '../../schemas/Country';
-import { useMongo } from './useMongo'; // adjust path as needed
+import { useApi } from './useApi'; // Changed from useMongo to useApi
 
 export function useCountry() {
-  return useMongo<Country>('countries');
+  return useApi<Country>('countries'); // Now uses API endpoint http://localhost:3000/api/countries
 } 

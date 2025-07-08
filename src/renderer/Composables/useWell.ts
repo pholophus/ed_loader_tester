@@ -1,9 +1,27 @@
 import Well from '../../schemas/Well';
-import { useMongo } from './useMongo';
+import { useApi } from './useApi';
+import { apiService } from '../../services/apiService';
 import { ref } from 'vue';
 
 export const useWell = () => {
-    const baseCrud = useMongo<Well>('wells');
+    const baseCrud = useApi<Well>('well');
+    
+    // Override specific methods if needed with different endpoints
+    const customFetch = async (query = {}) => {
+        try {
+            // Use a different endpoint for fetch if needed
+            const result = await apiService.get('well/fetchAll', query);
+            
+            if (result.success && result.data) {
+                return result.data;
+            } else {
+                throw new Error(result.error || 'Failed to fetch wells');
+            }
+        } catch (error: any) {
+            console.error('Error in customFetch:', error);
+            throw error; // Re-throw the error so calling code can handle it
+        }
+    };
     
     const getWellMetadata = async (wellId: string) => {
         const loading = ref(false);
@@ -14,37 +32,15 @@ export const useWell = () => {
         error.value = null;
 
         try {
-            // Create the aggregation pipeline
-            const pipeline = [
-                {
-                    $match: { 
-                        wellId: { $eq: wellId }
-                    }
-                },
-                {
-                    $lookup: {
-                        from: 'wellmetadatas',
-                        localField: 'wellMetadataId',
-                        foreignField: '_id',
-                        as: 'metadata'
-                    }
-                },
-                {
-                    $unwind: '$metadata'
-                },
-                {
-                    $replaceRoot: { newRoot: '$metadata' }
-                }
-            ];
-
-            // @ts-ignore
-            const result = await window.mongoAPI.aggregate('wellmetadatapivots', pipeline);
-
-            if (Array.isArray(result)) {
-                metadata.value = result;
-            } else {
-                error.value = result.error || 'Well metadata not found';
+            // Use API endpoint for well metadata aggregation
+            const response = await fetch(`http://localhost:3000/api/well-data/${wellId}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            
+            const result = await response.json();
+            metadata.value = result;
         } catch (e: any) {
             error.value = e.message;
         } finally {
@@ -67,24 +63,15 @@ export const useWell = () => {
         error.value = null;
 
         try {
-            // @ts-ignore
-            const result = await window.mongoAPI.find('wells', {
-                location: {
-                    $near: {
-                        $geometry: {
-                            type: "Point",
-                            coordinates: [coordinates.lon, coordinates.lat]
-                        },
-                        $maxDistance: radiusKm * 1000 // Convert km to meters
-                    }
-                }
-            });
-
-            if (Array.isArray(result)) {
-                wells.value = result;
-            } else {
-                error.value = 'Failed to fetch wells by location';
+            // Use API endpoint for location-based well search
+            const response = await fetch(`http://localhost:3000/api/well/location?lat=${coordinates.lat}&lon=${coordinates.lon}&radius=${radiusKm}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            
+            const result = await response.json();
+            wells.value = result;
         } catch (e: any) {
             error.value = e.message;
         } finally {
@@ -107,19 +94,15 @@ export const useWell = () => {
         error.value = null;
 
         try {
-            // @ts-ignore
-            const result = await window.mongoAPI.find('wells', {
-                createdAt: {
-                    $gte: startDate,
-                    $lte: endDate
-                }
-            });
-
-            if (Array.isArray(result)) {
-                wells.value = result;
-            } else {
-                error.value = 'Failed to fetch wells by date range';
+            // Use API endpoint for date range well search
+            const response = await fetch(`http://localhost:3000/api/well/date-range?start=${startDate.toISOString()}&end=${endDate.toISOString()}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            
+            const result = await response.json();
+            wells.value = result;
         } catch (e: any) {
             error.value = e.message;
         } finally {
@@ -176,10 +159,13 @@ export const useWell = () => {
         updatedAt: undefined,
         updatedBy: undefined,
         UWI: undefined,
+        name: undefined, // Added missing property from schema
     });
 
     return {
         ...baseCrud,
+        // Override fetch if needed
+        fetch: customFetch,
         getWellMetadata,
         getWellsByLocation,
         getWellsByDateRange,

@@ -1,19 +1,18 @@
 import { SeismicLine } from '../../schemas/SeismicLine';
-import { useMongo } from './useMongo';
+import { useApi } from './useApi';
 
 export const useSeismicLine = () => {
-    const baseCrud = useMongo<SeismicLine>('seismiclines');
+    const baseCrud = useApi<SeismicLine>('seismic-lines');
     
     // Function to create an empty SeismicLine object
     const createEmptyLine = (): SeismicLine => ({
-        dimension: undefined, // Made optional, set to undefined
+        name: '', // Required, keep empty string
         firstCDP: undefined, // Made optional, set to undefined
         firstField: undefined,
         firstShot: undefined,
         lastCDP: undefined, // Made optional, set to undefined
         lastField: undefined,
         lastShot: undefined, 
-        name: '', // Required, keep empty string
         compositeName: '', // Required, keep empty string
         recordLength: undefined, // Made optional, set to undefined
         recordLengthUom: undefined, // Made optional, set to undefined

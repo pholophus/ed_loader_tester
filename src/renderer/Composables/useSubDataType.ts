@@ -1,6 +1,6 @@
 import SubDataType from '../../schemas/SubDataType';
-import { useMongo } from './useMongo'; // adjust path as needed
+import { useApi } from './useApi'; // Changed from useMongo to useApi
 
 export function useSubDataType() {
-  return useMongo<SubDataType>('subdatatype');
+  return useApi<SubDataType>('subdata-types'); // Now uses API endpoint http://localhost:3000/api/sub-data-types
 }
