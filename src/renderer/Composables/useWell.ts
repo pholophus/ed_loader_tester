@@ -1,6 +1,7 @@
 import Well from '../../schemas/Well';
 import { useApi } from './useApi';
 import { apiService } from '../../services/apiService';
+import { getApiUrl } from '../../config/api';
 import { ref } from 'vue';
 
 export const useWell = () => {
@@ -33,7 +34,7 @@ export const useWell = () => {
 
         try {
             // Use API endpoint for well metadata aggregation
-            const response = await fetch(`http://localhost:3000/api/well-data/${wellId}`);
+            const response = await fetch(getApiUrl(`well-data/${wellId}`));
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -64,7 +65,7 @@ export const useWell = () => {
 
         try {
             // Use API endpoint for location-based well search
-            const response = await fetch(`http://localhost:3000/api/well/location?lat=${coordinates.lat}&lon=${coordinates.lon}&radius=${radiusKm}`);
+            const response = await fetch(getApiUrl(`well/location?lat=${coordinates.lat}&lon=${coordinates.lon}&radius=${radiusKm}`));
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -95,7 +96,7 @@ export const useWell = () => {
 
         try {
             // Use API endpoint for date range well search
-            const response = await fetch(`http://localhost:3000/api/well/date-range?start=${startDate.toISOString()}&end=${endDate.toISOString()}`);
+            const response = await fetch(getApiUrl(`well/date-range?start=${startDate.toISOString()}&end=${endDate.toISOString()}`));
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);

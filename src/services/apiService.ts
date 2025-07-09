@@ -1,3 +1,5 @@
+import { apiConfig } from '../config/api';
+
 interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -221,7 +223,8 @@ class ApiService {
 
 // Create and export the default API service instance
 export const apiService = new ApiService({
-  baseUrl: 'http://localhost:3000/api'
+  baseUrl: apiConfig.baseUrl,
+  timeout: apiConfig.timeout
 });
 
 // Export the class for custom instances if needed

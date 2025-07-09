@@ -6,9 +6,6 @@ export const useApi = <T = any>(endpoint: string) => {
     const loading = ref(false);
     const error = ref<string | null>(null);
 
-    /**
-     * Fetch documents - equivalent to MongoDB find
-     */
     const fetch = async (query = {}, sessionId?: string): Promise<T[]> => {
         loading.value = true;
         error.value = null;
@@ -37,9 +34,6 @@ export const useApi = <T = any>(endpoint: string) => {
         }
     };
 
-    /**
-     * Insert a single document - equivalent to MongoDB insert
-     */
     const insert = async (document: T, sessionId?: string): Promise<T> => {
         loading.value = true;
         error.value = null;
@@ -61,9 +55,6 @@ export const useApi = <T = any>(endpoint: string) => {
         }
     };
 
-    /**
-     * Insert multiple documents - equivalent to MongoDB insertMany
-     */
     const insertMany = async (documents: T[], sessionId?: string): Promise<T[]> => {
         loading.value = true;
         error.value = null;
@@ -85,10 +76,6 @@ export const useApi = <T = any>(endpoint: string) => {
         }
     };
 
-    /**
-     * Update a document - equivalent to MongoDB update
-     * This handles both filter-based updates and ID-based updates
-     */
     const update = async (filter: any, updateData: any, sessionId?: string): Promise<T | null> => {
         loading.value = true;
         error.value = null;
@@ -119,9 +106,6 @@ export const useApi = <T = any>(endpoint: string) => {
         }
     };
 
-    /**
-     * Delete a document - equivalent to MongoDB delete
-     */
     const remove = async (filter: any, sessionId?: string): Promise<boolean> => {
         loading.value = true;
         error.value = null;
@@ -154,9 +138,6 @@ export const useApi = <T = any>(endpoint: string) => {
         }
     };
 
-    /**
-     * Upsert a document - equivalent to MongoDB upsert
-     */
     const upsert = async (filter: any, document: T, sessionId?: string): Promise<T> => {
         loading.value = true;
         error.value = null;
@@ -178,9 +159,6 @@ export const useApi = <T = any>(endpoint: string) => {
         }
     };
 
-    /**
-     * Get a single document by ID
-     */
     const getById = async (id: string): Promise<T | null> => {
         loading.value = true;
         error.value = null;
@@ -201,9 +179,6 @@ export const useApi = <T = any>(endpoint: string) => {
         }
     };
 
-    /**
-     * Aggregate documents - equivalent to MongoDB aggregation
-     */
     const aggregate = async (pipeline: any[], sessionId?: string): Promise<T[]> => {
         loading.value = true;
         error.value = null;
@@ -224,9 +199,6 @@ export const useApi = <T = any>(endpoint: string) => {
         }
     };
 
-    /**
-     * Count documents
-     */
     const count = async (query = {}): Promise<number> => {
         loading.value = true;
         error.value = null;

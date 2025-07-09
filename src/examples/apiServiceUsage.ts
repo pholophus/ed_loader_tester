@@ -5,15 +5,17 @@
 
 import { apiService } from '../services/apiService';
 import { useApi } from '../renderer/Composables/useApi';
+import { getApiUrl, API_BASE_URL } from '../config/api';
 
 // ===== Direct API Service Usage =====
 
 /**
  * Example 1: Using apiService directly for countries endpoint
- * URL: http://localhost:3000/api/countries
+ * URL: {API_BASE_URL}/countries (configurable via src/config/api.ts)
  */
 async function directApiServiceExample() {
   console.log('=== Direct API Service Example ===');
+  console.log('Using API Base URL:', API_BASE_URL);
 
   // GET all countries
   const countries = await apiService.get('countries');
@@ -60,7 +62,7 @@ function composableExample() {
   console.log('=== Composable Usage Example ===');
 
   // Initialize the composable for 'users' endpoint
-  // URL: http://localhost:3000/api/users
+  // URL: {API_BASE_URL}/users (configurable via src/config/api.ts)
   const { 
     items: users, 
     loading, 
@@ -74,7 +76,7 @@ function composableExample() {
 
   // Example Vue component methods
   const loadUsers = async () => {
-    await fetch(); // GET http://localhost:3000/api/users
+    await fetch(); // GET {API_BASE_URL}/users
     console.log('Users loaded:', users.value);
   };
 

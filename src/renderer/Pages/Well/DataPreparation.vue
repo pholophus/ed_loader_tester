@@ -114,6 +114,11 @@
                                             <div class="dropdown-item no-results">No wells found</div>
                                         </div>
                                     </div>
+                                    <button class="btn btn-outline btn-sm add-well-btn" @click="openCreateWellModal" title="Create new well">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                            <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -224,7 +229,7 @@
                             </div>
                         </div> -->
 
-                        <div class="options-section">
+                        <!-- <div class="options-section">
                             <h3>Options</h3>
                             <div class="checkbox-group">
                                 <label class="checkbox-item">
@@ -259,16 +264,7 @@
                                     </label>
                                 </div>
                             </div>
-
-                            <!-- <div class="form-group">
-                                <label>Process Priority</label>
-                                <select v-model="processPriority" class="form-select">
-                                    <option value="normal">Normal</option>
-                                    <option value="high">High</option>
-                                    <option value="low">Low</option>
-                                </select>
-                            </div> -->
-                        </div>
+                        </div> -->
                     </div>
                 </div>
 
@@ -351,6 +347,131 @@
                 </div>
             </div>
         </main>
+
+        <!-- Create Well Modal -->
+        <div v-if="showCreateWellModal" class="modal-overlay" @click="closeCreateWellModal">
+            <div class="modal-content" @click.stop>
+                <div class="modal-header">
+                    <h3>Create New Well</h3>
+                    <button class="modal-close" @click="closeCreateWellModal">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="modal-body">
+                    <form @submit.prevent="createWell">
+                        <div class="form-group">
+                            <label>Well Name *</label>
+                            <input 
+                                type="text" 
+                                v-model="newWell.name" 
+                                placeholder="Enter well name"
+                                class="form-input"
+                                required
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label>Coordinate Reference System (CRS) *</label>
+                            <div class="searchable-select">
+                                <input 
+                                    type="text" 
+                                    v-model="newWellCrsSearchQuery"
+                                    @focus="showNewWellCrsDropdown = true"
+                                    @blur="hideNewWellCrsDropdown"
+                                    @input="filterNewWellCrs"
+                                    :placeholder="(crsLoading ? 'Loading CRS...' : 'Search coordinate reference systems...')"
+                                    class="form-input"
+                                    :class="{ 'has-selection': newWell.crsId }"
+                                    :disabled="crsLoading"
+                                    required
+                                />
+                                <div v-if="showNewWellCrsDropdown && filteredNewWellCrs.length > 0" class="dropdown-list">
+                                    <div 
+                                        v-for="crsItem in filteredNewWellCrs" 
+                                        :key="crsItem._id"
+                                        @mousedown="selectNewWellCrs(crsItem)"
+                                        class="dropdown-item"
+                                    >
+                                        <span class="crs-name">{{ crsItem.name || crsItem.code || `CRS ${crsItem._id}` }}</span>
+                                        <span class="crs-details">{{ crsItem.code ? `Code: ${crsItem.code}` : '' }} {{ crsItem.authority ? `Authority: ${crsItem.authority}` : '' }}</span>
+                                    </div>
+                                </div>
+                                <div v-if="showNewWellCrsDropdown && filteredNewWellCrs.length === 0 && newWellCrsSearchQuery.length > 0" class="dropdown-list">
+                                    <div class="dropdown-item no-results">No CRS found</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Country *</label>
+                            <div class="searchable-select">
+                                <input 
+                                    type="text" 
+                                    v-model="countrySearchQuery"
+                                    @focus="showCountryDropdown = true"
+                                    @blur="hideCountryDropdown"
+                                    @input="filterCountries"
+                                    :placeholder="(countriesLoading ? 'Loading countries...' : 'Search countries...')"
+                                    class="form-input"
+                                    :class="{ 'has-selection': newWell.countryId }"
+                                    :disabled="countriesLoading"
+                                    required
+                                />
+                                <div v-if="showCountryDropdown && filteredCountries.length > 0" class="dropdown-list">
+                                    <div 
+                                        v-for="country in filteredCountries" 
+                                        :key="country._id"
+                                        @mousedown="selectCountry(country)"
+                                        class="dropdown-item"
+                                    >
+                                        <span class="country-name">{{ country.name }}</span>
+                                        <span class="country-details">{{ country.code ? `Code: ${country.code}` : '' }}</span>
+                                    </div>
+                                </div>
+                                <div v-if="showCountryDropdown && filteredCountries.length === 0 && countrySearchQuery.length > 0" class="dropdown-list">
+                                    <div class="dropdown-item no-results">No countries found</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Coordinate X *</label>
+                                <input 
+                                    type="number" 
+                                    v-model.number="newWell.coordinateX" 
+                                    placeholder="Enter X coordinate"
+                                    class="form-input"
+                                    step="any"
+                                    required
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label>Coordinate Y *</label>
+                                <input 
+                                    type="number" 
+                                    v-model.number="newWell.coordinateY" 
+                                    placeholder="Enter Y coordinate"
+                                    class="form-input"
+                                    step="any"
+                                    required
+                                />
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost" @click="closeCreateWellModal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @click="createWell" :disabled="!isCreateWellFormValid || creatingWell">
+                        {{ creatingWell ? 'Creating...' : 'Create Well' }}
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -361,14 +482,16 @@ import { useRoute, useRouter } from 'vue-router';
 import { useWellStore } from '../../store/wellStore';
 import { useWell } from '../../Composables/useWell';
 import { useCRS } from '../../Composables/useCRS';
+import { useCountry } from '../../Composables/useCountry';
 import WorkflowProgress from '../../Components/WorkflowProgress.vue';
 
 const route = useRoute();
 const router = useRouter();
 // const fileStore = useFileStore();
 const wellStore = useWellStore();
-const { fetch: fetchWells } = useWell();
+const { fetch: fetchWells, insert: createWellAPI } = useWell();
 const { fetch: fetchCrs } = useCRS();
+const { fetch: fetchCountries } = useCountry();
 
 // Get selected target from route params or query
 const selectedTarget = ref(route.query.target as string || 'well');
@@ -399,6 +522,29 @@ const filteredCrs = ref<any[]>([]);
 const showCrsDropdown = ref(false);
 const selectedCrsId = ref('');
 
+// Countries data
+const countries = ref<any[]>([]);
+const countriesLoading = ref(false);
+const countrySearchQuery = ref('');
+const filteredCountries = ref<any[]>([]);
+const showCountryDropdown = ref(false);
+
+// Create Well Modal
+const showCreateWellModal = ref(false);
+const creatingWell = ref(false);
+const newWell = ref({
+    name: '',
+    crsId: '',
+    countryId: '',
+    coordinateX: null as number | null,
+    coordinateY: null as number | null
+});
+
+// New Well CRS data
+const newWellCrsSearchQuery = ref('');
+const filteredNewWellCrs = ref<any[]>([]);
+const showNewWellCrsDropdown = ref(false);
+
 // Options
 const options = ref({
     extractFiles: true,
@@ -423,6 +569,14 @@ const isFormValid = computed(() => {
     return datasetName.value.trim() !== '' && dataSource.value.trim() !== '';
 });
 
+const isCreateWellFormValid = computed(() => {
+    return newWell.value.name.trim() !== '' && 
+           newWell.value.crsId !== '' && 
+           newWell.value.countryId !== '' && 
+           newWell.value.coordinateX !== null && 
+           newWell.value.coordinateY !== null;
+});
+
 const selectAllChecked = computed(() => {
     return uploadedFiles.value.length > 0 && selectedFiles.value.length === uploadedFiles.value.length;
 });
@@ -440,16 +594,113 @@ const generateDatasetId = () => {
     datasetId.value = Math.random().toString(36).substr(2, 8).toUpperCase();
 };
 
-// const resetForm = () => {
-//     datasetName.value = '';
-//     description.value = '';
-//     dataSource.value = '';
-//     targetWell.value = '';
-//     wellbore.value = '';
-//     uploadedFiles.value = [];
-//     selectedFiles.value = [];
-//     generateDatasetId();
-// };
+// Create Well Modal Methods
+const openCreateWellModal = () => {
+    showCreateWellModal.value = true;
+    // Reset form
+    newWell.value = {
+        name: '',
+        crsId: '',
+        countryId: '',
+        coordinateX: null,
+        coordinateY: null
+    };
+    newWellCrsSearchQuery.value = '';
+    countrySearchQuery.value = '';
+};
+
+const closeCreateWellModal = () => {
+    showCreateWellModal.value = false;
+};
+
+const createWell = async () => {
+    if (!isCreateWellFormValid.value || creatingWell.value) return;
+    
+    try {
+        creatingWell.value = true;
+        
+        // Prepare well data for API
+        const wellData = {
+            name: newWell.value.name,
+            crsId: newWell.value.crsId,
+            countryId: newWell.value.countryId,
+            coordinateX: newWell.value.coordinateX,
+            coordinateY: newWell.value.coordinateY
+        };
+        
+        const createdWell = await createWellAPI(wellData);
+        
+        // Add the new well to the wells list
+        wells.value.unshift(createdWell);
+        filteredWells.value = wells.value;
+        
+        // Auto-select the newly created well
+        selectWell(createdWell);
+        
+        // Close modal
+        closeCreateWellModal();
+        
+        console.log('Well created successfully:', createdWell);
+    } catch (error) {
+        console.error('Error creating well:', error);
+        // You might want to show an error message to the user here
+    } finally {
+        creatingWell.value = false;
+    }
+};
+
+// New Well CRS Methods
+const filterNewWellCrs = () => {
+    if (!newWellCrsSearchQuery.value.trim()) {
+        filteredNewWellCrs.value = crs.value;
+        return;
+    }
+    
+    const query = newWellCrsSearchQuery.value.toLowerCase();
+    filteredNewWellCrs.value = crs.value.filter(crsItem => {
+        const name = (crsItem.name || '').toLowerCase();
+        return name.includes(query);
+    });
+};
+
+const selectNewWellCrs = (crsItem: any) => {
+    newWell.value.crsId = crsItem._id;
+    newWellCrsSearchQuery.value = crsItem.name || crsItem.code || `CRS ${crsItem._id}`;
+    showNewWellCrsDropdown.value = false;
+};
+
+const hideNewWellCrsDropdown = () => {
+    setTimeout(() => {
+        showNewWellCrsDropdown.value = false;
+    }, 200);
+};
+
+// Country Methods
+const filterCountries = () => {
+    if (!countrySearchQuery.value.trim()) {
+        filteredCountries.value = countries.value;
+        return;
+    }
+    
+    const query = countrySearchQuery.value.toLowerCase();
+    filteredCountries.value = countries.value.filter(country => {
+        const name = (country.name || '').toLowerCase();
+        const code = (country.code || '').toLowerCase();
+        return name.includes(query) || code.includes(query);
+    });
+};
+
+const selectCountry = (country: any) => {
+    newWell.value.countryId = country._id;
+    countrySearchQuery.value = country.name || `Country ${country._id}`;
+    showCountryDropdown.value = false;
+};
+
+const hideCountryDropdown = () => {
+    setTimeout(() => {
+        showCountryDropdown.value = false;
+    }, 200);
+};
 
 const saveDataset = () => {
     if (!isFormValid.value) return;
@@ -630,10 +881,23 @@ const searchCrs = async () => {
         crsLoading.value = true;
         crs.value = await fetchCrs();
         filteredCrs.value = crs.value;
+        filteredNewWellCrs.value = crs.value; // Initialize for new well modal
     } catch (error) {
         console.error('Error searching CRS:', error);
     } finally {
         crsLoading.value = false;
+    }
+};
+
+const searchCountries = async () => {
+    try {
+        countriesLoading.value = true;
+        countries.value = await fetchCountries();
+        filteredCountries.value = countries.value;
+    } catch (error) {
+        console.error('Error searching countries:', error);
+    } finally {
+        countriesLoading.value = false;
     }
 };
 
@@ -701,6 +965,7 @@ onMounted(() => {
     generateDatasetId();
     searchWells();
     searchCrs();
+    searchCountries();
     
     // Initialize workflow at preparation stage
     wellStore.setCurrentStage('preparation');
@@ -1374,6 +1639,103 @@ onMounted(() => {
 }
 
 .crs-details {
+    display: block;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+.add-well-btn {
+    min-width: 40px;
+    height: 38px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-color: #8b5cf6;
+    color: #8b5cf6;
+}
+
+.add-well-btn:hover {
+    background: #8b5cf6;
+    color: white;
+}
+
+/* Modal styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: #64748b;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: #f1f5f9;
+    color: #374151;
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.country-name {
+    display: block;
+    font-weight: 500;
+    color: #080a0b;
+    font-size: 0.85rem;
+}
+
+.country-details {
     display: block;
     font-size: 0.75rem;
     color: #6b7280;

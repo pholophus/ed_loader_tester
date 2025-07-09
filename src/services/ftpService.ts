@@ -92,75 +92,113 @@ export class FtpService {
   async uploadFile(
     localFilePath: string, 
     remoteFileName: string,
-    onProgress?: (progress: FtpTransferProgress) => void
+    onProgress?: (progress: FtpTransferProgress) => void,
+    maxRetries: number = 3,
+    retryDelay: number = 2000
   ): Promise<FtpTransferResult> {
-    try {
-      if (!this.isConnected || !this.client) {
-        const connected = await this.connect();
-        if (!connected || !this.client) {
-          return { success: false, error: 'Failed to connect to FTP server' };
-        }
-      }
-
-      // Check if local file exists
-      if (!fs.existsSync(localFilePath)) {
-        return { success: false, error: 'Local file does not exist' };
-      }
-
-      const fileStats = fs.statSync(localFilePath);
-      const totalBytes = fileStats.size;
-      let transferredBytes = 0;
-
-      console.log(`📤 Starting FTP upload: ${remoteFileName} (${totalBytes} bytes)`);
-
-      // Create progress tracking
-      const progressCallback = (info: any) => {
-        transferredBytes = info.bytes || 0;
-        const percentage = totalBytes > 0 ? Math.round((transferredBytes / totalBytes) * 100) : 0;
-        
-        if (onProgress) {
-          onProgress({
-            transferredBytes,
-            totalBytes,
-            percentage,
-            filename: remoteFileName
-          });
-        }
-      };
-
-      // Set up progress tracking
-      if (this.client) {
-        this.client.trackProgress(progressCallback);
-
-        // Perform the upload
-        const remotePath = path.posix.join(this.config.remotePath || '/', remoteFileName);
-        await this.client.uploadFrom(localFilePath, remotePath);
-
-        // Stop progress tracking
-        this.client.trackProgress();
-      }
-
-      console.log(`✅ FTP upload completed: ${remoteFileName}`);
-      
-      return {
-        success: true,
-        remotePath: path.posix.join(this.config.remotePath || '/', remoteFileName),
-        transferredBytes: totalBytes
-      };
-
-    } catch (error: any) {
-      console.error('❌ FTP upload failed:', error);
-      
-      // Stop progress tracking on error
-      if (this.client) {
-        this.client.trackProgress();
-      }
-      
-      return {
-        success: false,
-        error: error.message || 'Unknown FTP upload error'
-      };
+    // Check if local file exists first
+    if (!fs.existsSync(localFilePath)) {
+      return { success: false, error: 'Local file does not exist' };
     }
+
+    const fileStats = fs.statSync(localFilePath);
+    const totalBytes = fileStats.size;
+
+    // Retry loop
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Force reconnection on retry attempts
+        if (attempt > 1) {
+          console.log(`🔄 Retry attempt ${attempt}/${maxRetries} for: ${remoteFileName}`);
+          await this.disconnect();
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+
+        // Ensure we're connected
+        if (!this.isConnected || !this.client) {
+          const connected = await this.connect();
+          if (!connected || !this.client) {
+            if (attempt === maxRetries) {
+              return { success: false, error: 'Failed to connect to FTP server after retries' };
+            }
+            continue; // Try next attempt
+          }
+        }
+
+        let transferredBytes = 0;
+        console.log(`📤 Starting FTP upload: ${remoteFileName} (${totalBytes} bytes) - Attempt ${attempt}`);
+
+        // Create progress tracking
+        const progressCallback = (info: any) => {
+          transferredBytes = info.bytes || 0;
+          const percentage = totalBytes > 0 ? Math.round((transferredBytes / totalBytes) * 100) : 0;
+          
+          if (onProgress) {
+            onProgress({
+              transferredBytes,
+              totalBytes,
+              percentage,
+              filename: remoteFileName
+            });
+          }
+        };
+
+        // Set up progress tracking and perform upload
+        if (this.client) {
+          this.client.trackProgress(progressCallback);
+
+          // Perform the upload
+          const remotePath = path.posix.join(this.config.remotePath || '/', remoteFileName);
+          await this.client.uploadFrom(localFilePath, remotePath);
+
+          // Stop progress tracking
+          this.client.trackProgress();
+        }
+
+        console.log(`✅ FTP upload completed: ${remoteFileName}`);
+        
+        return {
+          success: true,
+          remotePath: path.posix.join(this.config.remotePath || '/', remoteFileName),
+          transferredBytes: totalBytes
+        };
+
+      } catch (error: any) {
+        console.error(`❌ FTP upload failed (attempt ${attempt}/${maxRetries}):`, error);
+        
+        // Stop progress tracking on error
+        if (this.client) {
+          this.client.trackProgress();
+        }
+
+        // Check if this is a connection-related error that we should retry
+        const errorMessage = error.message || '';
+        const isConnectionError = errorMessage.includes('FIN packet') || 
+                                 errorMessage.includes('closed') || 
+                                 errorMessage.includes('connection') ||
+                                 errorMessage.includes('timeout') ||
+                                 errorMessage.includes('ECONNRESET') ||
+                                 errorMessage.includes('EPIPE');
+
+        if (isConnectionError && attempt < maxRetries) {
+          console.log(`🔄 Connection error detected, will retry: ${errorMessage}`);
+          // Force disconnect to ensure clean reconnection
+          await this.disconnect();
+          continue; // Try next attempt
+        }
+
+        // If not a connection error, or we've exhausted retries, return the error
+        return {
+          success: false,
+          error: attempt === maxRetries 
+            ? `Upload failed after ${maxRetries} attempts: ${errorMessage}`
+            : errorMessage
+        };
+      }
+    }
+
+    // Should never reach here, but just in case
+    return { success: false, error: 'Upload failed for unknown reason' };
   }
 
   async testConnection(): Promise<boolean> {

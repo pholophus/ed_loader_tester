@@ -414,9 +414,23 @@
                                 <path d="M15 9L9 15M9 9L15 15" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </div>
-                        <h3 class="error-title">Upload Failed</h3>
+                        <h3 class="error-title">Publication Failed</h3>
                         <p class="error-subtitle">{{ publishError }}</p>
-                        <button class="btn btn-primary" @click="showPublishModal = false">
+                        
+                        <!-- Detailed error list -->
+                        <div v-if="debugErrorDetails.length > 0" class="error-details">
+                            <h4 class="error-details-title">File Errors:</h4>
+                            <div class="error-files-list">
+                                <div v-for="(errorDetail, index) in debugErrorDetails" 
+                                     :key="index" 
+                                     class="error-file-item">
+                                    <div class="error-file-name">{{ errorDetail.fileName }}</div>
+                                    <div class="error-file-message">{{ errorDetail.error }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-primary" @click="closePublishModal">
                             Close
                         </button>
                     </div>
@@ -439,6 +453,7 @@ import { useSubDataType } from '../../Composables/useSubDataType';
 import { useFileData } from '../../Composables/useFileData';
 import { lasSchema } from '../../../schemas/qc/las';
 import ExtendedFileData from '../../../schemas/ExtendedFileData';
+import { useGeoFile } from '@/Composables/useGeoFile';
 
 // Extended interface for DataQC-specific properties
 interface DataQCFileData extends ExtendedFileData {
@@ -502,6 +517,7 @@ const publishStatus = ref<'uploading' | 'completed' | 'error'>('uploading');
 const publishProgress = ref(0);
 const currentUploadingFile = ref('');
 const publishError = ref('');
+const publishErrorDetails = ref<Array<{fileName: string, error: string, index?: number}>>([]);
 
 // File management
 const checkedFiles = ref<Set<string>>(new Set());
@@ -553,6 +569,13 @@ const allFilesChecked = computed(() => {
 
 const someFilesChecked = computed(() => {
     return checkedFiles.value.size > 0 && !allFilesChecked.value;
+});
+
+// Debug computed property to track publishErrorDetails
+const debugErrorDetails = computed(() => {
+    console.log('[QC Debug] publishErrorDetails.value:', publishErrorDetails.value);
+    console.log('[QC Debug] publishErrorDetails.value.length:', publishErrorDetails.value.length);
+    return publishErrorDetails.value;
 });
 
 // const logs = ref([]);
@@ -769,74 +792,137 @@ const proceedToQualityCheck = async () => {
 };
 
 const proceedToPublish = async () => {
-    console.log('[QC] Starting publish process...');
-    
     try {
-        // Show publishing progress
+        // Show publishing modal immediately
         showPublishModal.value = true;
         publishStatus.value = 'uploading';
         publishProgress.value = 0;
+        publishError.value = '';
+        publishErrorDetails.value = [];
         
+        const { createBulk } = useGeoFile();
+        
+        // Create geoFiles array according to the expected structure
+        const geoFiles = wellStore.data.wellMetadatas.map(metadata => ({
+            id: metadata.id || '',
+            fileName: metadata.name || '',
+            fileFormatId: metadata.fileFormat || '',
+            dataTypeId: metadata.dataTypeId || '',
+            subDataTypeId: metadata.subDataTypeId || '',
+            type: 'well',
+            description: (metadata as any).description || '',
+            title: (metadata as any).title || metadata.name || '',
+            remarks: (metadata as any).remarks || '',
+            createdFor: metadata.createdFor || 'test',
+            createdBy: metadata.createdBy || 'test',
+            createdDate: metadata.createdDate ? new Date(metadata.createdDate) : new Date(),
+            fileLocation: '/homes/public/ed_loader_test/' + metadata.name || '',
+            fileSize: metadata.size || 0,
+            status: 'Raw',
+            ownership: '',
+            interpretedBy: metadata.editedBy || '',
+            interpretedOn: metadata.createdDate ? new Date(metadata.createdDate) : new Date(),
+            approvedBy: '',
+            approvedOn: '',
+            version: '1.0',
+            comment: '',
+            topDepth: 0,
+            topDepthUom: 'm',
+            baseDepth: 0,
+            baseDepthUom: 'm',
+            spudDate: new Date(),
+            completionDate: new Date(),
+            firstFieldFile: 0,
+            lastFieldFile: 0,
+            firstShotPoint: 0,
+            lastShotPoint: 0,
+            firstCDP: 0,
+            lastCDP: 0,
+            firstInline: 0,
+            lastInline: 0,
+            firstXline: 0,
+            lastXline: 0,
+            binSpacing: 0,
+            firstTRC: 0,
+            lastTRC: 0,
+            numberOfTraces: 0,
+            sampleType: 0,
+            sampleRate: 0,
+            sampleRateUom: 0,
+            recordLength: 0,
+            recordLengthUom: 0,
+            recordedBy: metadata.createdBy || '',
+            recordedOn: metadata.createdDate ? new Date(metadata.createdDate) : new Date(),
+            changedBy: metadata.editedBy || '',
+            changedOn: new Date(),
+            deletedAt: new Date('1970-01-01'), // Use epoch date for non-deleted files
+            ids: wellStore.data.well.map(well => well.wellId) // Associated well IDs
+        }));
+
+        const body = {
+            geoFiles: geoFiles
+        };
+        
+        const response = await createBulk(body);
+
+        if (response.success) {
+            // Check if ALL files were created successfully
+            if (response.errorCount === 0) {
+                console.log('✅ All GeoFiles created successfully!');
+                console.log(`Created ${response.successCount} GeoFiles`);
+                console.log('[QC] GeoFile creation completed, proceeding with FTP upload...');
+                // Continue with FTP upload process
+            } 
+            // Check if SOME files were created (partial success)
+            else if (response.successCount > 0) {
+                console.log(`⚠️ Partial success: ${response.successCount}/${response.totalProcessed} GeoFiles created`);
+                console.log('Successful files:', response.results);
+                console.log('Failed files:', response.errors);
+                
+                publishStatus.value = 'error';
+                publishError.value = response.message || `Partial success: ${response.successCount}/${response.totalProcessed} files created`;
+                publishErrorDetails.value = response.errors || [];
+                console.log('[QC] Set error details for partial success:', publishErrorDetails.value);
+                return;
+            } 
+            // Check if NO files were created
+            else {
+                console.log('❌ No GeoFiles were created');
+                console.log('All errors:', response.errors);
+                publishStatus.value = 'error';
+                publishError.value = response.message || 'Failed to create any GeoFiles';
+                publishErrorDetails.value = response.errors || [];
+                console.log('[QC] Set error details for complete failure:', publishErrorDetails.value);
+                return;
+            }
+        } else {
+            console.error('❌ GeoFile bulk creation failed');
+            console.log('Response:', response);
+            publishStatus.value = 'error';
+            publishError.value = response.message || 'Failed to create GeoFiles';
+            publishErrorDetails.value = response.errors || [];
+            console.log('[QC] Set error details for API failure:', publishErrorDetails.value);
+            return;
+        }
+
         // Get all files to upload
         const filesToUpload = Array.from(fileDataMap.value.values());
-        let completedFiles = 0;
         
         console.log(`[QC] Publishing ${filesToUpload.length} files via FTP`);
         
         // Test FTP connection using the configuration from main process
         const ftpStatus = await window.electronAPI.getFtpStatus();
+        console.log('[QC] FTP status:', ftpStatus);
         if (!ftpStatus.configured || !ftpStatus.enabled) {
             publishStatus.value = 'error';
             publishError.value = 'FTP is not configured or enabled';
+            publishErrorDetails.value = [];
             return;
         }
         
         console.log('[QC] FTP is configured and ready');
         
-        // Set up event listeners for FTP transfer
-        window.electronAPI.onFtpTransferStart((file: any) => {
-            console.log(`[QC] FTP transfer started for: ${file.originalName || file.name}`);
-            currentUploadingFile.value = file.originalName || file.name || file.id;
-        });
-        
-        window.electronAPI.onFtpTransferProgress((data: { file: any, progress: any }) => {
-            console.log(`[QC] FTP progress: ${data.progress.percentage}% for ${data.file.originalName || data.file.name}`);
-            const overallProgress = ((completedFiles / filesToUpload.length) * 100) + 
-                                  ((data.progress.percentage / 100) * (100 / filesToUpload.length));
-            publishProgress.value = Math.min(overallProgress, 100);
-        });
-        
-        window.electronAPI.onFtpTransferComplete((data: { file: any, remotePath: string }) => {
-            console.log(`[QC] FTP transfer completed: ${data.remotePath}`);
-            completedFiles++;
-            publishProgress.value = (completedFiles / filesToUpload.length) * 100;
-            
-            if (completedFiles >= filesToUpload.length) {
-                // All files uploaded successfully
-                publishStatus.value = 'completed';
-                console.log('[QC] All files published successfully');
-                
-                // Update workflow: mark publication as completed
-                wellStore.addCompletedStage('publication');
-                console.log('[QC] Publication stage marked as completed');
-                
-                setTimeout(() => {
-                    showPublishModal.value = false;
-                    // Reset states
-                    publishStatus.value = 'uploading';
-                    publishProgress.value = 0;
-                    currentUploadingFile.value = '';
-                }, 2000);
-            }
-        });
-        
-        window.electronAPI.onFtpTransferError((data: { file: any, error: string }) => {
-            console.error(`[QC] FTP transfer error for ${data.file.originalName || data.file.name}:`, data.error);
-            publishStatus.value = 'error';
-            publishError.value = `Failed to upload ${data.file.originalName || data.file.name}: ${data.error}`;
-        });
-        
-        // Upload files to FTP server
+        // Upload files to FTP server (simplified approach)
         console.log('[QC] Starting FTP upload process...');
         
         for (let i = 0; i < filesToUpload.length; i++) {
@@ -844,17 +930,28 @@ const proceedToPublish = async () => {
             currentUploadingFile.value = file.name;
             
             try {
-                // Use the real FTP upload function
+                // Check if file path exists
                 if (!file.path) {
-                    throw new Error(`File path is missing for ${file.name}`);
+                    throw new Error(`File path is missing for ${file.name || 'unknown file'}`);
                 }
-                await window.electronAPI.uploadFile(file.path, file.name);
-                completedFiles++;
-                publishProgress.value = ((completedFiles / filesToUpload.length) * 100);
-                console.log(`[QC] Upload complete for: ${file.name} ${file.path}`);
+                
+                // Simple upload - the main process handles all events automatically
+                const result = await window.electronAPI.uploadFile(file.path, file.name || 'unknown');
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'Upload failed');
+                }
+                
+                // Update progress
+                publishProgress.value = ((i + 1) / filesToUpload.length) * 100;
+                console.log(`[QC] Upload complete for: ${file.name}`);
+                
             } catch (error: any) {
                 console.error(`[QC] Upload failed for ${file.name}:`, error);
-                throw new Error(`Failed to upload ${file.name}: ${error.message || error}`);
+                publishStatus.value = 'error';
+                publishError.value = `Failed to upload ${file.name}: ${error.message || error}`;
+                publishErrorDetails.value = [];
+                return;
             }
         }
         
@@ -868,17 +965,14 @@ const proceedToPublish = async () => {
         console.log('[QC] Publication stage marked as completed');
         
         setTimeout(() => {
-            showPublishModal.value = false;
-            // Reset states
-            publishStatus.value = 'uploading';
-            publishProgress.value = 0;
-            currentUploadingFile.value = '';
+            closePublishModal();
         }, 2000);
         
     } catch (error: any) {
         console.error('[QC] Error during publish process:', error);
         publishStatus.value = 'error';
         publishError.value = error.message || 'Unknown error during publishing';
+        publishErrorDetails.value = [];
     }
 };
 
@@ -894,7 +988,7 @@ const closeApprovalModal = () => {
 
 const approveDataset = () => {
     // console.log('[QC] Approving dataset with comments:', approvalComments.value);
-    wellStore.approveDataset(approvalComments.value);
+    wellStore.approveDataset(approvalComments.value || '');
     // console.log('[QC] Dataset approved, isApproved:', wellStore.data.approval.isApproved);
     // console.log('[QC] Current stage:', wellStore.data.currentStage);
     closeApprovalModal();
@@ -907,6 +1001,16 @@ const approveDataset = () => {
 
 const closeSuccessModal = () => {
     showSuccessModal.value = false;
+};
+
+const closePublishModal = () => {
+    showPublishModal.value = false;
+    // Reset states
+    publishStatus.value = 'uploading';
+    publishProgress.value = 0;
+    currentUploadingFile.value = '';
+    publishError.value = '';
+    publishErrorDetails.value = [];
 };
 
 const rejectDataset = () => {
@@ -1927,6 +2031,52 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.error-details {
+    width: 100%;
+    max-width: 100%;
+    margin: 1.5rem 0;
+    text-align: left;
+}
+
+.error-details-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 1rem 0;
+    text-align: center;
+}
+
+.error-files-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    background: #fef2f2;
+}
+
+.error-file-item {
+    padding: 0.75rem;
+    border-bottom: 1px solid #fecaca;
+}
+
+.error-file-item:last-child {
+    border-bottom: none;
+}
+
+.error-file-name {
+    font-weight: 600;
+    color: #991b1b;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+    word-break: break-all;
+}
+
+.error-file-message {
+    color: #7f1d1d;
+    font-size: 0.8rem;
+    line-height: 1.4;
 }
 
 @media (max-width: 1024px) {
