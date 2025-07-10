@@ -104,10 +104,14 @@
                 v-if="ingestStore.activeTab === 'seismic' && $route.path.startsWith('/ingests/main')">Tools</router-link>
               <button class="px-4 py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors" @click="showSettingsModal = true">Settings</button>
             </div>
-            <div>
+            <div class="flex items-center space-x-2">
               <button v-if="$route.path.startsWith('/ingests/main')" @click="handleSubmitToEdafy"
                 class="bg-brand-500 hover:bg-brand-700 text-white px-4 py-2 rounded-md transition-colors">Submit to
                 EDAFY</button>
+              <button @click="handleLogout"
+                class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">
+                Logout
+              </button>
             </div>
           </div>
         </div>
@@ -185,6 +189,7 @@ import { storeToRefs } from 'pinia';
 import ToolsModal from './ToolsModal.vue';
 import Modal from './Modal.vue';
 import { processAllData } from '../../services/combinedDataService';
+import { useAuth } from '../Composables/useAuth';
 // No need to import the icons as components anymore
 
 const errorMessage = ref('');
@@ -196,6 +201,7 @@ const router = useRouter();
 const route = useRoute();
 const ingestStore = useIngestStore();
 const { dbProcessingData, seismicHasValidationError, wellHasValidationError, othersHasValidationError, OTMData } = storeToRefs(ingestStore);
+const { logout } = useAuth();
 
 const showSettingsModal = ref(false);
 const settingValue = ref('');
@@ -345,6 +351,10 @@ const saveSettings = () => {
   // Here you would typically save the settingValue, e.g., to local storage or a store
   window.electronAPI.setDbName(settingValue.value);
   showSettingsModal.value = false; // Close the modal after saving
+};
+
+const handleLogout = () => {
+  logout();
 };
 </script>
 

@@ -174,7 +174,7 @@
                             </div>
                         </div>
 
-                        <div class="options-section">
+                        <!-- <div class="options-section">
                             <h3>Options</h3>
                             <div class="checkbox-group">
                                 <label class="checkbox-item">
@@ -209,16 +209,7 @@
                                     </label>
                                 </div>
                             </div>
-
-                            <!-- <div class="form-group">
-                                <label>Process Priority</label>
-                                <select v-model="processPriority" class="form-select">
-                                    <option value="normal">Normal</option>
-                                    <option value="high">High</option>
-                                    <option value="low">Low</option>
-                                </select>
-                            </div> -->
-                        </div>
+                        </div> -->
                     </div>
                 </div>
 

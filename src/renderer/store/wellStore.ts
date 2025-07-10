@@ -4,6 +4,8 @@ interface Well{
   wellId: string;
   wellName: string;
   UWI: string;
+  coordx: number;
+  coordy: number;
 }
 
 interface FileData{
@@ -37,7 +39,10 @@ interface Dataset{
     currentStage: WorkflowStage;
     completedStages: WorkflowStage[];
     approval: Approval;
-    CRS: string;
+    CRS: {
+      proj4: string;
+      srid: string;
+    };
 }
 
 interface Metadata {
@@ -75,12 +80,18 @@ export const useWellStore = defineStore('wellData', {
         isApproved: false,
         comments: '',
       },
+      CRS: {
+        proj4: '',
+        srid: '',
+      },
     } as Dataset,
   }),
   
   actions: {
-    setCRS(crs: string) {
-      this.data.CRS = crs;
+    setCRS(crs: { proj4: string, srid: string }) {
+      console.log("crs in wellStore", crs);
+      this.data.CRS.proj4 = crs.proj4;
+      this.data.CRS.srid = crs.srid;
     },
 
     addWellData(data: Well) {

@@ -454,6 +454,9 @@ import { useFileData } from '../../Composables/useFileData';
 import { lasSchema } from '../../../schemas/qc/las';
 import ExtendedFileData from '../../../schemas/ExtendedFileData';
 import { useGeoFile } from '@/Composables/useGeoFile';
+import { useWell } from '@/Composables/useWell';
+import { useUserStore } from '@/store/userStore';
+import { Converter } from '../../../utils/crsConverter';
 
 // Extended interface for DataQC-specific properties
 interface DataQCFileData extends ExtendedFileData {
@@ -472,6 +475,7 @@ const route = useRoute();
 const router = useRouter();
 const wellStore = useWellStore();
 const settingsStore = useSettingsStore();
+const userStore = useUserStore();
 
 // Composables
 const { items: dataTypes, fetch: fetchDataTypes } = useDataType();
@@ -573,8 +577,8 @@ const someFilesChecked = computed(() => {
 
 // Debug computed property to track publishErrorDetails
 const debugErrorDetails = computed(() => {
-    console.log('[QC Debug] publishErrorDetails.value:', publishErrorDetails.value);
-    console.log('[QC Debug] publishErrorDetails.value.length:', publishErrorDetails.value.length);
+    // console.log('[QC Debug] publishErrorDetails.value:', publishErrorDetails.value);
+    // console.log('[QC Debug] publishErrorDetails.value.length:', publishErrorDetails.value.length);
     return publishErrorDetails.value;
 });
 
@@ -721,13 +725,13 @@ const validateFileData = (file: DataQCFileData): ValidationResult => {
         const result = lasSchema.safeParse(validationData);
         
         if (result.success) {
-            console.log('[Validation] File passed validation:', file.name);
+            // console.log('[Validation] File passed validation:', file.name);
             return {
                 isValid: true,
                 errors: []
             };
         } else {
-            console.log('[Validation] File failed validation:', file.name, result.error.issues);
+            // console.log('[Validation] File failed validation:', file.name, result.error.issues);
             return {
                 isValid: false,
                 errors: result.error.issues.map(issue => ({
@@ -755,7 +759,7 @@ const validateFileData = (file: DataQCFileData): ValidationResult => {
 // };
 
 const runValidationForAllFiles = () => {
-    console.log('[QC] Starting quality check validation...');
+    // console.log('[QC] Starting quality check validation...');
 
     wellStore.clearFileValidationResults();
     
@@ -763,14 +767,14 @@ const runValidationForAllFiles = () => {
         const result = validateFileData(file);
         // validationResults.value.set(file.id, result);
         
-        console.log('[QC] File:', file.name, 'Validation Result:', result);
+        // console.log('[QC] File:', file.name, 'Validation Result:', result);
         // Store validation result in wellStore
         wellStore.updateFileValidationResult(file.id, result);
     });
 };
 
 const proceedToQualityCheck = async () => {
-    console.log('[QC] Starting quality check process...');
+    // console.log('[QC] Starting quality check process...');
     
     try {
         // Run validation for all files
@@ -782,12 +786,12 @@ const proceedToQualityCheck = async () => {
         // Advance workflow to approval stage and mark quality-check as completed
         wellStore.advanceWorkflow('approval', 'quality-check');
         
-        console.log('[QC] Stage updated to approval, completed stages:', wellStore.data.completedStages);
+        // console.log('[QC] Stage updated to approval, completed stages:', wellStore.data.completedStages);
         
         // Navigate to approval page
         // router.push('/data-approval');
     } catch (error) {
-        console.error('[QC] Error during quality check:', error);
+        // console.error('[QC] Error during quality check:', error);
     }
 };
 
@@ -801,6 +805,10 @@ const proceedToPublish = async () => {
         publishErrorDetails.value = [];
         
         const { createBulk } = useGeoFile();
+        const { update: updateWell, getById } = useWell();
+        const user = userStore.getUser;
+
+        // const wellsToUpdate = [];
         
         // Create geoFiles array according to the expected structure
         const geoFiles = wellStore.data.wellMetadatas.map(metadata => ({
@@ -814,7 +822,7 @@ const proceedToPublish = async () => {
             title: (metadata as any).title || metadata.name || '',
             remarks: (metadata as any).remarks || '',
             createdFor: metadata.createdFor || 'test',
-            createdBy: metadata.createdBy || 'test',
+            createdBy: user.data?.name,
             createdDate: metadata.createdDate ? new Date(metadata.createdDate) : new Date(),
             fileLocation: '/homes/public/ed_loader_test/' + metadata.name || '',
             fileSize: metadata.size || 0,
@@ -822,8 +830,8 @@ const proceedToPublish = async () => {
             ownership: '',
             interpretedBy: metadata.editedBy || '',
             interpretedOn: metadata.createdDate ? new Date(metadata.createdDate) : new Date(),
-            approvedBy: '',
-            approvedOn: '',
+            approvedBy: user.data?.name,
+            approvedOn: new Date(),
             version: '1.0',
             comment: '',
             topDepth: 0,
@@ -832,31 +840,34 @@ const proceedToPublish = async () => {
             baseDepthUom: 'm',
             spudDate: new Date(),
             completionDate: new Date(),
-            firstFieldFile: 0,
-            lastFieldFile: 0,
-            firstShotPoint: 0,
-            lastShotPoint: 0,
-            firstCDP: 0,
-            lastCDP: 0,
-            firstInline: 0,
-            lastInline: 0,
-            firstXline: 0,
-            lastXline: 0,
-            binSpacing: 0,
-            firstTRC: 0,
-            lastTRC: 0,
-            numberOfTraces: 0,
-            sampleType: 0,
-            sampleRate: 0,
-            sampleRateUom: 0,
-            recordLength: 0,
-            recordLengthUom: 0,
-            recordedBy: metadata.createdBy || '',
-            recordedOn: metadata.createdDate ? new Date(metadata.createdDate) : new Date(),
-            changedBy: metadata.editedBy || '',
-            changedOn: new Date(),
-            deletedAt: new Date('1970-01-01'), // Use epoch date for non-deleted files
-            ids: wellStore.data.well.map(well => well.wellId) // Associated well IDs
+            // firstFieldFile: 0,
+            // lastFieldFile: 0,
+            // firstShotPoint: 0,
+            // lastShotPoint: 0,
+            // firstCDP: 0,
+            // lastCDP: 0,
+            // firstInline: 0,
+            // lastInline: 0,
+            // firstXline: 0,
+            // lastXline: 0,
+            // binSpacing: 0,
+            // firstTRC: 0,
+            // lastTRC: 0,
+            // numberOfTraces: 0,
+            // sampleType: 0,
+            // sampleRate: 0,
+            // sampleRateUom: 0,
+            // recordLength: 0,
+            // recordLengthUom: 0,
+            recordedBy: user.data?.name,
+            recordedOn: new Date(),
+            changedBy: null,
+            changedOn: null,
+            ids: wellStore.data.well.map(well => well.wellId), // Associated well IDs,
+            // well: {
+            //     latitude: 0,
+            //     longitude: 0
+            // }
         }));
 
         const body = {
@@ -867,52 +878,77 @@ const proceedToPublish = async () => {
 
         if (response.success) {
             // Check if ALL files were created successfully
-            if (response.errorCount === 0) {
-                console.log('✅ All GeoFiles created successfully!');
-                console.log(`Created ${response.successCount} GeoFiles`);
-                console.log('[QC] GeoFile creation completed, proceeding with FTP upload...');
-                // Continue with FTP upload process
-            } 
+            // if (response.errorCount === 0) {
+            //     // console.log('✅ All GeoFiles created successfully!');
+            //     // console.log(`Created ${response.successCount} GeoFiles`);
+            //     // console.log('[QC] GeoFile creation completed, proceeding with FTP upload...');
+            //     // Continue with FTP upload process
+            // } 
             // Check if SOME files were created (partial success)
-            else if (response.successCount > 0) {
-                console.log(`⚠️ Partial success: ${response.successCount}/${response.totalProcessed} GeoFiles created`);
-                console.log('Successful files:', response.results);
-                console.log('Failed files:', response.errors);
+            if (response.successCount > 0) {
+                // console.log(`⚠️ Partial success: ${response.successCount}/${response.totalProcessed} GeoFiles created`);
+                // console.log('Successful files:', response.results);
+                // console.log('Failed files:', response.errors);
                 
                 publishStatus.value = 'error';
                 publishError.value = response.message || `Partial success: ${response.successCount}/${response.totalProcessed} files created`;
                 publishErrorDetails.value = response.errors || [];
-                console.log('[QC] Set error details for partial success:', publishErrorDetails.value);
+                // console.log('[QC] Set error details for partial success:', publishErrorDetails.value);
                 return;
             } 
             // Check if NO files were created
-            else {
-                console.log('❌ No GeoFiles were created');
-                console.log('All errors:', response.errors);
-                publishStatus.value = 'error';
-                publishError.value = response.message || 'Failed to create any GeoFiles';
-                publishErrorDetails.value = response.errors || [];
-                console.log('[QC] Set error details for complete failure:', publishErrorDetails.value);
-                return;
-            }
+            // else {
+            //     // console.log('❌ No GeoFiles were created');
+            //     // console.log('All errors:', response.errors);
+            //     publishStatus.value = 'error';
+            //     publishError.value = response.message || 'Failed to create any GeoFiles';
+            //     publishErrorDetails.value = response.errors || [];
+            //     // console.log('[QC] Set error details for complete failure:', publishErrorDetails.value);
+            //     return;
+            // }
         } else {
-            console.error('❌ GeoFile bulk creation failed');
-            console.log('Response:', response);
+            // console.error('❌ GeoFile bulk creation failed');
+            // console.log('Response:', response);
             publishStatus.value = 'error';
             publishError.value = response.message || 'Failed to create GeoFiles';
             publishErrorDetails.value = response.errors || [];
-            console.log('[QC] Set error details for API failure:', publishErrorDetails.value);
+            // console.log('[QC] Set error details for API failure:', publishErrorDetails.value);
             return;
+        }
+
+        if(wellStore.data.CRS.srid && wellStore.data.CRS.proj4) {
+            for(const well of wellStore.data.well) {
+                try {
+                    const customParams = {
+                        epsgCode: wellStore.data.CRS.srid,
+                        projDefinition: wellStore.data.CRS.proj4,
+                        coordinates: [well.coordx, well.coordy] as [number, number]
+                    };
+                    
+                    const wgs84Coords = Converter.convertCustomToWgs84(customParams);
+
+                    await updateWell(well.wellId, {
+                        latitude: wgs84Coords[0],
+                        longitude: wgs84Coords[1]
+                    });
+
+                    const wellByID = await getById(well.wellId);
+                    console.log("[QC] wellByID", wellByID);
+                    
+                } catch (error) {
+                    console.error('[CRS] Coordinate conversion error:', error);
+                }
+            }
         }
 
         // Get all files to upload
         const filesToUpload = Array.from(fileDataMap.value.values());
         
-        console.log(`[QC] Publishing ${filesToUpload.length} files via FTP`);
+        // console.log(`[QC] Publishing ${filesToUpload.length} files via FTP`);
         
         // Test FTP connection using the configuration from main process
         const ftpStatus = await window.electronAPI.getFtpStatus();
-        console.log('[QC] FTP status:', ftpStatus);
+        // console.log('[QC] FTP status:', ftpStatus);
         if (!ftpStatus.configured || !ftpStatus.enabled) {
             publishStatus.value = 'error';
             publishError.value = 'FTP is not configured or enabled';
@@ -920,10 +956,10 @@ const proceedToPublish = async () => {
             return;
         }
         
-        console.log('[QC] FTP is configured and ready');
+        // console.log('[QC] FTP is configured and ready');
         
         // Upload files to FTP server (simplified approach)
-        console.log('[QC] Starting FTP upload process...');
+        // console.log('[QC] Starting FTP upload process...');
         
         for (let i = 0; i < filesToUpload.length; i++) {
             const file = filesToUpload[i];
@@ -944,10 +980,10 @@ const proceedToPublish = async () => {
                 
                 // Update progress
                 publishProgress.value = ((i + 1) / filesToUpload.length) * 100;
-                console.log(`[QC] Upload complete for: ${file.name}`);
+                // console.log(`[QC] Upload complete for: ${file.name}`);
                 
             } catch (error: any) {
-                console.error(`[QC] Upload failed for ${file.name}:`, error);
+                // console.error(`[QC] Upload failed for ${file.name}:`, error);
                 publishStatus.value = 'error';
                 publishError.value = `Failed to upload ${file.name}: ${error.message || error}`;
                 publishErrorDetails.value = [];
@@ -958,18 +994,18 @@ const proceedToPublish = async () => {
         // Mark as completed
         publishStatus.value = 'completed';
         publishProgress.value = 100;
-        console.log('[QC] All files published successfully');
+        // console.log('[QC] All files published successfully');
         
         // Update workflow: mark publication as completed
         wellStore.addCompletedStage('publication');
-        console.log('[QC] Publication stage marked as completed');
+        // console.log('[QC] Publication stage marked as completed');
         
         setTimeout(() => {
             closePublishModal();
         }, 2000);
         
     } catch (error: any) {
-        console.error('[QC] Error during publish process:', error);
+        // console.error('[QC] Error during publish process:', error);
         publishStatus.value = 'error';
         publishError.value = error.message || 'Unknown error during publishing';
         publishErrorDetails.value = [];
@@ -1014,10 +1050,10 @@ const closePublishModal = () => {
 };
 
 const rejectDataset = () => {
-    console.log('[QC] Rejecting dataset...');
+    // console.log('[QC] Rejecting dataset...');
     wellStore.rejectDataset();
-    console.log('[QC] Dataset rejected, isApproved:', wellStore.data.approval.isApproved);
-    console.log('[QC] Current stage:', wellStore.data.currentStage);
+    // console.log('[QC] Dataset rejected, isApproved:', wellStore.data.approval.isApproved);
+    // console.log('[QC] Current stage:', wellStore.data.currentStage);
 };
 
 // const toggleSelectAllFiles = () => {

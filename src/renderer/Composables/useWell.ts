@@ -23,6 +23,11 @@ export const useWell = () => {
             throw error; // Re-throw the error so calling code can handle it
         }
     };
+
+    const update = async (wellId: string, data: any) => {
+        const result = await apiService.put('well', wellId, data);
+        return result;
+    };
     
     const getWellMetadata = async (wellId: string) => {
         const loading = ref(false);
@@ -166,6 +171,7 @@ export const useWell = () => {
     return {
         ...baseCrud,
         // Override fetch if needed
+        update,
         fetch: customFetch,
         getWellMetadata,
         getWellsByLocation,

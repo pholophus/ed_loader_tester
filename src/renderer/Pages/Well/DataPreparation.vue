@@ -825,7 +825,9 @@ const selectWell = (well: any) => {
     wellStore.addWellData({
         wellId: well._id,
         wellName: well.name || well.UWI || well.wellboreId || `Well ${well._id}`,
-        UWI: well.UWI || ''
+        UWI: well.UWI || '',
+        coordx: well.latitude,
+        coordy: well.longitude,
     });
 };
 
@@ -865,9 +867,21 @@ const selectCrs = (crsItem: any) => {
     selectedCrsId.value = crsItem._id;
     crsSearchQuery.value = crsItem.name || crsItem.code || `CRS ${crsItem._id}`;
     showCrsDropdown.value = false;
+
+    // console.log("crsItem chosen", crsItem);
+
+    // console.log("crsItem.proj4", crsItem.proj4);
+    // console.log("crsItem.srid", crsItem.srid);
     
     // Store selected CRS data if needed
-    // wellStore.setCrsData(crsItem);
+    wellStore.setCRS({
+        proj4: crsItem.proj4,
+        srid: crsItem.srid
+    });
+
+    // console.log("wellStore.data.CRS", wellStore.data.CRS);
+    // console.log("wellStore.data.CRS.proj4", wellStore.data.CRS.proj4);
+    // console.log("wellStore.data.CRS.srid", wellStore.data.CRS.srid);
 };
 
 const hideCrsDropdown = () => {
@@ -938,7 +952,7 @@ const prepareDataset = () => {
     // Advance workflow to loading stage and mark preparation as completed
     wellStore.advanceWorkflow('loading', 'preparation');
 
-    wellStore.setCRS(selectedCrsId.value);
+    // wellStore.setCRS(selectedCrsId.value);
     
     // Navigate to DataQC page with form data
     router.push({

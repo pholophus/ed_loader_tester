@@ -14,14 +14,44 @@ The migration is designed to be **gradual** and **non-breaking**, allowing you t
 
 1. **`src/services/apiService.ts`** - Base API service for HTTP requests
 2. **`src/renderer/Composables/useApi.ts`** - Vue composable (replacement for useMongo)
-3. **`src/examples/apiServiceUsage.ts`** - Usage examples
+3. **`src/config/api.ts`** - API configuration with environment variable support
+4. **`src/examples/apiServiceUsage.ts`** - Usage examples
 
 ## API Base Configuration
 
-- **Base URL**: `http://localhost:3000/api`
-- **Endpoint Structure**: `http://localhost:3000/api/{endpoint}`
+The API base URL is now configurable through the configuration file:
 
-Example:
+- **Configuration File**: `src/config/api.ts`
+- **Default**: `http://localhost:3000/api`
+
+### Setting Custom API URL
+
+Edit the `src/config/api.ts` file:
+
+```typescript
+export const apiConfig: ApiConfig = {
+  baseUrl: 'http://localhost:3000/api',  // Change this URL
+  timeout: 30000
+};
+```
+
+For production:
+
+```typescript
+export const apiConfig: ApiConfig = {
+  baseUrl: 'https://api.yourapp.com/v1',  // Production URL
+  timeout: 60000
+};
+```
+
+### Endpoint Structure
+
+All endpoints are relative to the configured base URL:
+- Countries: `{BASE_URL}/countries`
+- Users: `{BASE_URL}/users`
+- Projects: `{BASE_URL}/projects`
+
+Example with default configuration:
 - Countries: `http://localhost:3000/api/countries`
 - Users: `http://localhost:3000/api/users`
 - Projects: `http://localhost:3000/api/projects`
@@ -32,6 +62,9 @@ Example:
 
 ```typescript
 import { apiService } from '@/services/apiService';
+import { getApiUrl, API_BASE_URL } from '@/config/api';
+
+console.log('Using API Base URL:', API_BASE_URL);
 
 // GET all countries
 const result = await apiService.get('countries');
@@ -47,6 +80,9 @@ const updated = await apiService.put('countries', 'id123', { name: 'Updated' });
 
 // DELETE by ID
 const deleted = await apiService.delete('countries', 'id123');
+
+// Direct URL construction for custom endpoints
+const customUrl = getApiUrl('custom/endpoint');
 ```
 
 ### 2. Vue Composable Usage
@@ -58,8 +94,8 @@ import { useApi } from '@/composables/useApi';
 const { items, loading, error, fetch, insert, update, remove } = useApi('countries');
 
 // Load data
-await fetch(); // GET /api/countries
-await fetch({ active: true }); // GET /api/countries?active=true
+await fetch(); // GET {BASE_URL}/countries
+await fetch({ active: true }); // GET {BASE_URL}/countries?active=true
 
 // Create
 const newCountry = await insert({ name: 'New Country' });
@@ -73,7 +109,13 @@ await remove({ _id: 'id123' });
 
 ## Migration Strategy
 
-### Step 1: Identify Collections to Migrate
+### Step 1: Configure Your API URL
+
+1. Open `src/config/api.ts`
+2. Update the `baseUrl` in `apiConfig` to your API server URL
+3. Optionally adjust the `timeout` value
+
+### Step 2: Identify Collections to Migrate
 
 List all places where you currently use `useMongo`:
 
@@ -84,7 +126,7 @@ const { items, fetch, insert } = useMongo('users');
 const { items, fetch, insert } = useMongo('projects');
 ```
 
-### Step 2: Replace One Collection at a Time
+### Step 3: Replace One Collection at a Time
 
 **BEFORE:**
 ```typescript
@@ -100,7 +142,7 @@ import { useApi } from '@/composables/useApi';
 const { items: countries, fetch: fetchCountries } = useApi('countries');
 ```
 
-### Step 3: Test Each Migration
+### Step 4: Test Each Migration
 
 1. Replace `useMongo` with `useApi` for one collection
 2. Test all CRUD operations
@@ -109,24 +151,24 @@ const { items: countries, fetch: fetchCountries } = useApi('countries');
 
 ## API Endpoints Expected
 
-Your backend API should support these endpoints:
+Your backend API should support these endpoints relative to your configured base URL:
 
 ### Basic CRUD
 ```
-GET    /api/{collection}              # Find documents
-GET    /api/{collection}/:id          # Get by ID
-POST   /api/{collection}              # Create document
-PUT    /api/{collection}/:id          # Update by ID
-DELETE /api/{collection}/:id          # Delete by ID
+GET    {BASE_URL}/{collection}              # Find documents
+GET    {BASE_URL}/{collection}/:id          # Get by ID
+POST   {BASE_URL}/{collection}              # Create document
+PUT    {BASE_URL}/{collection}/:id          # Update by ID
+DELETE {BASE_URL}/{collection}/:id          # Delete by ID
 ```
 
 ### Advanced Operations
 ```
-POST   /api/{collection}/bulk         # Insert multiple
-POST   /api/{collection}/update       # Update with filter
-POST   /api/{collection}/upsert       # Upsert operation
-POST   /api/{collection}/aggregate    # Aggregation
-POST   /api/{collection}/count        # Count documents
+POST   {BASE_URL}/{collection}/bulk         # Insert multiple
+POST   {BASE_URL}/{collection}/update       # Update with filter
+POST   {BASE_URL}/{collection}/upsert       # Upsert operation
+POST   {BASE_URL}/{collection}/aggregate    # Aggregation
+POST   {BASE_URL}/{collection}/count        # Count documents
 ```
 
 ### Expected Request/Response Format
@@ -211,14 +253,52 @@ const addCountry = async (countryData) => {
 
 ## Configuration Options
 
-### Changing Base URL
+### Basic Configuration
+
+Edit `src/config/api.ts` to change the API settings:
+
+```typescript
+export const apiConfig: ApiConfig = {
+  baseUrl: 'http://localhost:3000/api',  // Your API URL
+  timeout: 30000                         // Request timeout in ms
+};
+```
+
+### Environment-specific Configuration
+
+You can add environment-specific logic in the config file:
+
+```typescript
+export const apiConfig: ApiConfig = {
+  baseUrl: process.env.NODE_ENV === 'production' 
+    ? 'https://api.yourapp.com/v1'
+    : 'http://localhost:3000/api',
+  timeout: 30000
+};
+```
+
+### Programmatic Configuration
+
+```typescript
+import { apiConfig, getApiUrl, API_BASE_URL } from '@/config/api';
+
+// Get current configuration
+console.log('Base URL:', API_BASE_URL);
+console.log('Timeout:', apiConfig.timeout);
+
+// Build custom URLs
+const customEndpoint = getApiUrl('custom/endpoint');
+console.log('Custom URL:', customEndpoint);
+```
+
+### Creating Custom API Service Instance
 
 ```typescript
 import { ApiService } from '@/services/apiService';
 
-// Create custom instance with different base URL
+// Create custom instance with different configuration
 const customApiService = new ApiService({
-  baseUrl: 'https://api.yourdomain.com/v1',
+  baseUrl: 'https://api.yourdomain.com/v2',
   timeout: 60000,
   headers: {
     'Authorization': 'Bearer your-token'
@@ -226,14 +306,30 @@ const customApiService = new ApiService({
 });
 ```
 
-### Environment-based Configuration
+## Configuration Examples
 
+### Development Configuration
 ```typescript
-const apiService = new ApiService({
-  baseUrl: process.env.NODE_ENV === 'production' 
-    ? 'https://api.yourapp.com' 
-    : 'http://localhost:3000/api'
-});
+export const apiConfig: ApiConfig = {
+  baseUrl: 'http://localhost:3000/api',
+  timeout: 30000
+};
+```
+
+### Production Configuration
+```typescript
+export const apiConfig: ApiConfig = {
+  baseUrl: 'https://api.yourapp.com/v1',
+  timeout: 60000
+};
+```
+
+### Testing Configuration
+```typescript
+export const apiConfig: ApiConfig = {
+  baseUrl: 'http://localhost:4000/api',
+  timeout: 15000
+};
 ```
 
 ## Error Handling
@@ -241,6 +337,8 @@ const apiService = new ApiService({
 The API service provides consistent error handling:
 
 ```typescript
+import { apiService } from '@/services/apiService';
+
 const result = await apiService.get('countries');
 
 if (result.success) {
@@ -254,33 +352,39 @@ if (result.success) {
 
 1. **Gradual Migration** - Migrate one collection at a time
 2. **Same Interface** - No changes to component logic
-3. **Better Architecture** - Separation of concerns
-4. **Scalability** - API can handle caching, rate limiting, etc.
-5. **Security** - No direct database access from frontend
-6. **Flexibility** - Easy to switch between different data sources
+3. **Configurable** - Easy environment-specific configuration
+4. **Better Architecture** - Separation of concerns
+5. **Scalability** - API can handle caching, rate limiting, etc.
+6. **Security** - No direct database access from frontend
+7. **Flexibility** - Easy to switch between different API servers
 
 ## Next Steps
 
-1. Set up your backend API with the expected endpoints
-2. Test the API service with a simple collection first
-3. Start migrating collections one by one
-4. Update error handling and loading states as needed
-5. Eventually remove the MongoDB direct connection code
+1. Update `src/config/api.ts` with your correct API base URL
+2. Set up your backend API with the expected endpoints
+3. Test the API service with a simple collection first
+4. Start migrating collections one by one
+5. Update error handling and loading states as needed
+6. Eventually remove the MongoDB direct connection code
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **CORS errors** - Ensure your API server allows requests from your frontend
-2. **Network timeouts** - Adjust timeout in ApiService configuration
-3. **Response format** - Ensure your API returns the expected JSON format
-4. **Query parameters** - Complex objects are JSON.stringify'd automatically
+2. **Network timeouts** - Adjust `timeout` in `src/config/api.ts`
+3. **Wrong API URL** - Check your `baseUrl` in `src/config/api.ts`
+4. **Response format** - Ensure your API returns the expected JSON format
+5. **Query parameters** - Complex objects are JSON.stringify'd automatically
 
 ### Debug Mode
 
-Enable console logging to see all API requests:
+Enable console logging to see all API requests and current configuration:
 
 ```typescript
+import { API_BASE_URL } from '@/config/api';
+
+console.log('Current API Base URL:', API_BASE_URL);
 // The composable already includes detailed logging
 // Check browser console for request/response details
 ``` 
