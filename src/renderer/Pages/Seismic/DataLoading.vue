@@ -168,20 +168,20 @@
                             <div v-if="activeTab === 'metadata'" class="metadata-form">
                                 <div class="metadata-header">
                                     <div></div>
-                                    <div class="metadata-actions">
+                                    <!-- <div class="metadata-actions">
                                         <button class="btn btn-primary" @click="updateMetadata">Update</button>
                                         <button class="btn btn-secondary" @click="resetFileName">Reset</button>
-                                    </div>
+                                    </div> -->
                                 </div>
                                 
                                 <div class="form-group">
                                     <label>Edited By</label>
-                                    <span class="form-value">{{ selectedFile.editedBy }}</span>
+                                    <span class="form-value">{{ userStore.user?.data.name }}</span>
                                 </div>
                                 
                                 <div class="form-group">
                                     <label>Created By</label>
-                                    <span class="form-value">{{ selectedFile.createdBy }}</span>
+                                    <span class="form-value">{{ userStore.user?.data.name }}</span>
                                 </div>
 
                                 <div class="form-group">
@@ -453,6 +453,7 @@ import {
     isSegyFile,
     type SegyPreviewData
 } from '../../../services/segyService';
+import { useUserStore } from '../../store/userStore';
 
 // Extended interface for seismic data loading with additional properties
 interface SeismicDataLoadingFileData extends ExtendedFileData {
@@ -502,6 +503,7 @@ interface SeismicDataLoadingFileData extends ExtendedFileData {
 const router = useRouter();
 // const fileStore = useFileStore();
 const seismicStore = useSeismicStore();
+const userStore = useUserStore();
 
 // Composables
 const { items: dataTypes, fetch: fetchDataTypes } = useDataType();
@@ -718,6 +720,7 @@ const toggleAllFiles = (event: Event) => {
 };
 
 const proceedToQualityCheck = () => {
+    
     // First, save any pending changes to the currently selected file
     if (selectedFile.value && editableFileName.value !== selectedFile.value.targetFileName) {
         updateMetadata();
@@ -1111,7 +1114,7 @@ const performManualExtraction = async () => {
                 console.log(`[DataLoading] Processing file: ${file.name}`);
                 
                 // Make POST request to the Flask API
-                const response = await fetch('http://localhost:5000/api/segy_manual_read', {
+                const response = await fetch('http://localhost:5001/api/segy_manual_read', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1277,7 +1280,7 @@ const performAutomaticExtraction = async () => {
             console.log(`[DataLoading] Auto-extracting from file: ${file.name}`);
             
             // Make POST request to the Flask API
-            const response = await fetch('http://localhost:5000/api/segy_manual_read', {
+            const response = await fetch('http://localhost:5001/api/segy_manual_read', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

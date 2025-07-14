@@ -10,12 +10,12 @@
           <h1 class="text-base font-semibold">ED Loader App</h1>
         </div>
         <div class="flex items-center space-x-2 pr-2">
-          <Button variant="ghost" size="sm">
+          <!-- <Button variant="ghost" size="sm">
             Settings
           </Button>
           <Button variant="outline" size="sm">
             Help
-          </Button>
+          </Button> -->
           <Button 
             v-if="isAuthenticated" 
             variant="destructive" 

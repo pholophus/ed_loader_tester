@@ -62,17 +62,35 @@ interface Metadata {
     xl_byte_position?: number;
 }
 
+interface SurveyCornerPoints {
+    inline: number;
+    xline: number;
+    latitude: number;
+    longitude: number;
+}
+
 interface Dataset {
     survey: Survey;
-    line: Line[];
+
+    //used when uploading file for existing surveys
+    lines: Line[];
+
     hasDoneQC: boolean;
     currentStage: WorkflowStage;
     completedStages: WorkflowStage[];
     approval: Approval;
+
+    //used when uploading new seismic
     seismicMetadatas: Metadata[];
+    
     isForCreatingNewSeismic: boolean;
     isForUploadingFileForExistingSeismic: boolean;
-    CRS: string;
+    CRS: {
+        proj4: string;
+        srid: string;
+    };
+    surveyCornerPoints?: SurveyCornerPoints[];
+    uploadOption: 'new' | 'existing';
 }
 
 interface FileData {
@@ -96,7 +114,7 @@ export const useSeismicStore = defineStore('seismicData', {
     state: () => ({
         data: {
             survey: {} as Survey,
-            line: [] as Line[],
+            lines: [] as Line[],
             hasDoneQC: false,
             currentStage: 'preparation' as WorkflowStage,
             completedStages: [] as WorkflowStage[],
@@ -107,11 +125,12 @@ export const useSeismicStore = defineStore('seismicData', {
             seismicMetadatas: [] as Metadata[],
             isForCreatingNewSeismic: false,
             isForUploadingFileForExistingSeismic: false,
+            uploadOption: 'new',
         } as Dataset,
     }),
 
     actions: {
-        setCRS(crs: string) {
+        setCRS(crs: { proj4: string, srid: string }) {
             this.data.CRS = crs;
         },
 
@@ -119,16 +138,20 @@ export const useSeismicStore = defineStore('seismicData', {
             this.data.survey = data;
         },
 
+        setSurveyCornerPoints(data: SurveyCornerPoints[]) {
+            this.data.surveyCornerPoints = data;
+        },
+
         removeSurveyData(surveyId: string) {
             this.data.survey = {} as Survey;
         },
 
         addLineData(data: Line) {
-            this.data.line.push(data);
+            this.data.lines.push(data);
         },
 
         removeLineData(lineId: string) {
-            this.data.line = this.data.line.filter(line => line.metadata.find(m => m.id === lineId));
+            this.data.lines = this.data.lines.filter(line => line.metadata.find(m => m.id === lineId));
         },
         
         setSelectedFiles(files: FileData[]) {
@@ -256,6 +279,7 @@ export const useSeismicStore = defineStore('seismicData', {
         },
 
         setUploadOption(option: 'new' | 'existing') {
+            this.data.uploadOption = option;
             if (option === 'new') {
                 this.data.isForCreatingNewSeismic = true;
                 this.data.isForUploadingFileForExistingSeismic = false;

@@ -2,6 +2,7 @@ from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
 from seismic_viewer import get_seismic_data, get_ebcdic_header, get_file_metadata
 from segy_manual_extractor import read_segy_file
+from proj4_converter import convert_multiple_segy_files_to_wgs84, convert_segy_coordinates_to_wgs84
 import logging
 import os
 
@@ -138,6 +139,232 @@ def serve_manual_segy_read():
     app.logger.debug("Successfully processed SEGY file with manual extraction")
     return jsonify(result)
 
+@app.route('/api/convert_coordinates', methods=['POST'])
+def serve_coordinate_conversion():
+    """
+    API endpoint to convert srcx/srcy coordinates from SEG-Y files to WGS84.
+    
+    POST Request body (JSON):
+    {
+        "segy_files": ["path/to/file1.sgy", "path/to/file2.sgy"],
+        "srid": 2000,
+        "proj4": "+proj=tmerc +lat_0=0 +lon_0=-62 +k=0.9995000000000001 +x_0=400000 +y_0=0 +ellps=GRS80 +units=m +no_defs",
+        "byte_header_x": 73,
+        "byte_header_y": 77,
+        "sample_interval": 10
+    }
+    
+    Returns:
+    {
+        "status": "success",
+        "results": {
+            "filename1.sgy": {
+                "filename": "filename1.sgy",
+                "original_coordinates": [[x1, y1], [x2, y2], ...],
+                "converted_coordinates": [[lon1, lat1], [lon2, lat2], ...],
+                "count": 10,
+                "byte_header_x": 73,
+                "byte_header_y": 77,
+                "sample_interval": 10
+            },
+            "filename2.sgy": {
+                "error": "Error message if any"
+            }
+        },
+        "summary": {
+            "total_files": 2,
+            "successful_conversions": 1,
+            "total_coordinates": 10,
+            "byte_header_x": 73,
+            "byte_header_y": 77,
+            "sample_interval": 10
+        }
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        
+        # Extract parameters from request
+        segy_files = data.get('segy_files', [])
+        srid = data.get('srid', 2000)
+        proj4_string = data.get('proj4', "+proj=tmerc +lat_0=0 +lon_0=-62 +k=0.9995000000000001 +x_0=400000 +y_0=0 +ellps=GRS80 +units=m +no_defs")
+        byte_header_x = data.get('byte_header_x', None)
+        byte_header_y = data.get('byte_header_y', None)
+        sample_interval = data.get('sample_interval', 10)
+        
+        # Validate input
+        if not segy_files:
+            return jsonify({'error': 'segy_files array is required and cannot be empty'}), 400
+        
+        if not isinstance(segy_files, list):
+            return jsonify({'error': 'segy_files must be an array'}), 400
+        
+        if not isinstance(srid, int):
+            return jsonify({'error': 'srid must be an integer'}), 400
+        
+        if not isinstance(proj4_string, str):
+            return jsonify({'error': 'proj4 must be a string'}), 400
+        
+        # Validate byte headers if provided
+        if byte_header_x is not None and not isinstance(byte_header_x, int):
+            return jsonify({'error': 'byte_header_x must be an integer'}), 400
+        
+        if byte_header_y is not None and not isinstance(byte_header_y, int):
+            return jsonify({'error': 'byte_header_y must be an integer'}), 400
+        
+        # Both byte headers should be provided together or both should be None
+        if (byte_header_x is not None and byte_header_y is None) or (byte_header_x is None and byte_header_y is not None):
+            return jsonify({'error': 'Both byte_header_x and byte_header_y must be provided together'}), 400
+        
+        # Validate sample_interval
+        if not isinstance(sample_interval, int) or sample_interval < 1:
+            return jsonify({'error': 'sample_interval must be a positive integer'}), 400
+        
+        app.logger.debug(f"Converting coordinates for {len(segy_files)} SEG-Y files")
+        app.logger.debug(f"SRID: {srid}")
+        app.logger.debug(f"Proj4 string: {proj4_string}")
+        app.logger.debug(f"Byte headers: X={byte_header_x}, Y={byte_header_y}")
+        app.logger.debug(f"Sample interval: {sample_interval}")
+        
+        # Convert coordinates using the proj4_converter
+        results = convert_multiple_segy_files_to_wgs84(segy_files, srid, proj4_string, byte_header_x, byte_header_y, sample_interval)
+        
+        # Calculate summary statistics
+        total_files = len(segy_files)
+        successful_conversions = 0
+        total_coordinates = 0
+        
+        for filename, result in results.items():
+            if 'error' not in result:
+                successful_conversions += 1
+                total_coordinates += result.get('count', 0)
+        
+        # Prepare response
+        response = {
+            'status': 'success',
+            'results': results,
+            'summary': {
+                'total_files': total_files,
+                'successful_conversions': successful_conversions,
+                'failed_conversions': total_files - successful_conversions,
+                'total_coordinates': total_coordinates,
+                'srid': srid,
+                'proj4_string': proj4_string,
+                'byte_header_x': byte_header_x,
+                'byte_header_y': byte_header_y,
+                'sample_interval': sample_interval
+            }
+        }
+        
+        app.logger.debug(f"Successfully converted coordinates for {successful_conversions}/{total_files} files")
+        return jsonify(response)
+        
+    except Exception as e:
+        app.logger.error(f"Error in coordinate conversion: {str(e)}")
+        return jsonify({
+            'error': f'Internal server error: {str(e)}',
+            'status': 'error'
+        }), 500
+
+@app.route('/api/convert_single_file', methods=['POST'])
+def serve_single_file_conversion():
+    """
+    API endpoint to convert srcx/srcy coordinates from a single SEG-Y file to WGS84.
+    
+    POST Request body (JSON):
+    {
+        "file_path": "path/to/file.sgy",
+        "srid": 2000,
+        "proj4": "+proj=tmerc +lat_0=0 +lon_0=-62 +k=0.9995000000000001 +x_0=400000 +y_0=0 +ellps=GRS80 +units=m +no_defs",
+        "byte_header_x": 73,
+        "byte_header_y": 77,
+        "sample_interval": 10
+    }
+    
+    Returns:
+    {
+        "status": "success",
+        "filename": "filename.sgy",
+        "original_coordinates": [[x1, y1], [x2, y2], ...],
+        "converted_coordinates": [[lon1, lat1], [lon2, lat2], ...],
+        "count": 10,
+        "byte_header_x": 73,
+        "byte_header_y": 77,
+        "sample_interval": 10
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        
+        # Extract parameters from request
+        file_path = data.get('file_path')
+        srid = data.get('srid', 2000)
+        proj4_string = data.get('proj4', "+proj=tmerc +lat_0=0 +lon_0=-62 +k=0.9995000000000001 +x_0=400000 +y_0=0 +ellps=GRS80 +units=m +no_defs")
+        byte_header_x = data.get('byte_header_x', None)
+        byte_header_y = data.get('byte_header_y', None)
+        sample_interval = data.get('sample_interval', 10)
+        
+        # Validate input
+        if not file_path:
+            return jsonify({'error': 'file_path is required'}), 400
+        
+        if not isinstance(file_path, str):
+            return jsonify({'error': 'file_path must be a string'}), 400
+        
+        if not isinstance(srid, int):
+            return jsonify({'error': 'srid must be an integer'}), 400
+        
+        if not isinstance(proj4_string, str):
+            return jsonify({'error': 'proj4 must be a string'}), 400
+        
+        # Validate byte headers if provided
+        if byte_header_x is not None and not isinstance(byte_header_x, int):
+            return jsonify({'error': 'byte_header_x must be an integer'}), 400
+        
+        if byte_header_y is not None and not isinstance(byte_header_y, int):
+            return jsonify({'error': 'byte_header_y must be an integer'}), 400
+        
+        # Both byte headers should be provided together or both should be None
+        if (byte_header_x is not None and byte_header_y is None) or (byte_header_x is None and byte_header_y is not None):
+            return jsonify({'error': 'Both byte_header_x and byte_header_y must be provided together'}), 400
+        
+        # Validate sample_interval
+        if not isinstance(sample_interval, int) or sample_interval < 1:
+            return jsonify({'error': 'sample_interval must be a positive integer'}), 400
+        
+        app.logger.debug(f"Converting coordinates for single file: {file_path}")
+        app.logger.debug(f"SRID: {srid}")
+        app.logger.debug(f"Proj4 string: {proj4_string}")
+        app.logger.debug(f"Byte headers: X={byte_header_x}, Y={byte_header_y}")
+        app.logger.debug(f"Sample interval: {sample_interval}")
+        
+        # Convert coordinates using the proj4_converter
+        result = convert_segy_coordinates_to_wgs84(file_path, srid, proj4_string, byte_header_x, byte_header_y, sample_interval)
+        
+        if 'error' in result:
+            app.logger.error(f"Error converting coordinates: {result['error']}")
+            return jsonify({
+                'error': result['error'],
+                'status': 'error'
+            }), 400
+        
+        # Add status to response
+        result['status'] = 'success'
+        
+        app.logger.debug(f"Successfully converted {result['count']} coordinates")
+        return jsonify(result)
+        
+    except Exception as e:
+        app.logger.error(f"Error in single file coordinate conversion: {str(e)}")
+        return jsonify({
+            'error': f'Internal server error: {str(e)}',
+            'status': 'error'
+        }), 500
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
@@ -159,7 +386,9 @@ def serve_index():
                 '/api/seismic_data': 'Get seismic data',
                 '/api/ebcdic_header': 'Get EBCDIC header',
                 '/api/file_metadata': 'Get file metadata',
-                '/api/segy_manual_read': 'Read SEGY file with manual extraction (returns segy_read_from_list format)'
+                '/api/segy_manual_read': 'Read SEGY file with manual extraction (returns segy_read_from_list format)',
+                '/api/convert_coordinates': 'Convert srcx/srcy coordinates from multiple SEG-Y files to WGS84',
+                '/api/convert_single_file': 'Convert srcx/srcy coordinates from a single SEG-Y file to WGS84'
             }
         })
 
@@ -172,4 +401,4 @@ def internal_error(error):
     return jsonify({'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    app.run(debug=True, host='0.0.0.0', port=5001) 

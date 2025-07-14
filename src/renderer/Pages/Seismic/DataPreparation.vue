@@ -139,7 +139,7 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
+                        <div class="form-group" v-if="uploadOption === 'new'">
                             <div class="form-row">
                                 <label>Coordinate Reference System (CRS)</label>
                                 <div class="select-with-search">
@@ -358,6 +358,85 @@
                                 <option value="3D">3D</option>
                             </select>
                         </div>
+
+                        <div class="form-group" v-if="newSurveyDimension === '3D'">
+                            <div class="coordinates-header">
+                                <label>Survey Coordinates</label>
+                                <button type="button" class="btn btn-outline btn-sm" @click="addCoordinateRow">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                        <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                    Add Row
+                                </button>
+                            </div>
+                            <div class="coordinates-table-container">
+                                <div class="coordinates-table">
+                                    <div class="coordinates-table-header">
+                                        <div class="coord-col-corner">Corner</div>
+                                        <div class="coord-col-inlines">INLINES</div>
+                                        <div class="coord-col-crossline">CROSSLINE</div>
+                                        <div class="coord-col-x">X coordinate</div>
+                                        <div class="coord-col-y">Y coordinate</div>
+                                        <div class="coord-col-actions">Actions</div>
+                                    </div>
+                                    <div class="coordinates-table-body">
+                                        <div 
+                                            v-for="(coord, index) in surveyCornerPoints" 
+                                            :key="coord.id"
+                                            class="coordinate-row"
+                                        >
+                                            <div class="coord-col-corner">
+                                                <p>{{ coord.corner }}</p>
+                                            </div>
+                                            <div class="coord-col-inlines">
+                                                <input 
+                                                    type="number" 
+                                                    v-model.number="coord.inline" 
+                                                    class="coord-input"
+                                                    step="1"
+                                                />
+                                            </div>
+                                            <div class="coord-col-crossline">
+                                                <input 
+                                                    type="number" 
+                                                    v-model.number="coord.xline" 
+                                                    class="coord-input"
+                                                    step="1"
+                                                />
+                                            </div>
+                                            <div class="coord-col-x">
+                                                <input 
+                                                    type="number" 
+                                                    v-model.number="coord.latitude" 
+                                                    class="coord-input"
+                                                    step="0.1"
+                                                />
+                                            </div>
+                                            <div class="coord-col-y">
+                                                <input 
+                                                    type="number" 
+                                                    v-model.number="coord.longitude" 
+                                                    class="coord-input"
+                                                    step="0.1"
+                                                />
+                                            </div>
+                                            <div class="coord-col-actions">
+                                                <button 
+                                                    type="button" 
+                                                    class="btn btn-ghost btn-sm remove-coord-btn"
+                                                    @click="removeCoordinateRow(index)"
+                                                    :disabled="surveyCornerPoints.length <= 1"
+                                                >
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -379,6 +458,7 @@ import { useSeismicSurvey } from '../../Composables/useSeismicSurvey';
 import { useCountry } from '../../Composables/useCountry';
 import { useCRS } from '../../Composables/useCRS';
 import WorkflowProgress from '../../Components/WorkflowProgress.vue';
+import { useSurveyCornerPoints } from '@/Composables/useSurveyCornerPoints';
 
 const route = useRoute();
 const router = useRouter();
@@ -387,6 +467,7 @@ const seismicStore = useSeismicStore();
 const { fetch: fetchSurveys, insert: insertSurvey, createEmptySurvey } = useSeismicSurvey();
 const { fetch: fetchCountries } = useCountry();
 const { fetch: fetchCrs } = useCRS();
+const { createBulkBySurvey } = useSurveyCornerPoints();
 
 // Get selected target from route params or query
 
@@ -405,6 +486,14 @@ const uploadOption = ref('new');
 const newSurveyName = ref('');
 const newSurveyCountry = ref('');
 const newSurveyDimension = ref('');
+
+// Survey coordinates data
+const surveyCornerPoints = ref([
+    { id: 1, corner: 1, inline: 0, xline: 0, latitude: 0, longitude: 0 },
+    { id: 2, corner: 2, inline: 0, xline: 0, latitude: 0, longitude: 0 },
+    { id: 3, corner: 3, inline: 0, xline: 0, latitude: 0, longitude: 0 },
+    { id: 4, corner: 4, inline: 0, xline: 0, latitude: 0, longitude: 0 }
+]);
 
 // Seismics data
 const seismics = ref<any[]>([]);
@@ -496,8 +585,6 @@ const generateDatasetId = () => {
 
 const saveDataset = () => {
     if (!isFormValid.value) return;
-    // Save logic here
-    // console.log('Saving dataset...');
 };
 
 const selectFiles = async () => {
@@ -671,7 +758,9 @@ const hideSeismicDropdown = () => {
 const searchSeismics = async () => {
     try {
         seismicsLoading.value = true;
-        seismics.value = await fetchSurveys();
+        seismics.value = await fetchSurveys() || [];
+
+        console.log('seismics.value ', seismics.value);
         // console.log('seismics.value ', seismics.value)
         filteredSeismics.value = seismics.value;
         filteredTargetSeismics.value = seismics.value;
@@ -706,14 +795,21 @@ const prepareDataset = () => {
     }));
     
     seismicStore.setSelectedFiles(filesToStore);
+
+    // seismicStore.setCRS({
+    //     proj4: selectedCrsId.value,
+    //     srid: selectedCrsId.value
+    // });
     
     // Advance workflow to loading stage and mark preparation as completed
     seismicStore.advanceWorkflow('loading', 'preparation');
 
-    // Store selected CRS data
-    seismicStore.setCRS(selectedCrsId.value);
+    seismicStore.setUploadOption(uploadOption.value as 'new' | 'existing');
 
-    console.log('seismicStore.data ', seismicStore.data)
+    // Store selected CRS data
+    // seismicStore.setCRS(selectedCrsId.value);
+
+    // console.log('seismicStore.data ', seismicStore.data)
     
     // Navigate to DataQC page with form data
     router.push({
@@ -724,13 +820,21 @@ const prepareDataset = () => {
 const openSeismicModal = () => {
     showSeismicModal.value = true;
     // Reset form values when opening modal
-    uploadOption.value = 'existing';
+    uploadOption.value = 'new';
     seismicSearchQuery.value = '';
     selectedSeismicName.value = '';
     newSurveyName.value = '';
     newSurveyCountry.value = '';
     newSurveyDimension.value = '';
     selectedCountry.value = null;
+    
+    // Reset coordinates to default values
+    surveyCornerPoints.value = [
+        { id: 1, corner: 1, inline: 0, xline: 0, latitude: 0, longitude: 0 },
+        { id: 2, corner: 2, inline: 0, xline: 0, latitude: 0, longitude: 0 },
+        { id: 3, corner: 3, inline: 0, xline: 0, latitude: 0, longitude: 0 },
+        { id: 4, corner: 4, inline: 0, xline: 0, latitude: 0, longitude: 0 }
+    ];
     
     // Load countries if not already loaded
     if (countries.value.length === 0) {
@@ -758,6 +862,30 @@ const createSurvey = async () => {
 
         // Insert the new survey
         const createdSurvey = await insertSurvey(newSurvey);
+
+        if(newSurveyDimension.value === '3D') {
+            const surveyCornerPointsData = surveyCornerPoints.value.map(coord => ({
+                inline: coord.inline,
+                xline: coord.xline,
+                latitude: coord.latitude,
+                longitude: coord.longitude
+            }));
+
+            seismicStore.setSurveyCornerPoints(surveyCornerPointsData);
+
+            // const surveyCornerPoints = seismicStore.data.surveyCornerPoints;
+
+                const surveyCornerPointsBodyRequest = {
+                    cornerPoints: surveyCornerPoints.value || [],
+                    surveyName: createdSurvey.name,
+                    type: createdSurvey.dimension,
+                }
+
+                console.log('[QC] surveyCornerPointsBodyRequest', surveyCornerPointsBodyRequest);
+
+                const createdBulkSurveyCornerPointsResponse = await createBulkBySurvey(surveyCornerPointsBodyRequest);
+                console.log('[QC] createdBulkSurveyCornerPointsResponse', createdBulkSurveyCornerPointsResponse);
+        }
         
         // Update the target seismic display and selection
         selectedSeismicDisplay.value = `${newSurvey.name} (${newSurveyDimension.value})`;
@@ -874,9 +1002,21 @@ const selectCrs = (crsItem: any) => {
     selectedCrsId.value = crsItem._id;
     crsSearchQuery.value = crsItem.name || crsItem.code || `CRS ${crsItem._id}`;
     showCrsDropdown.value = false;
+
+    // console.log("crsItem chosen", crsItem);
+
+    // console.log("crsItem.proj4", crsItem.proj4);
+    // console.log("crsItem.srid", crsItem.srid);
     
     // Store selected CRS data if needed
-    // seismicStore.setCrsData(crsItem);
+    seismicStore.setCRS({
+        proj4: crsItem.proj4,
+        srid: crsItem.srid
+    });
+
+    // console.log("wellStore.data.CRS", wellStore.data.CRS);
+    // console.log("wellStore.data.CRS.proj4", wellStore.data.CRS.proj4);
+    // console.log("wellStore.data.CRS.srid", wellStore.data.CRS.srid);
 };
 
 const hideCrsDropdown = () => {
@@ -894,6 +1034,31 @@ const searchCrs = async () => {
         console.error('Error searching CRS:', error);
     } finally {
         crsLoading.value = false;
+    }
+};
+
+// Survey coordinates methods
+const addCoordinateRow = () => {
+    const newId = Math.max(...surveyCornerPoints.value.map(c => c.id)) + 1;
+    const lastCorner = surveyCornerPoints.value.length > 0 ? surveyCornerPoints.value[surveyCornerPoints.value.length - 1].corner : 0;
+    
+    surveyCornerPoints.value.push({
+        id: newId,
+        corner: lastCorner + 1,
+        inline: 0,
+        xline: 0,
+        latitude: 0,
+        longitude: 0
+    });
+};
+
+const removeCoordinateRow = (index: number) => {
+    if (surveyCornerPoints.value.length > 1) {
+        surveyCornerPoints.value.splice(index, 1);
+        // Update corner numbers to maintain sequence
+        surveyCornerPoints.value.forEach((coord, idx) => {
+            coord.corner = idx + 1;
+        });
     }
 };
 
@@ -1686,5 +1851,185 @@ onMounted(() => {
 .add-seismic-btn svg {
     width: 16px;
     height: 16px;
+}
+
+/* Coordinates table styles */
+.coordinates-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.coordinates-table-container {
+    position: relative;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: white;
+    /* Add smooth scrolling */
+    scroll-behavior: smooth;
+    /* Custom scrollbar styling */
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db #f8fafc;
+}
+
+.coordinates-table-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.coordinates-table-container::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 4px;
+}
+
+.coordinates-table-container::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.coordinates-table-container::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+
+.coordinates-table {
+    min-width: 650px; /* Set minimum width to ensure horizontal scrolling */
+    width: 100%;
+    background: white;
+}
+
+.coordinates-table-header {
+    display: grid;
+    grid-template-columns: 80px 100px 110px 140px 140px 80px;
+    gap: 0;
+    background: #f8fafc;
+    border-bottom: 1px solid #e5e7eb;
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: #374151;
+}
+
+.coordinates-table-header > div {
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    border-right: 1px solid #e5e7eb;
+}
+
+.coordinates-table-header > div:last-child {
+    border-right: none;
+}
+
+.coordinate-row {
+    display: grid;
+    grid-template-columns: 80px 100px 110px 140px 140px 80px;
+    gap: 0;
+    border-bottom: 1px solid #f3f4f6;
+    background: white;
+    transition: background-color 0.2s ease;
+}
+
+.coordinate-row:hover {
+    background: #fafbfc;
+}
+
+.coordinate-row:last-child {
+    border-bottom: none;
+}
+
+.coordinate-row > div {
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid #f3f4f6;
+}
+
+.coordinate-row > div:last-child {
+    border-right: none;
+}
+
+.coord-input {
+    width: 100%;
+    padding: 0.375rem 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    text-align: center;
+    background: white;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.coord-input:focus {
+    outline: none;
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
+}
+
+.coord-input:hover {
+    border-color: #c4b5fd;
+}
+
+.remove-coord-btn {
+    padding: 0.25rem;
+    min-width: auto;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.remove-coord-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.remove-coord-btn svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* Add subtle gradient to indicate scrollable content */
+.coordinates-table-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 20px;
+    background: linear-gradient(to left, rgba(255, 255, 255, 0.8), transparent);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.coordinates-table-container:hover::after {
+    opacity: 1;
+}
+
+/* Responsive adjustments for coordinates table */
+@media (max-width: 768px) {
+    .coordinates-table {
+        min-width: 550px; /* Reduce minimum width on mobile */
+    }
+    
+    .coordinates-table-header,
+    .coordinate-row {
+        grid-template-columns: 60px 80px 90px 110px 110px 60px;
+        font-size: 0.7rem;
+    }
+    
+    .coord-input {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.375rem;
+    }
+    
+    .coordinates-table-header > div,
+    .coordinate-row > div {
+        padding: 0.375rem 0.25rem;
+    }
 }
 </style> 

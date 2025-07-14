@@ -62,7 +62,7 @@ export async function fetchSegyEbcdicHeader(filePath: string): Promise<SegyPrevi
   try {
     console.log('[SEGY Service] Fetching EBCDIC header for:', filePath);
     
-    const response = await fetch(`http://localhost:5000/api/ebcdic_header?file_path=${encodeURIComponent(filePath)}`);
+    const response = await fetch(`http://localhost:5001/api/ebcdic_header?file_path=${encodeURIComponent(filePath)}`);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -104,7 +104,7 @@ export async function fetchSegyMetadata(filePath: string): Promise<{success: boo
   try {
     console.log('[SEGY Service] Fetching metadata for:', filePath);
     
-    const response = await fetch(`http://localhost:5000/api/file_metadata?file_path=${encodeURIComponent(filePath)}`);
+    const response = await fetch(`http://localhost:5001/api/file_metadata?file_path=${encodeURIComponent(filePath)}`);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

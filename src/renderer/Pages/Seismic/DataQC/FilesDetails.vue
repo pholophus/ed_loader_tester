@@ -106,12 +106,12 @@
 
                     <div v-if="selectedMetadata" class="form-group">
                         <label>Created By</label>
-                        <span class="form-value">{{ selectedMetadata?.createdBy || 'N/A' }}</span>
+                        <span class="form-value">{{ userStore.user?.data.name }}</span>
                     </div>
 
                     <div v-if="selectedMetadata" class="form-group">
                         <label>Edited By</label>
-                        <span class="form-value">{{ selectedMetadata?.editedBy || 'N/A' }}</span>
+                        <span class="form-value">{{ userStore.user?.data.name }}</span>
                     </div>
 
                     <div v-if="!selectedMetadata && props.selectedFile" class="form-group">
@@ -267,6 +267,7 @@ import {
     type LasComprehensiveData
 } from '../../../../services/lasService';
 import { parseSegyFileForPreview, type SegyPreviewData, isSegyFile } from '../../../../services/segyService';
+import { useUserStore } from '../../../store/userStore';
 
 // Props for receiving data from parent component
 interface Props {
@@ -279,6 +280,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Access seismic store
 const seismicStore = useSeismicStore();
+const userStore = useUserStore();
 
 // Computed property to get metadata based on selected file
 const selectedMetadata = computed(() => {

@@ -1,8 +1,14 @@
 import { SeismicLine } from '../../schemas/SeismicLine';
+import { apiService } from '../../services/apiService';
 import { useApi } from './useApi';
 
 export const useSeismicLine = () => {
     const baseCrud = useApi<SeismicLine>('seismic-lines');
+
+    const createBulk = async (data: {seismicLines: SeismicLine[]}) => {
+        const response = await apiService.post('/seismic-line/create-bulk', data);
+        return response;
+    };
     
     // Function to create an empty SeismicLine object
     const createEmptyLine = (): SeismicLine => ({
@@ -26,6 +32,7 @@ export const useSeismicLine = () => {
 
     return {
         ...baseCrud,
+        createBulk,
         createEmptyLine,
     };
 }; 

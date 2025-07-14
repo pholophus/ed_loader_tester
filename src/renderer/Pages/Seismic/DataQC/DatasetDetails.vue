@@ -44,11 +44,11 @@
                     </div>
                     <div class="info-row">
                         <label>Created:</label>
-                        <span>{{ '-' }}</span>
+                        <span>{{ userStore.user?.data.name }}</span>
                     </div>
                     <div class="info-row">
                         <label>Loaded:</label>
-                        <span>{{ '-' }}</span>
+                        <span>{{ userStore.user?.data.name }}</span>
                     </div>
                     <div class="info-row">
                         <label>Approved:</label>
@@ -84,10 +84,12 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useSeismicStore } from '../../../store/seismicStore';
+import { useUserStore } from '../../../store/userStore';
 import QCReport from './QCReport.vue';
 
 // Initialize the seismic store
 const seismicStore = useSeismicStore();
+const userStore = useUserStore();
 
 // Props for receiving data from parent component
 interface Props {

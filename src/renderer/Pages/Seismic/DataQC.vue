@@ -11,11 +11,13 @@
                     Back
                 </router-link>
                 <div class="header-actions">
-                    <button v-if="seismicStore.data.currentStage !== 'publication'" class="btn btn-primary" @click="proceedToQualityCheck"
-                        >
+                    <button v-if="seismicStore.data.currentStage !== 'publication'" class="btn btn-primary"
+                        @click="proceedToQualityCheck">
                         Quality Check
                     </button>
-                    <button v-if="seismicStore.data.currentStage == 'publication' && seismicStore.data.approval.isApproved" class="btn btn-primary" @click="proceedToPublish">
+                    <button
+                        v-if="seismicStore.data.currentStage == 'publication' && seismicStore.data.approval.isApproved"
+                        class="btn btn-primary" @click="proceedToPublish">
                         Publish
                     </button>
                 </div>
@@ -33,22 +35,26 @@
             </div>
 
             <!-- Workflow Progress -->
-            <WorkflowProgress :current-stage="seismicStore.data.currentStage" :completed-stages="seismicStore.data.completedStages" />
+            <WorkflowProgress :current-stage="seismicStore.data.currentStage"
+                :completed-stages="seismicStore.data.completedStages" />
 
             <!-- Approval Notice -->
-            <div v-if="settingsStore.options.publishAuto == false && seismicStore.data.currentStage == 'approval'" class="approval-notice">
+            <div v-if="settingsStore.options.publishAuto == false && seismicStore.data.currentStage == 'approval'"
+                class="approval-notice">
                 <div class="approval-content">
                     <span class="approval-text">Publication of this dataset requires your approval</span>
                     <div class="approval-actions">
                         <button class="btn btn-approve" @click="showApprovalModal">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
                             Approve Dataset
                         </button>
                         <button class="btn btn-reject" @click="rejectDataset">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
                             Reject Dataset
                         </button>
@@ -56,7 +62,7 @@
                 </div>
             </div>
 
-            
+
         </header>
 
         <main class="qc-main">
@@ -81,7 +87,8 @@
                                 Dataset
                             </button>
                             <button class="tab" :class="{ active: activeTab === 'files' }" @click="activeTab = 'files'">
-                                Files ({{ selectedLineId ? seismicStore.getSeismicFileCount(selectedLineId) : files.length }})
+                                Files ({{ selectedLineId ? seismicStore.getSeismicFileCount(selectedLineId) :
+                                    files.length }})
                             </button>
                             <!-- <button class="tab" :class="{ active: activeTab === 'logs' }" @click="activeTab = 'logs'">
                                 Logs ({{ logs.length }})
@@ -168,17 +175,19 @@
                                                 </div>
                                                 <div class="info-row">
                                                     <label>Country:</label>
-                                                    <span>{{ seismicStore.data.survey.country || 'Not specified' }}</span>
+                                                    <span>{{ seismicStore.data.survey.country || 'Not specified'
+                                                    }}</span>
                                                 </div>
                                                 <div class="info-row">
                                                     <label>Dimension:</label>
-                                                    <span>{{ seismicStore.data.survey.dimension || 'Not specified' }}</span>
+                                                    <span>{{ seismicStore.data.survey.dimension || 'Not specified'
+                                                    }}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- File Info -->
                                 <!-- <div class="info-row">
                                     <label>Total File Size:</label>
@@ -214,21 +223,23 @@
 
                         <!-- Files Tab Content -->
                         <div v-if="activeTab === 'files'" class="tab-content">
-                            <div v-if="seismicStore.data.isForUploadingFileForExistingSeismic && !selectedLineId" class="no-well-selected">
+                            <div v-if="seismicStore.data.isForUploadingFileForExistingSeismic && !selectedLineId"
+                                class="no-well-selected">
                                 <div class="no-well-message">
                                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" class="no-well-icon">
-                                        <path d="M9 12L11 14L15 10" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        <circle cx="12" cy="12" r="10" stroke="#9ca3af" stroke-width="2" fill="none"/>
+                                        <path d="M9 12L11 14L15 10" stroke="#9ca3af" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round" />
+                                        <circle cx="12" cy="12" r="10" stroke="#9ca3af" stroke-width="2" fill="none" />
                                     </svg>
                                     <h3>Select a Well</h3>
                                     <p>Please select a well from the Dataset tab to view its files.</p>
                                 </div>
                             </div>
-                            
+
                             <div v-else>
                                 <div class="files-actions">
-                                    <button class="btn btn-outline btn-sm" @click="removeSelectedFiles" 
-                                            :disabled="checkedFiles.size === 0">
+                                    <button class="btn btn-outline btn-sm" @click="removeSelectedFiles"
+                                        :disabled="checkedFiles.size === 0">
                                         Remove{{ checkedFiles.size > 0 ? ` (${checkedFiles.size})` : '' }}
                                     </button>
                                 </div>
@@ -238,13 +249,13 @@
                                         <table class="components-table">
                                             <thead>
                                                 <tr>
-                                                    <th><input type="checkbox" 
-                                                        :checked="allFilesChecked" 
-                                                        :indeterminate="someFilesChecked"
-                                                        @change="toggleAllFiles" /></th>
+                                                    <th><input type="checkbox" :checked="allFilesChecked"
+                                                            :indeterminate="someFilesChecked"
+                                                            @change="toggleAllFiles" /></th>
                                                     <th>File Name</th>
                                                     <th>Size</th>
-                                                    <th v-if="seismicStore.data.isForUploadingFileForExistingSeismic">Line</th>
+                                                    <th v-if="seismicStore.data.isForUploadingFileForExistingSeismic">
+                                                        Line</th>
                                                     <th>Category</th>
                                                     <th>Sub Category</th>
                                                     <th>First Field File</th>
@@ -259,36 +270,44 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr v-for="file in paginatedFiles" :key="file.id" 
-                                                    :class="{ 
-                                                        selected: selectedFile?.id === file.id,
-                                                        'validation-error': getValidationStatus(file.id) === 'error',
-                                                        'validation-success': getValidationStatus(file.id) === 'success'
-                                                    }"
-                                                    @click="selectFile(file)">
-                                                    <td><input type="checkbox" :checked="isFileChecked(file.id)" @click="toggleFileCheck(file.id, $event)" /></td>
+                                                <tr v-for="file in paginatedFiles" :key="file.id" :class="{
+                                                    selected: selectedFile?.id === file.id,
+                                                    'validation-error': getValidationStatus(file.id) === 'error',
+                                                    'validation-success': getValidationStatus(file.id) === 'success'
+                                                }" @click="selectFile(file)">
+                                                    <td><input type="checkbox" :checked="isFileChecked(file.id)"
+                                                            @click="toggleFileCheck(file.id, $event)" /></td>
                                                     <td class="file-name">{{ file.name }}</td>
                                                     <td>{{ formatFileSize(file.size) }}</td>
                                                     <td v-if="seismicStore.data.isForUploadingFileForExistingSeismic">
-                                                        <select class="entity-select" v-model="(file as SeismicDataQCFileData).wellId">
+                                                        <select class="entity-select"
+                                                            v-model="(file as SeismicDataQCFileData).wellId">
                                                             <option value="">Select Line</option>
-                                                            <option v-for="line in seismicStore.data.line" :key="line.lineId" :value="line.lineId">
+                                                            <option v-for="line in seismicStore.data.lines"
+                                                                :key="line.lineId" :value="line.lineId">
                                                                 {{ line.name }}
                                                             </option>
                                                         </select>
                                                     </td>
                                                     <td>
-                                                        <select class="entity-select" v-model="file.selectedDataTypeId" @change="onDataTypeChange(file, file.selectedDataTypeId || '')">
+                                                        <select class="entity-select" v-model="file.selectedDataTypeId"
+                                                            @change="onDataTypeChange(file, file.selectedDataTypeId || '')">
                                                             <option value="">Select Category</option>
-                                                            <option v-for="dataType in activeDataTypes" :key="dataType._id" :value="dataType._id">
+                                                            <option v-for="dataType in activeDataTypes"
+                                                                :key="dataType._id" :value="dataType._id">
                                                                 {{ dataType.displayName }}
                                                             </option>
                                                         </select>
                                                     </td>
                                                     <td>
-                                                        <select class="entity-select" v-model="file.selectedSubDataTypeId" :disabled="!file.selectedDataTypeId" @change="onSubDataTypeChange(file, file.selectedSubDataTypeId || '')">
+                                                        <select class="entity-select"
+                                                            v-model="file.selectedSubDataTypeId"
+                                                            :disabled="!file.selectedDataTypeId"
+                                                            @change="onSubDataTypeChange(file, file.selectedSubDataTypeId || '')">
                                                             <option value="">Select Sub Category</option>
-                                                            <option v-for="subDataType in getFilteredSubDataTypes(file.selectedDataTypeId || '')" :key="subDataType._id" :value="subDataType._id">
+                                                            <option
+                                                                v-for="subDataType in getFilteredSubDataTypes(file.selectedDataTypeId || '')"
+                                                                :key="subDataType._id" :value="subDataType._id">
                                                                 {{ subDataType.displayName }}
                                                             </option>
                                                         </select>
@@ -302,13 +321,14 @@
                                                     <td>{{ getExtractedValue(file, 'first_trace', 'Il') }}</td>
                                                     <td>{{ getExtractedValue(file, 'first_trace', 'Xl') }}</td>
                                                     <td>
-                                                        <div class="status-icon" 
-                                                             :class="{ 
-                                                                 success: getValidationStatus(file.id) === 'success',
-                                                                 error: getValidationStatus(file.id) === 'error'
-                                                             }">
-                                                            <span v-if="getValidationStatus(file.id) === 'success'">✓</span>
-                                                            <span v-else-if="getValidationStatus(file.id) === 'error'">✗</span>
+                                                        <div class="status-icon" :class="{
+                                                            success: getValidationStatus(file.id) === 'success',
+                                                            error: getValidationStatus(file.id) === 'error'
+                                                        }">
+                                                            <span
+                                                                v-if="getValidationStatus(file.id) === 'success'">✓</span>
+                                                            <span
+                                                                v-else-if="getValidationStatus(file.id) === 'error'">✗</span>
                                                             <span v-else>-</span>
                                                         </div>
                                                     </td>
@@ -316,7 +336,7 @@
                                             </tbody>
                                         </table>
                                     </div>
-                                    
+
                                     <div class="table-footer">
                                         <div class="footer-left">
                                             <span>{{ paginationInfo }}</span>
@@ -332,9 +352,12 @@
                                             </div>
                                         </div>
                                         <div class="pagination">
-                                            <button class="page-btn" @click="goToPreviousPage" :disabled="!canGoToPreviousPage">‹</button>
-                                            <span class="page-info">Page {{ currentPage }} of {{ totalPages || 1 }}</span>
-                                            <button class="page-btn" @click="goToNextPage" :disabled="!canGoToNextPage">›</button>
+                                            <button class="page-btn" @click="goToPreviousPage"
+                                                :disabled="!canGoToPreviousPage">‹</button>
+                                            <span class="page-info">Page {{ currentPage }} of {{ totalPages || 1
+                                            }}</span>
+                                            <button class="page-btn" @click="goToNextPage"
+                                                :disabled="!canGoToNextPage">›</button>
                                         </div>
                                     </div>
                                 </div>
@@ -408,8 +431,8 @@
                 </div>
 
                 <!-- Details Panel -->
-                <DatasetDetails v-if="activeTab === 'dataset'"/>
-                <FilesDetails v-if="activeTab === 'files' && selectedFile !== null" :selected-file="selectedFile"/>
+                <DatasetDetails v-if="activeTab === 'dataset'" />
+                <FilesDetails v-if="activeTab === 'files' && selectedFile !== null" :selected-file="selectedFile" />
             </div>
         </main>
 
@@ -420,19 +443,15 @@
                     <h3>Approval Comments</h3>
                     <button class="modal-close" @click="closeApprovalModal">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
                         </svg>
                     </button>
                 </div>
                 <div class="modal-body">
                     <label for="approval-comments" class="modal-label">Approval comments (optional)</label>
-                    <textarea 
-                        id="approval-comments"
-                        v-model="approvalComments"
-                        class="modal-textarea"
-                        placeholder="Enter your approval comments here..."
-                        rows="4"
-                    ></textarea>
+                    <textarea id="approval-comments" v-model="approvalComments" class="modal-textarea"
+                        placeholder="Enter your approval comments here..." rows="4"></textarea>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-outline" @click="closeApprovalModal">
@@ -440,7 +459,8 @@
                     </button>
                     <button class="btn btn-approve" @click="approveDataset">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
                         </svg>
                         Approve
                     </button>
@@ -454,14 +474,77 @@
                 <div class="success-modal-content">
                     <div class="success-icon">
                         <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="12" r="10" fill="#22c55e"/>
-                            <path d="M9 12L11 14L15 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="12" cy="12" r="10" fill="#22c55e" />
+                            <path d="M9 12L11 14L15 10" stroke="white" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
                         </svg>
                     </div>
                     <h3 class="success-title">Dataset Approved</h3>
                     <button class="btn btn-primary success-btn" @click="closeSuccessModal">
                         Done
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Publish Modal -->
+        <div v-if="showPublishModal" class="modal-overlay">
+            <div class="publish-modal-container">
+                <div class="publish-modal-content">
+                    <div v-if="publishStatus === 'uploading'" class="upload-progress">
+                        <div class="upload-icon">
+                            <div class="spinner-large"></div>
+                        </div>
+                        <h3 class="upload-title">Publishing Dataset</h3>
+                        <p class="upload-subtitle">Uploading files to FTP server...</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" :style="{ width: publishProgress + '%' }"></div>
+                        </div>
+                        <div class="progress-info">
+                            <span class="progress-percent">{{ Math.round(publishProgress) }}%</span>
+                            <span v-if="currentUploadingFile" class="current-file">{{ currentUploadingFile }}</span>
+                        </div>
+                    </div>
+
+                    <div v-if="publishStatus === 'completed'" class="upload-success">
+                        <div class="success-icon">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" fill="#22c55e" />
+                                <path d="M9 12L11 14L15 10" stroke="white" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <h3 class="success-title">Dataset Published</h3>
+                        <p class="success-subtitle">All files have been successfully uploaded to the FTP server.</p>
+                    </div>
+
+                    <div v-if="publishStatus === 'error'" class="upload-error">
+                        <div class="error-icon">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" fill="#ef4444" />
+                                <path d="M15 9L9 15M9 9L15 15" stroke="white" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <h3 class="error-title">Publication Failed</h3>
+                        <p class="error-subtitle">{{ publishError }}</p>
+
+                        <!-- Detailed error list -->
+                        <div v-if="debugErrorDetails.length > 0" class="error-details">
+                            <h4 class="error-details-title">File Errors:</h4>
+                            <div class="error-files-list">
+                                <div v-for="(errorDetail, index) in debugErrorDetails" :key="index"
+                                    class="error-file-item">
+                                    <div class="error-file-name">{{ errorDetail.fileName }}</div>
+                                    <div class="error-file-message">{{ errorDetail.error }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" @click="closePublishModal">
+                            Close
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -482,6 +565,8 @@ import { useSubDataType } from '../../Composables/useSubDataType';
 import { useFileData } from '../../Composables/useFileData';
 import { segySchema } from '../../../schemas/qc/segy';
 import ExtendedFileData from '../../../schemas/ExtendedFileData';
+import { useSeismicSurvey } from '../../Composables/useSeismicSurvey';
+import { useSeismicLine } from '../../Composables/useSeismicLine';
 
 // Extended interface for seismic data QC with additional properties
 interface SeismicDataQCFileData extends ExtendedFileData {
@@ -489,12 +574,12 @@ interface SeismicDataQCFileData extends ExtendedFileData {
     surveyId?: string;
     seismicId?: string;
     seismicName?: string;
-    
+
     // File properties
     dimension?: string;
     description?: string;
     itemRemarks?: string;
-    
+
     // Seismic trace data
     firstFieldFile?: number;
     lastFieldFile?: number;
@@ -504,33 +589,33 @@ interface SeismicDataQCFileData extends ExtendedFileData {
     lcdp?: number;
     inline?: number;
     xline?: number;
-    
+
     // Trace information
     firstTrc?: number;
     lastTrc?: number;
     ntraces?: number;
-    
+
     // Sample data
     sampleType?: string;
     sampleRate?: number;
     sampleRateUom?: string;
     recordLength?: number;
     recordLengthUom?: string;
-    
+
     // File paths
     fileWindowsPath?: string;
     fileUnixPath?: string;
-    
+
     // Bin spacing
     binSpacing?: number;
-    
+
     // Well/Line ID (reusing wellId for line selection in seismic context)
     wellId?: string;
 }
 
-import { 
-    parseLasFileForPreview, 
-    isLasFile, 
+import {
+    parseLasFileForPreview,
+    isLasFile,
     extractLasMetadata,
     extractLasComprehensiveData,
     extractLasMetadataForDisplay,
@@ -539,6 +624,9 @@ import {
     type LasMetadata,
     type LasComprehensiveData
 } from '../../../services/lasService';
+import { useGeoFile } from '@/Composables/useGeoFile';
+import { useUserStore } from '@/store/userStore';
+import { useSeismicCoordinate } from '@/Composables/useSeismicCoordinate';
 
 const route = useRoute();
 const router = useRouter();
@@ -549,13 +637,17 @@ const settingsStore = useSettingsStore();
 // Composables
 const { items: dataTypes, fetch: fetchDataTypes } = useDataType();
 const { items: subDataTypes, fetch: fetchSubDataTypes } = useSubDataType();
-const { 
-    fileDataMap, 
-    initializeFileData, 
+const {
+    fileDataMap,
+    initializeFileData,
     getFilesByLineId,
     updateFileData,
-    removeFile 
+    removeFile
 } = useFileData({ includeQCFields: true, defaultQualityStatus: 'success', storeType: 'seismic' });
+
+const { createBulk: createBulkSeismicLine } = useSeismicLine();
+const { createBulkByLine } = useSeismicCoordinate();
+const { createBulk: createBulkGeoFile } = useGeoFile();
 
 // Data from route or default values
 const datasetName = ref(route.query.datasetName as string || 'OSDU_Demo');
@@ -584,6 +676,9 @@ const showApprovalModalDialog = ref(false);
 const approvalComments = ref('');
 const showSuccessModal = ref(false);
 
+// Publish modal management
+const showPublishModal = ref(false);
+
 // File management
 const checkedFiles = ref<Set<string>>(new Set());
 const selectAllFiles = ref(false);
@@ -598,13 +693,19 @@ const selectedLineId = ref<string>('');
 const currentPage = ref<number>(1);
 const itemsPerPage = ref<number>(10);
 
+const publishStatus = ref<'uploading' | 'completed' | 'error'>('uploading');
+const publishProgress = ref(0);
+const currentUploadingFile = ref('');
+const publishError = ref('');
+const publishErrorDetails = ref<Array<{ fileName: string, error: string, index?: number }>>([]);
+
 // Computed properties
 const files = computed(() => {
     // If a well is selected, filter files by wellId
     if (selectedLineId.value) {
         return getFilesByLineId(selectedLineId.value);
     }
-    
+
     // Otherwise return all files
     return Array.from(fileDataMap.value.values());
 });
@@ -614,11 +715,11 @@ const activeDataTypes = computed(() => {
     if (!dataTypes.value) {
         return [];
     }
-    
+
     const filtered = dataTypes.value.filter((dt: any) => {
         return dt.isActive;
     });
-    
+
     return filtered;
 });
 
@@ -626,7 +727,7 @@ const getFilteredSubDataTypes = (dataTypeId: string) => {
     const filtered = subDataTypes.value?.filter((sdt: any) => {
         return sdt.isActive && sdt.dataTypeId === dataTypeId;
     }) || [];
-    
+
     return filtered;
 };
 
@@ -637,6 +738,11 @@ const allFilesChecked = computed(() => {
 
 const someFilesChecked = computed(() => {
     return checkedFiles.value.size > 0 && !allFilesChecked.value;
+});
+
+// Debug computed property to track publishErrorDetails
+const debugErrorDetails = computed(() => {
+    return publishErrorDetails.value;
 });
 
 // const logs = ref([]);
@@ -697,13 +803,13 @@ const selectRow = (index: number) => {
 
 const toggleFileCheck = (fileId: string, event: Event) => {
     event.stopPropagation(); // Prevent row selection when clicking checkbox
-    
+
     if (checkedFiles.value.has(fileId)) {
         checkedFiles.value.delete(fileId);
     } else {
         checkedFiles.value.add(fileId);
     }
-    
+
     updateSelectAllState();
 };
 
@@ -713,7 +819,7 @@ const isFileChecked = (fileId: string) => {
 
 const toggleAllFiles = (event: Event) => {
     const target = event.target as HTMLInputElement;
-    
+
     if (target.checked) {
         files.value.forEach(file => {
             checkedFiles.value.add(file.id);
@@ -721,7 +827,7 @@ const toggleAllFiles = (event: Event) => {
     } else {
         checkedFiles.value.clear();
     }
-    
+
     selectAllFiles.value = target.checked;
 };
 
@@ -737,11 +843,11 @@ const updateSelectAllState = () => {
 
 const removeSelectedFiles = () => {
     if (checkedFiles.value.size === 0) return;
-    
+
     checkedFiles.value.forEach(fileId => {
         removeFile(fileId);
     });
-    
+
     checkedFiles.value.clear();
     selectAllFiles.value = false;
 };
@@ -770,21 +876,21 @@ const selectLine = (lineId: string) => {
 const getSelectedLineName = (wellId: string | undefined): string => {
     if (!wellId) return '';
     // In seismic context, wellId maps to lineId
-    const line = seismicStore.data.line.find(l => l.lineId === wellId);
+    const line = seismicStore.data.lines.find(l => l.lineId === wellId);
     return line?.name || '';
 };
 
 // Validation Methods
 const validateFileData = async (file: SeismicDataQCFileData): Promise<void> => {
     console.log('[DataQC] Validating file:', file.name);
-    
+
     if (!file.path) {
         console.error('[DataQC] No file path provided for validation');
         return;
     }
 
     const seismicFile = file as SeismicDataQCFileData;
-    
+
     try {
         // Prepare validation data
         const validationData = {
@@ -823,7 +929,7 @@ const validateFileData = async (file: SeismicDataQCFileData): Promise<void> => {
         };
 
         const result = segySchema.safeParse(validationData);
-        
+
         if (result.success) {
             console.log('[Validation] File passed validation:', file.name);
             // Store validation result in seismic store
@@ -863,7 +969,7 @@ const validateFileData = async (file: SeismicDataQCFileData): Promise<void> => {
 
 const runValidationForAllFiles = () => {
     console.log('[QC] Starting quality check validation...');
-    
+
     Array.from(fileDataMap.value.values()).forEach(file => {
         validateFileData(file);
     });
@@ -871,19 +977,19 @@ const runValidationForAllFiles = () => {
 
 const proceedToQualityCheck = async () => {
     console.log('[QC] Starting quality check process...');
-    
+
     try {
         // Run validation for all files
         await runValidationForAllFiles();
-        
+
         // Set that QC has been done
         seismicStore.setHasDoneQC(true);
-        
+
         // Advance workflow to approval stage and mark quality-check as completed
         seismicStore.advanceWorkflow('approval', 'quality-check');
-        
+
         console.log('[QC] Stage updated to approval, completed stages:', seismicStore.data.completedStages);
-        
+
         // Navigate to approval page
         // router.push('/data-approval');
     } catch (error) {
@@ -893,174 +999,409 @@ const proceedToQualityCheck = async () => {
 
 const proceedToPublish = async () => {
     console.log('[QC] Starting publish process...');
-    
-    // Navigate to publication page
-    // router.push('/data-publication');
-};
 
-const showApprovalModal = () => {
-    approvalComments.value = seismicStore.data.approval.comments || '';
-    showApprovalModalDialog.value = true;
-};
-
-const closeApprovalModal = () => {
-    showApprovalModalDialog.value = false;
-    approvalComments.value = '';
-};
-
-const approveDataset = () => {
-    // console.log('[QC] Approving dataset with comments:', approvalComments.value);
-    seismicStore.approveDataset(approvalComments.value);
-    // console.log('[QC] Dataset approved, isApproved:', wellStore.data.approval.isApproved);
-    // console.log('[QC] Current stage:', wellStore.data.currentStage);
-    closeApprovalModal();
-    
-    // Show success modal after approval
-    setTimeout(() => {
-        showSuccessModal.value = true;
-    }, 300);
-};
-
-const closeSuccessModal = () => {
-    showSuccessModal.value = false;
-};
-
-const rejectDataset = () => {
-    console.log('[QC] Rejecting dataset...');
-    seismicStore.rejectDataset();
-    console.log('[QC] Dataset rejected, isApproved:', seismicStore.data.approval.isApproved);
-    console.log('[QC] Current stage:', seismicStore.data.currentStage);
-};
-
-// const toggleSelectAllFiles = () => {
-//     files.value.forEach(file => {
-//         file.selected = selectAllFiles.value;
-//     });
-// };
-
-// Computed properties for pagination
-const paginatedFiles = computed(() => {
-    const start = (currentPage.value - 1) * itemsPerPage.value;
-    const end = start + itemsPerPage.value;
-    return files.value.slice(start, end);
-});
-
-const totalPages = computed(() => {
-    return Math.ceil(files.value.length / itemsPerPage.value);
-});
-
-const canGoToPreviousPage = computed(() => {
-    return currentPage.value > 1;
-});
-
-const canGoToNextPage = computed(() => {
-    return currentPage.value < totalPages.value;
-});
-
-const paginationInfo = computed(() => {
-    const start = (currentPage.value - 1) * itemsPerPage.value + 1;
-    const end = Math.min(currentPage.value * itemsPerPage.value, files.value.length);
-    return files.value.length > 0 ? `${start} - ${end} of ${files.value.length}` : '0';
-});
-
-// Pagination methods
-const goToNextPage = () => {
-    if (canGoToNextPage.value) {
-        currentPage.value++;
-    }
-};
-
-const goToPreviousPage = () => {
-    if (canGoToPreviousPage.value) {
-        currentPage.value--;
-    }
-};
-
-// File selection methods
-const selectFile = (file: ExtendedFileData) => {
-    selectedFile.value = file;
-};
-
-// Validation status method
-const getValidationStatus = (fileId: string): 'success' | 'error' | 'pending' => {
-    const file = seismicStore.data.seismicMetadatas.find(f => f.id === fileId);
-    if (!file?.validationResult) return 'pending';
-    return file.validationResult.isValid ? 'success' : 'error';
-};
-
-// Extracted value method for seismic data
-const getExtractedValue = (file: ExtendedFileData, trace: string, field: string): string => {
-    // Find the file metadata in the seismic store
-    const fileMetadata = seismicStore.data.seismicMetadatas.find(f => f.id === file.id);
-    if (!fileMetadata) return '';
-    
-    // Map the trace and field combination to the flattened property names
-    const fieldMap: Record<string, string> = {
-        'first_trace_Ffid': 'first_field_file',
-        'last_trace_Ffid': 'last_field_file',
-        'first_trace_Sp': 'first_shot_point',
-        'last_trace_Sp': 'last_shot_point',
-        'first_trace_Cdp': 'first_cdp',
-        'last_trace_Cdp': 'last_cdp',
-        'first_trace_Il': 'inline',
-        'first_trace_Xl': 'crossline'
-    };
-    
-    const key = `${trace}_${field}`;
-    const propertyName = fieldMap[key];
-    
-    if (propertyName && fileMetadata[propertyName as keyof typeof fileMetadata] !== undefined) {
-        return fileMetadata[propertyName as keyof typeof fileMetadata]?.toString() || '';
-    }
-    
-    return '';
-};
-
-// Lifecycle
-onMounted(async () => {
-    
-    // Initialize file data from store
-    initializeFileData();
-    
-    // Fetch data types and sub data types
     try {
-        await fetchDataTypes();
-        await fetchSubDataTypes();
-    } catch (error) {
-        console.error('[QC] Error fetching data:', error);
-    }
-    
-    // Set the current stage to quality-check if coming from loading
-    if (seismicStore.data.currentStage === 'loading') {
-        seismicStore.setCurrentStage('quality-check');
-        if (!seismicStore.data.completedStages.includes('loading')) {
-            seismicStore.addCompletedStage('loading');
-        }
-    }
-    
-    setTimeout(() => {
-        if (seismicStore.data.currentStage === 'preparation') {
-            seismicStore.setCurrentStage('loading');
-            seismicStore.addCompletedStage('preparation');
-        }
-    }, 1000);
-});
+        /**JANGAN LUPA UNCOMMENT */
+        showPublishModal.value = true;
+        publishStatus.value = 'uploading';
+        publishProgress.value = 0;
+        publishError.value = '';
+        publishErrorDetails.value = [];
 
-// Watch for activeTab changes to auto-select first file when files tab is activated
-watch(activeTab, (newTab) => {
-    if (newTab === 'files' && selectedLineId.value && files.value.length > 0) {
-        // Auto-select the first file when files tab is clicked
-        selectedRowIndex.value = 0;
-    }
-});
+        let createBulkGeoFileResponse = null;
 
-// Watch for selectedLineId changes to auto-select first file when a well is selected
-watch(selectedLineId, (newLineId) => {
-    if (newLineId && activeTab.value === 'files' && files.value.length > 0) {
-        // Auto-select the first file when a well is selected and files tab is active
-        selectedRowIndex.value = 0;
+        if (seismicStore.data.uploadOption === 'new') {
+            const seismicLines = seismicStore.data.seismicMetadatas.map(metadata => ({
+                firstField: metadata.first_field_file,
+                lastField: metadata.last_field_file,
+                firstShotPoint: metadata.first_shot_point,
+                lastShotPoint: metadata.last_shot_point,
+                firstCDP: metadata.first_cdp,
+                lastCDP: metadata.last_cdp,
+                firstInline: metadata.inline,
+                lastInline: undefined, // Not present in Metadata, set as undefined
+                firstXline: undefined, // Not present in Metadata, set as undefined
+                lastXline: undefined, // Not present in Metadata, set as undefined
+                binSpacing: undefined, // Not present in Metadata, set as undefined
+                firstTRC: undefined, // Not present in Metadata, set as undefined
+                lastTRC: undefined, // Not present in Metadata, set as undefined
+                numberOfTraces: undefined, // Not present in Metadata, set as undefined
+                sampleType: undefined, // Not present in Metadata, set as undefined
+                sampleRate: undefined, // Not present in Metadata, set as undefined
+                sampleRateUom: undefined, // Not present in Metadata, set as undefined
+                recordLength: undefined, // Not present in Metadata, set as undefined
+                recordLengthUom: undefined, // Not present in Metadata, set as undefined
+                name: metadata.name,
+                surveyIds: [seismicStore.data.survey.surveyId]
+            }));
+
+            const seismicLineBodyRequest = {
+                seismicLines: seismicLines
+            }
+
+            /**JANGAN LUPA UNCOMMENT */
+            const createdBulkSeismicLineResponse = await createBulkSeismicLine(seismicLineBodyRequest);
+            console.log('[QC] createdBulkSeismicLineResponse', createdBulkSeismicLineResponse);
+            const createdBulkSeismicLines = createdBulkSeismicLineResponse.data.seismicLines;
+            // const { update: updateSeismic, getById } = useSeismic();
+            const user = useUserStore().user;
+
+
+            /**JANGAN LUPA UNCOMMENT */
+            const geoFiles = seismicStore.data.seismicMetadatas.map(metadata => {
+                const matched = createdBulkSeismicLines.find(
+                    (line: any) => line.name === metadata.name
+                );
+
+                if (!matched) {
+                    throw new Error(`No matching createdBulkSeismicLine for name: ${metadata.name}`);
+                }
+
+                return {
+                    id: metadata.id || '',
+                    fileName: metadata.name || '',
+                    fileFormatId: metadata.fileFormat || '',
+                    dataTypeId: metadata.dataTypeId || '',
+                    subDataTypeId: metadata.subDataTypeId || '',
+                    type: 'seismic',
+                    description: (metadata as any).description || '',
+                    title: (metadata as any).title || metadata.name || '',
+                    remarks: (metadata as any).remarks || '',
+                    createdFor: metadata.createdFor || 'test',
+                    createdBy: user.data?.name,
+                    createdDate: metadata.createdDate ? new Date(metadata.createdDate) : new Date(),
+                    fileLocation: '/homes/public/ed_loader_test/' + metadata.name || '',
+                    fileSize: metadata.size || 0,
+                    status: 'Raw',
+                    ownership: '',
+                    interpretedBy: metadata.editedBy || '',
+                    interpretedOn: metadata.createdDate ? new Date(metadata.createdDate) : new Date(),
+                    approvedBy: user.data?.name,
+                    approvedOn: new Date(),
+                    version: '1.0',
+                    comment: '',
+                    spudDate: new Date(),
+                    completionDate: new Date(),
+                    recordedBy: user.data?.name,
+                    recordedOn: new Date(),
+                    changedBy: null,
+                    changedOn: null,
+                    ids: matched._id, 
+                };
+            });
+
+
+            const geoFileBodyRequest = {
+                geoFiles: geoFiles
+            };
+
+            /**JANGAN LUPA UNCOMMENT */
+            createBulkGeoFileResponse = await createBulkGeoFile(geoFileBodyRequest);
+
+            // Coordinate conversion for SEG-Y files
+            const segyFiles = seismicStore.data.seismicMetadatas.map(metadata => metadata.path);  
+
+            if (seismicStore.data.survey.dimension === '2D' && segyFiles.length > 0 && seismicStore.data?.CRS?.srid && seismicStore.data?.CRS?.proj4) {
+                    // Validate and clean the data
+                    const validFiles = segyFiles.filter(path => path && path.trim() !== '');
+                    const sridNumber = parseInt(seismicStore.data.CRS.srid);
+                    
+                    if (validFiles.length > 0 && !isNaN(sridNumber) && seismicStore.data.CRS.proj4.trim()) {
+                        const convertRequestBody = {
+                            segy_files: validFiles,
+                            srid: sridNumber,
+                            proj4: seismicStore.data.CRS.proj4.trim(),
+                            byte_header_x: 73,
+                            byte_header_y: 77
+                        };
+
+                        const response = await fetch('http://localhost:5001/api/convert_coordinates', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(convertRequestBody)
+                        });
+
+                        let conversionResult = null;
+
+                        if (response.ok) {
+                            conversionResult = await response.json();
+                            console.log('[QC] Coordinate conversion successful:', conversionResult);
+                        } else {
+                            const errorDetails = await response.json().catch(() => ({ error: 'Unknown error' }));
+                            throw new Error(`[QC] Coordinate conversion failed: ${JSON.stringify(errorDetails)}`);
+                        }
+
+                        console.log('[QC] conversionResult', conversionResult);
+
+                        // Traverse the results object from the conversionResult
+                        Object.entries(conversionResult.results).forEach(async ([filename, result]) => {
+                            const createBulkByLineDataBody = {
+                                coordinates: Array.isArray(result.converted_coordinates)
+                                    ? result.converted_coordinates.map((coord: any) => ({
+                                        latitude: coord[0],
+                                        longitude: coord[1]
+                                    }))
+                                    : [],
+                                lineName: filename,
+                                type: seismicStore.data.survey.dimension,
+                                fileName: filename
+                            }
+
+                            console.log('[QC] createBulkByLineDataBody', createBulkByLineDataBody);
+
+                            const responseCreateBulkByLine = await createBulkByLine(createBulkByLineDataBody);
+                            if (responseCreateBulkByLine && responseCreateBulkByLine.error) {
+                                throw new Error(`[QC] createBulkByLine error: ${responseCreateBulkByLine.error}`);
+                            }
+
+                            console.log('[QC] responseCreateBulkByLine', responseCreateBulkByLine);
+                        });
+                    }
+            }
+
+        } else {
+            // update existing seismic
+        }
+
+        /**JANGAN LUPA UNCOMMENT */
+        if (!createBulkGeoFileResponse.success) {
+            publishStatus.value = 'error';
+            publishError.value = createBulkGeoFileResponse.message || 'Failed to create GeoFiles';
+            publishErrorDetails.value = createBulkGeoFileResponse.errors || [];
+            return;
+        }
+
+        const filesToUpload = Array.from(fileDataMap.value.values());
+
+        const ftpStatus = await window.electronAPI.getFtpStatus();
+        if (!ftpStatus.configured || !ftpStatus.enabled) {
+            publishStatus.value = 'error';
+            publishError.value = 'FTP is not configured or enabled';
+            publishErrorDetails.value = [];
+            return;
+        }
+
+        for (let i = 0; i < filesToUpload.length; i++) {
+            const file = filesToUpload[i];
+            currentUploadingFile.value = file.name;
+
+            try {
+                // Check if file path exists
+                if (!file.path) {
+                    throw new Error(`File path is missing for ${file.name || 'unknown file'}`);
+                }
+
+                // Simple upload - the main process handles all events automatically
+                const result = await window.electronAPI.uploadFile(file.path, file.name || 'unknown');
+
+                if (!result.success) {
+                    throw new Error(result.error || 'Upload failed');
+                }
+
+                // Update progress
+                publishProgress.value = ((i + 1) / filesToUpload.length) * 100;
+                // console.log(`[QC] Upload complete for: ${file.name}`);
+
+            } catch (error: any) {
+                // console.error(`[QC] Upload failed for ${file.name}:`, error);
+                publishStatus.value = 'error';
+                publishError.value = `Failed to upload ${file.name}: ${error.message || error}`;
+                publishErrorDetails.value = [];
+                return;
+            }
+        }
+
+        // Mark as completed
+        publishStatus.value = 'completed';
+        publishProgress.value = 100;
+
+        // Update workflow: mark publication as completed
+        seismicStore.addCompletedStage('publication');
+
+        setTimeout(() => {
+            closePublishModal();
+        }, 2000);
+
+    } catch (error: any) {
+        console.error('[QC] Error during publish process:', error);
+        publishStatus.value = 'error';
+        publishError.value = error.message || 'Unknown error during publishing';
+        publishErrorDetails.value = [];
     }
-});
+    };
+
+    const showApprovalModal = () => {
+        approvalComments.value = seismicStore.data.approval.comments || '';
+        showApprovalModalDialog.value = true;
+    };
+
+    const closeApprovalModal = () => {
+        showApprovalModalDialog.value = false;
+        approvalComments.value = '';
+    };
+
+    const approveDataset = () => {
+        seismicStore.approveDataset(approvalComments.value);
+        closeApprovalModal();
+
+        // Show success modal after approval
+        setTimeout(() => {
+            showSuccessModal.value = true;
+        }, 300);
+    };
+
+    const closeSuccessModal = () => {
+        showSuccessModal.value = false;
+    };
+
+    const closePublishModal = () => {
+        showPublishModal.value = false;
+        // Reset states
+        publishStatus.value = 'uploading';
+        publishProgress.value = 0;
+        currentUploadingFile.value = '';
+        publishError.value = '';
+        publishErrorDetails.value = [];
+    };
+
+    const rejectDataset = () => {
+        console.log('[QC] Rejecting dataset...');
+        seismicStore.rejectDataset();
+        console.log('[QC] Dataset rejected, isApproved:', seismicStore.data.approval.isApproved);
+        console.log('[QC] Current stage:', seismicStore.data.currentStage);
+    };
+
+    // const toggleSelectAllFiles = () => {
+    //     files.value.forEach(file => {
+    //         file.selected = selectAllFiles.value;
+    //     });
+    // };
+
+    // Computed properties for pagination
+    const paginatedFiles = computed(() => {
+        const start = (currentPage.value - 1) * itemsPerPage.value;
+        const end = start + itemsPerPage.value;
+        return files.value.slice(start, end);
+    });
+
+    const totalPages = computed(() => {
+        return Math.ceil(files.value.length / itemsPerPage.value);
+    });
+
+    const canGoToPreviousPage = computed(() => {
+        return currentPage.value > 1;
+    });
+
+    const canGoToNextPage = computed(() => {
+        return currentPage.value < totalPages.value;
+    });
+
+    const paginationInfo = computed(() => {
+        const start = (currentPage.value - 1) * itemsPerPage.value + 1;
+        const end = Math.min(currentPage.value * itemsPerPage.value, files.value.length);
+        return files.value.length > 0 ? `${start} - ${end} of ${files.value.length}` : '0';
+    });
+
+    // Pagination methods
+    const goToNextPage = () => {
+        if (canGoToNextPage.value) {
+            currentPage.value++;
+        }
+    };
+
+    const goToPreviousPage = () => {
+        if (canGoToPreviousPage.value) {
+            currentPage.value--;
+        }
+    };
+
+    // File selection methods
+    const selectFile = (file: ExtendedFileData) => {
+        selectedFile.value = file;
+    };
+
+    // Validation status method
+    const getValidationStatus = (fileId: string): 'success' | 'error' | 'pending' => {
+        const file = seismicStore.data.seismicMetadatas.find(f => f.id === fileId);
+        if (!file?.validationResult) return 'pending';
+        return file.validationResult.isValid ? 'success' : 'error';
+    };
+
+    // Extracted value method for seismic data
+    const getExtractedValue = (file: ExtendedFileData, trace: string, field: string): string => {
+        // Find the file metadata in the seismic store
+        const fileMetadata = seismicStore.data.seismicMetadatas.find(f => f.id === file.id);
+        if (!fileMetadata) return '';
+
+        // Map the trace and field combination to the flattened property names
+        const fieldMap: Record<string, string> = {
+            'first_trace_Ffid': 'first_field_file',
+            'last_trace_Ffid': 'last_field_file',
+            'first_trace_Sp': 'first_shot_point',
+            'last_trace_Sp': 'last_shot_point',
+            'first_trace_Cdp': 'first_cdp',
+            'last_trace_Cdp': 'last_cdp',
+            'first_trace_Il': 'inline',
+            'first_trace_Xl': 'crossline'
+        };
+
+        const key = `${trace}_${field}`;
+        const propertyName = fieldMap[key];
+
+        if (propertyName && fileMetadata[propertyName as keyof typeof fileMetadata] !== undefined) {
+            return fileMetadata[propertyName as keyof typeof fileMetadata]?.toString() || '';
+        }
+
+        return '';
+    };
+
+    // Lifecycle
+    onMounted(async () => {
+
+        // Initialize file data from store
+        initializeFileData();
+
+        // Fetch data types and sub data types
+        try {
+            await fetchDataTypes();
+            await fetchSubDataTypes();
+        } catch (error) {
+            console.error('[QC] Error fetching data:', error);
+        }
+
+        // Set the current stage to quality-check if coming from loading
+        if (seismicStore.data.currentStage === 'loading') {
+            seismicStore.setCurrentStage('quality-check');
+            if (!seismicStore.data.completedStages.includes('loading')) {
+                seismicStore.addCompletedStage('loading');
+            }
+        }
+
+        setTimeout(() => {
+            if (seismicStore.data.currentStage === 'preparation') {
+                seismicStore.setCurrentStage('loading');
+                seismicStore.addCompletedStage('preparation');
+            }
+        }, 1000);
+    });
+
+    // Watch for activeTab changes to auto-select first file when files tab is activated
+    watch(activeTab, (newTab) => {
+        if (newTab === 'files' && selectedLineId.value && files.value.length > 0) {
+            // Auto-select the first file when files tab is clicked
+            selectedRowIndex.value = 0;
+        }
+    });
+
+    // Watch for selectedLineId changes to auto-select first file when a well is selected
+    watch(selectedLineId, (newLineId) => {
+        if (newLineId && activeTab.value === 'files' && files.value.length > 0) {
+            // Auto-select the first file when a well is selected and files tab is active
+            selectedRowIndex.value = 0;
+        }
+    });
 </script>
 
 <style scoped>
@@ -1127,13 +1468,16 @@ watch(selectedLineId, (newLineId) => {
 
 .qc-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr; /* Equal width for both panels */
+    grid-template-columns: 1fr 1fr;
+    /* Equal width for both panels */
     gap: 1.5rem;
 }
 
 .components-panel {
-    width: 100%; /* Full width of its grid column */
-    overflow-x: auto; /* Enable horizontal scrolling */
+    width: 100%;
+    /* Full width of its grid column */
+    overflow-x: auto;
+    /* Enable horizontal scrolling */
 }
 
 .panel-card {
@@ -1263,7 +1607,8 @@ watch(selectedLineId, (newLineId) => {
     border-radius: 8px 8px 0 0;
     border-bottom: none;
     background: white;
-    max-height: calc(100% - 60px); /* Account for footer height */
+    max-height: calc(100% - 60px);
+    /* Account for footer height */
     width: 100%;
 }
 
@@ -1291,7 +1636,8 @@ watch(selectedLineId, (newLineId) => {
     width: 100%;
     font-size: 0.75rem;
     border-collapse: collapse;
-    min-width: 1600px; /* Increased minimum width to accommodate all seismic columns */
+    min-width: 1600px;
+    /* Increased minimum width to accommodate all seismic columns */
     background: white;
     border: none;
 }
@@ -1308,15 +1654,18 @@ watch(selectedLineId, (newLineId) => {
     position: sticky;
     top: 0;
     z-index: 10;
-    min-width: 120px; /* Ensure consistent minimum column width */
+    min-width: 120px;
+    /* Ensure consistent minimum column width */
 }
 
 .components-table th:first-child {
-    min-width: 50px; /* Smaller width for checkbox column */
+    min-width: 50px;
+    /* Smaller width for checkbox column */
 }
 
 .components-table th:nth-child(2) {
-    min-width: 200px; /* File name column gets more space */
+    min-width: 200px;
+    /* File name column gets more space */
 }
 
 .components-table td {
@@ -1774,6 +2123,166 @@ watch(selectedLineId, (newLineId) => {
     padding: 0.75rem 1.5rem;
 }
 
+/* Publish Modal Styles */
+.publish-modal-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    width: 90%;
+    max-width: 400px;
+    overflow: hidden;
+    transform: scale(1);
+    transition: all 0.3s ease;
+}
+
+.publish-modal-content {
+    padding: 2rem 1.5rem 1.5rem 1.5rem;
+    text-align: center;
+}
+
+.upload-progress,
+.upload-success,
+.upload-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.upload-icon {
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.spinner-large {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #e5e7eb;
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.upload-title,
+.success-title,
+.error-title {
+    color: #0f172a;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+}
+
+.upload-subtitle,
+.success-subtitle,
+.error-subtitle {
+    color: #6b7280;
+    font-size: 0.9rem;
+    margin: 0 0 1.5rem 0;
+    line-height: 1.4;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    font-size: 0.8rem;
+}
+
+.progress-percent {
+    font-weight: 600;
+    color: #374151;
+}
+
+.current-file {
+    color: #6b7280;
+    font-style: italic;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.error-icon {
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.error-details {
+    width: 100%;
+    max-width: 100%;
+    margin: 1.5rem 0;
+    text-align: left;
+}
+
+.error-details-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 1rem 0;
+    text-align: center;
+}
+
+.error-files-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    background: #fef2f2;
+}
+
+.error-file-item {
+    padding: 0.75rem;
+    border-bottom: 1px solid #fecaca;
+}
+
+.error-file-item:last-child {
+    border-bottom: none;
+}
+
+.error-file-name {
+    font-weight: 600;
+    color: #991b1b;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+    word-break: break-all;
+}
+
+.error-file-message {
+    color: #7f1d1d;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
 /* Wells List Styles */
 .info-section {
     margin-bottom: 1.5rem;
@@ -1960,8 +2469,10 @@ watch(selectedLineId, (newLineId) => {
     }
 
     .components-panel {
-        width: 100%; /* Full width on mobile */
-        overflow-x: auto; /* Keep horizontal scrolling */
+        width: 100%;
+        /* Full width on mobile */
+        overflow-x: auto;
+        /* Keep horizontal scrolling */
     }
 
     .workflow-progress {

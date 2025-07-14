@@ -1,5 +1,6 @@
 import { SeismicSurvey } from '../../schemas/SeismicSurvey';
 import { useApi } from './useApi';
+import { apiService } from '../../services/apiService';
 import { ref } from 'vue';
 
 export const useSeismicSurvey = () => {
@@ -60,11 +61,23 @@ export const useSeismicSurvey = () => {
       streamerLength: undefined,
       streamerLengthUom: undefined,
     });
+
+    const getAll = async () => {
+        const response = await apiService.get('seismic-survey/fetchAll');
+        return response.data;
+    }
+
+    const insert = async (survey: SeismicSurvey) => {
+        const response = await apiService.post('seismic-survey/create', survey);
+        return response.data;
+    }
     
     // Add any specific functions for seismic surveys here if needed
 
     return {
         ...baseCrud,
+        insert,
         createEmptySurvey,
+        fetch: getAll,
     };
 }; 

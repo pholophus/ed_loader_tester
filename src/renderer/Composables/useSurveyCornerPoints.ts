@@ -3,24 +3,25 @@ import { apiService } from '../../services/apiService';
 import { useApi } from './useApi';
 import mongoose from 'mongoose';
 
-interface createBulkByLineData {
-    coordinates: {
-        latitude: string;
-        longitude: string;
-    }[];
-    lineName: string;
-    type: string;
-    fileName: string;
+interface SurveyCornerPoint {
+    cornerPoints: 
+    {
+        latitude: number,
+        longitude: number,
+        inline: number,
+        xline: number
+    }[],
+    surveyName: string,
+    type: string
 }
 
-export const useSeismicCoordinate = () => {
-    const { insert, insertMany, ...rest } = useApi<SeismicCoordinate>('seismic-polygon/coordinates');
+export const useSurveyCornerPoints = () => {
+    const { insert, insertMany, ...rest } = useApi<SurveyCornerPoint>('survey-corner-point');
 
-    const createBulkByLine = async (data: createBulkByLineData) => {
-        const response = await apiService.post('seismic-polygon/coordinates/create-batch', data);
+    const createBulkBySurvey = async (data: SurveyCornerPoint) => {
+        const response = await apiService.post('survey-corner-point/create-batch', data);
         return response;
     };
-    
     
     // Function to create an empty SeismicCoordinate object
     // const createEmptyLine = (): SeismicCoordinate => ({
@@ -33,7 +34,7 @@ export const useSeismicCoordinate = () => {
     return {
         insert,
         insertMany,
-        createBulkByLine,
+        createBulkBySurvey,
         ...rest
     };
 }; 
