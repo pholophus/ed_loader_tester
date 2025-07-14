@@ -251,7 +251,7 @@
                             <div class="col-progress">Upload Progress</div>
                         </div>
 
-                        <div class="files-upload-area" @drop="onDrop" @dragover="onDragOver" @dragleave="onDragLeave">
+                        <!---<div class="files-upload-area" @drop="onDrop" @dragover="onDragOver" @dragleave="onDragLeave">
                             <div class="upload-icon">
                                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
                                     <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -261,7 +261,7 @@
                             </div>
                             <h3>Drag and drop multiple files to upload</h3>
                             <p>or use the buttons above to select files or folders</p>
-                        </div>
+                        </div>-->
 
                         <div v-if="uploadedFiles.length > 0" class="files-list">
                             <div v-for="file in uploadedFiles" :key="file.id" class="file-item">
@@ -446,6 +446,14 @@
                 </div>
             </div>
         </div>
+
+        <!-- Notification Modal -->
+        <NotificationModal
+            v-model="showNotificationModal"
+            :type="notificationType"
+            :title="notificationTitle"
+            :message="notificationMessage"
+        />
     </div>
 </template>
 
@@ -458,6 +466,7 @@ import { useSeismicSurvey } from '../../Composables/useSeismicSurvey';
 import { useCountry } from '../../Composables/useCountry';
 import { useCRS } from '../../Composables/useCRS';
 import WorkflowProgress from '../../Components/WorkflowProgress.vue';
+import NotificationModal from '../../Components/NotificationModal.vue';
 import { useSurveyCornerPoints } from '@/Composables/useSurveyCornerPoints';
 
 const route = useRoute();
@@ -510,6 +519,12 @@ const showTargetSeismicDropdown = ref(false);
 // Modal data
 const showSeismicModal = ref(false);
 const selectedSeismicDisplay = ref('');
+
+// Notification modal data
+const showNotificationModal = ref(false);
+const notificationType = ref<'success' | 'error' | 'info'>('info');
+const notificationTitle = ref('');
+const notificationMessage = ref('');
 
 // Options
 const options = ref({
@@ -846,10 +861,17 @@ const closeSeismicModal = () => {
     showSeismicModal.value = false;
 };
 
+const showNotification = (type: 'success' | 'error' | 'info', title: string, message: string) => {
+    notificationType.value = type;
+    notificationTitle.value = title;
+    notificationMessage.value = message;
+    showNotificationModal.value = true;
+};
+
 const createSurvey = async () => {
     // Validate form data
     if (!newSurveyName.value.trim() || !newSurveyCountry.value.trim() || !newSurveyDimension.value) {
-        console.error('Please fill in all required fields');
+        showNotification('error', 'Validation Error', 'Please fill in all required fields');
         return;
     }
 
@@ -872,8 +894,6 @@ const createSurvey = async () => {
             }));
 
             seismicStore.setSurveyCornerPoints(surveyCornerPointsData);
-
-            // const surveyCornerPoints = seismicStore.data.surveyCornerPoints;
 
                 const surveyCornerPointsBodyRequest = {
                     cornerPoints: surveyCornerPoints.value || [],
@@ -902,11 +922,15 @@ const createSurvey = async () => {
         // Refresh the seismics list to include the new survey
         await searchSeismics();
 
+        // Show success notification
+        showNotification('success', 'Survey Created Successfully', `Survey "${newSurvey.name}" has been created successfully.`);
+        
         // console.log('Survey created successfully:', createdSurvey);
         console.log('seismicStore.data ', seismicStore.data)
         
     } catch (error) {
         console.error('Error creating survey:', error);
+        showNotification('error', 'Creation Failed', `Failed to create survey: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
     
     closeSeismicModal();
@@ -2032,4 +2056,6 @@ onMounted(() => {
         padding: 0.375rem 0.25rem;
     }
 }
+
+
 </style> 

@@ -46,12 +46,12 @@
                             </svg>
                             Approve Dataset
                         </button>
-                        <button class="btn btn-reject" @click="rejectDataset">
+                        <!-- <button class="btn btn-reject" @click="rejectDataset">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                                 <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                             Reject Dataset
-                        </button>
+                        </button> -->
                     </div>
                 </div>
             </div>
@@ -328,7 +328,7 @@
         <div v-if="showApprovalModalDialog" class="modal-overlay" @click.self="closeApprovalModal">
             <div class="modal-container">
                 <div class="modal-header">
-                    <h3>Approval Comments</h3>
+                    <h3>Approval Confirmation</h3>
                     <button class="modal-close" @click="closeApprovalModal">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -336,14 +336,9 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <label for="approval-comments" class="modal-label">Approval comments (optional)</label>
-                    <textarea 
-                        id="approval-comments"
-                        v-model="approvalComments"
-                        class="modal-textarea"
-                        placeholder="Enter your approval comments here..."
-                        rows="4"
-                    ></textarea>
+                    <label for="approval-comments" class="modal-label">By approving this means you acknowledge that the data is ready to be published.</label>
+                    <!-- <textarea id="approval-comments" v-model="approvalComments" class="modal-textarea"
+                        placeholder="Enter your approval comments here..." rows="4"></textarea> -->
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-outline" @click="closeApprovalModal">

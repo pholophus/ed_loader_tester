@@ -51,13 +51,13 @@
                             </svg>
                             Approve Dataset
                         </button>
-                        <button class="btn btn-reject" @click="rejectDataset">
+                        <!-- <button class="btn btn-reject" @click="rejectDataset">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                                 <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2"
                                     stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
                             Reject Dataset
-                        </button>
+                        </button> -->
                     </div>
                 </div>
             </div>
@@ -440,7 +440,7 @@
         <div v-if="showApprovalModalDialog" class="modal-overlay" @click.self="closeApprovalModal">
             <div class="modal-container">
                 <div class="modal-header">
-                    <h3>Approval Comments</h3>
+                    <h3>Approval Confirmation</h3>
                     <button class="modal-close" @click="closeApprovalModal">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -449,9 +449,9 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <label for="approval-comments" class="modal-label">Approval comments (optional)</label>
-                    <textarea id="approval-comments" v-model="approvalComments" class="modal-textarea"
-                        placeholder="Enter your approval comments here..." rows="4"></textarea>
+                    <label for="approval-comments" class="modal-label">By approving this means you acknowledge that the data is ready to be published.</label>
+                    <!-- <textarea id="approval-comments" v-model="approvalComments" class="modal-textarea"
+                        placeholder="Enter your approval comments here..." rows="4"></textarea> -->
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-outline" @click="closeApprovalModal">
@@ -495,7 +495,7 @@
                         <div class="upload-icon">
                             <div class="spinner-large"></div>
                         </div>
-                        <h3 class="upload-title">Publishing Dataset</h3>
+                        <h3 class="upload-title">Uploading Files</h3>
                         <p class="upload-subtitle">Uploading files to FTP server...</p>
                         <div class="progress-bar">
                             <div class="progress-fill" :style="{ width: publishProgress + '%' }"></div>
@@ -514,7 +514,7 @@
                                     stroke-linejoin="round" />
                             </svg>
                         </div>
-                        <h3 class="success-title">Dataset Published</h3>
+                        <h3 class="success-title">Files Uploaded</h3>
                         <p class="success-subtitle">All files have been successfully uploaded to the FTP server.</p>
                     </div>
 
@@ -526,7 +526,7 @@
                                     stroke-linejoin="round" />
                             </svg>
                         </div>
-                        <h3 class="error-title">Publication Failed</h3>
+                        <h3 class="error-title">Upload Failed</h3>
                         <p class="error-subtitle">{{ publishError }}</p>
 
                         <!-- Detailed error list -->
@@ -548,6 +548,14 @@
                 </div>
             </div>
         </div>
+
+        <!-- Notification Modal -->
+        <NotificationModal
+            v-model="showNotificationModal"
+            :type="notificationType"
+            :title="notificationTitle"
+            :message="notificationMessage"
+        />
     </div>
 </template>
 
@@ -557,6 +565,7 @@ import { useRoute, useRouter } from 'vue-router';
 import DatasetDetails from './DataQC/DatasetDetails.vue';
 import FilesDetails from './DataQC/FilesDetails.vue';
 import WorkflowProgress from '../../Components/WorkflowProgress.vue';
+import NotificationModal from '../../Components/NotificationModal.vue';
 // import { useWellStore, ValidationResult } from '../../store/wellStore';
 import { useSeismicStore, ValidationResult } from '../../store/seismicStore';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -678,6 +687,12 @@ const showSuccessModal = ref(false);
 
 // Publish modal management
 const showPublishModal = ref(false);
+
+// Notification modal management
+const showNotificationModal = ref(false);
+const notificationType = ref<'success' | 'error' | 'info'>('info');
+const notificationTitle = ref('');
+const notificationMessage = ref('');
 
 // File management
 const checkedFiles = ref<Set<string>>(new Set());
@@ -1220,8 +1235,18 @@ const proceedToPublish = async () => {
         // Update workflow: mark publication as completed
         seismicStore.addCompletedStage('publication');
 
+        // setTimeout(() => {
+        //     closePublishModal();
+        //     // Show success notification
+        //     showNotification('success', 'Publication Complete', 'Dataset has been successfully published to the FTP server.');
+        // }, 2000);
+
+        // Redirect to Dashboard after successful publication
         setTimeout(() => {
             closePublishModal();
+            showNotification('success', 'Publication Complete', 'Dataset has been successfully published to the FTP server.');
+            // Redirect to Dashboard
+            router.push({ path: '/' });
         }, 2000);
 
     } catch (error: any) {
@@ -1257,14 +1282,21 @@ const proceedToPublish = async () => {
     };
 
     const closePublishModal = () => {
-        showPublishModal.value = false;
-        // Reset states
-        publishStatus.value = 'uploading';
-        publishProgress.value = 0;
-        currentUploadingFile.value = '';
-        publishError.value = '';
-        publishErrorDetails.value = [];
-    };
+    showPublishModal.value = false;
+    // Reset states
+    publishStatus.value = 'uploading';
+    publishProgress.value = 0;
+    currentUploadingFile.value = '';
+    publishError.value = '';
+    publishErrorDetails.value = [];
+};
+
+const showNotification = (type: 'success' | 'error' | 'info', title: string, message: string) => {
+    notificationType.value = type;
+    notificationTitle.value = title;
+    notificationMessage.value = message;
+    showNotificationModal.value = true;
+};
 
     const rejectDataset = () => {
         console.log('[QC] Rejecting dataset...');
