@@ -30,6 +30,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
   parseLasToWellioJson: (filePath: string) => ipcRenderer.invoke('las:parseToWellioJson', filePath),
   countLasCurves: (filePath: string) => ipcRenderer.invoke('las:countCurves', filePath),
   
+  // PDF file operations
+  parsePdfForPreview: (filePath: string) => ipcRenderer.invoke('pdf:parseForPreview', filePath),
+  extractPdfMetadata: (filePath: string) => ipcRenderer.invoke('pdf:extractMetadata', filePath),
+  extractPdfComprehensiveData: (filePath: string, maxPages?: number) => ipcRenderer.invoke('pdf:extractComprehensiveData', filePath, maxPages),
+  countPdfPages: (filePath: string) => ipcRenderer.invoke('pdf:countPages', filePath),
+  extractPdfPagesText: (filePath: string, startPage: number, endPage: number) => ipcRenderer.invoke('pdf:extractPagesText', filePath, startPage, endPage),
+  
+  // DOCX file operations
+  parseDocxForPreview: (filePath: string) => ipcRenderer.invoke('docx:parseForPreview', filePath),
+  extractDocxMetadata: (filePath: string) => ipcRenderer.invoke('docx:extractMetadata', filePath),
+  extractDocxComprehensiveData: (filePath: string, includeHtml?: boolean) => ipcRenderer.invoke('docx:extractComprehensiveData', filePath, includeHtml),
+  convertDocxToHtml: (filePath: string) => ipcRenderer.invoke('docx:convertToHtml', filePath),
+  countDocxWords: (filePath: string) => ipcRenderer.invoke('docx:countWords', filePath),
+  extractDocxParagraphsText: (filePath: string, startParagraph: number, endParagraph: number) => ipcRenderer.invoke('docx:extractParagraphsText', filePath, startParagraph, endParagraph),
+  extractDocxImages: (filePath: string) => ipcRenderer.invoke('docx:extractImages', filePath),
+  
   // Python script operations
   extractSingleFileSegyContent: (filePath: string) => ipcRenderer.invoke('python:runSingleFileSegy', filePath),
   extractSegyContent: () => ipcRenderer.invoke('python:runSegy'),

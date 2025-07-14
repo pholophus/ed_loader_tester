@@ -284,50 +284,51 @@
                                     <p>Loading preview...</p>
                                 </div>
                                 
-                                <div v-else-if="previewData?.error" class="preview-error">
-                                    <p>{{ previewData.error }}</p>
+                                <!-- LAS File Preview -->
+                                <div v-else-if="lasPreviewData?.error" class="preview-error">
+                                    <p>{{ lasPreviewData.error }}</p>
                                 </div>
                                 
-                                <div v-else-if="previewData" class="preview-data">
+                                <div v-else-if="lasPreviewData" class="preview-data">
                                     <!-- Metadata Section -->
-                                    <div v-if="previewData.metadata && Object.keys(previewData.metadata).length > 0" class="preview-metadata">
+                                    <div v-if="lasPreviewData.metadata && Object.keys(lasPreviewData.metadata).length > 0" class="preview-metadata">
                                         <h4>File Information</h4>
                                         <div class="metadata-grid">
-                                            <div v-if="previewData.metadata.wellName" class="metadata-item">
+                                            <div v-if="lasPreviewData.metadata.wellName" class="metadata-item">
                                                 <label>Well Name:</label>
-                                                <span>{{ previewData.metadata.wellName }}</span>
+                                                <span>{{ lasPreviewData.metadata.wellName }}</span>
                                             </div>
-                                            <div v-if="previewData.metadata.location" class="metadata-item">
+                                            <div v-if="lasPreviewData.metadata.location" class="metadata-item">
                                                 <label>Location:</label>
-                                                <span>{{ previewData.metadata.location }}</span>
+                                                <span>{{ lasPreviewData.metadata.location }}</span>
                                             </div>
-                                            <div v-if="previewData.metadata.uwi" class="metadata-item">
+                                            <div v-if="lasPreviewData.metadata.uwi" class="metadata-item">
                                                 <label>UWI:</label>
-                                                <span>{{ previewData.metadata.uwi }}</span>
+                                                <span>{{ lasPreviewData.metadata.uwi }}</span>
                                             </div>
-                                            <div v-if="previewData.metadata.startDepth" class="metadata-item">
+                                            <div v-if="lasPreviewData.metadata.startDepth" class="metadata-item">
                                                 <label>Start Depth:</label>
-                                                <span>{{ previewData.metadata.startDepth }}</span>
+                                                <span>{{ lasPreviewData.metadata.startDepth }}</span>
                                             </div>
-                                            <div v-if="previewData.metadata.stopDepth" class="metadata-item">
+                                            <div v-if="lasPreviewData.metadata.stopDepth" class="metadata-item">
                                                 <label>Stop Depth:</label>
-                                                <span>{{ previewData.metadata.stopDepth }}</span>
+                                                <span>{{ lasPreviewData.metadata.stopDepth }}</span>
                                             </div>
-                                            <div v-if="previewData.metadata.step" class="metadata-item">
+                                            <div v-if="lasPreviewData.metadata.step" class="metadata-item">
                                                 <label>Step:</label>
-                                                <span>{{ previewData.metadata.step }}</span>
+                                                <span>{{ lasPreviewData.metadata.step }}</span>
                                             </div>
-                                            <div v-if="previewData.metadata.curveCount" class="metadata-item">
+                                            <div v-if="lasPreviewData.metadata.curveCount" class="metadata-item">
                                                 <label>Curve Count:</label>
-                                                <span>{{ previewData.metadata.curveCount }}</span>
+                                                <span>{{ lasPreviewData.metadata.curveCount }}</span>
                                             </div>
                                         </div>
                                         
                                         <!-- Curves List -->
-                                        <div v-if="previewData.metadata.curves && previewData.metadata.curves.length > 0" class="curves-section">
+                                        <div v-if="lasPreviewData.metadata.curves && lasPreviewData.metadata.curves.length > 0" class="curves-section">
                                             <h5>Available Curves</h5>
                                             <div class="curves-list">
-                                                <span v-for="curve in previewData.metadata.curves" :key="curve" class="curve-tag">
+                                                <span v-for="curve in lasPreviewData.metadata.curves" :key="curve" class="curve-tag">
                                                     {{ curve }}
                                                 </span>
                                             </div>
@@ -338,9 +339,19 @@
                                     <div class="ascii-preview">
                                         <h4>ASCII Content</h4>
                                         <div class="ascii-content">
-                                            <pre>{{ previewData.asciiText }}</pre>
+                                            <pre>{{ lasPreviewData.asciiText }}</pre>
                                         </div>
                                     </div>
+                                </div>
+
+                                <!-- PDF File Preview -->
+                                <div v-else-if="isPdfFile(selectedFile?.name) && pdfFileUrl" class="preview-data">
+                                    <iframe :src="pdfFileUrl" width="100%" height="600px" style="border: none;"></iframe>
+                                </div>
+                                
+                                <!-- DOCX File Preview -->
+                                <div v-else-if="isDocxFile(selectedFile?.name) && docxHtmlContent" class="preview-data">
+                                    <div v-html="docxHtmlContent" style="background:white; padding:1rem; min-height:400px;"></div>
                                 </div>
                                 
                                 <div v-else class="no-preview">
@@ -382,6 +393,16 @@ import {
     type LasComprehensiveData,
     type LasDepthMetadata
 } from '../../../services/lasService';
+import { 
+    parsePdfFileForPreview, 
+    isPdfFile,
+    type PdfPreviewData
+} from '../../../services/pdfService';
+import { 
+    parseDocxFileForPreview, 
+    isDocxFile,
+    type DocxPreviewData
+} from '../../../services/docxService';
 
 const router = useRouter();
 // const fileStore = useFileStore();
@@ -403,13 +424,18 @@ const activeTab = ref('metadata');
 const selectedFile = ref<DataLoadingFileData | null>(null);
 const checkedFiles = ref<Set<string>>(new Set());
 const editableFileName = ref('');
-const previewData = ref<LasPreviewData | null>(null);
+const lasPreviewData = ref<LasPreviewData | null>(null);
+const pdfPreviewData = ref<PdfPreviewData | null>(null);
+const docxPreviewData = ref<DocxPreviewData | null>(null);
 const isLoadingPreview = ref(false);
 
 // LAS depth metadata state
 const currentDepthMetadata = ref<LasDepthMetadata | null>(null);
 const isLoadingDepthMetadata = ref(false);
 const depthMetadataCache = ref<Map<string, LasDepthMetadata>>(new Map());
+
+// DOCX HTML preview state
+const docxHtmlContent = ref('');
 
 // Extended interface for DataLoading-specific properties
 interface DataLoadingFileData extends ExtendedFileData {
@@ -491,7 +517,10 @@ const selectFile = (file: DataLoadingFileData) => {
     editableFileName.value = selectedFile.value.targetFileName || selectedFile.value.name;
     
     // Clear previous preview data
-    previewData.value = null;
+    lasPreviewData.value = null;
+    pdfPreviewData.value = null;
+    docxPreviewData.value = null;
+    docxHtmlContent.value = ''; // Clear DOCX HTML content
     
     // Set depth metadata from cache if it's a LAS file
     if (isLasFile(selectedFile.value.name)) {
@@ -506,8 +535,9 @@ const selectFile = (file: DataLoadingFileData) => {
         currentDepthMetadata.value = null;
     }
     
-    // Load preview if it's a .las file and preview tab is active
-    if (activeTab.value === 'preview' && isLasFile(selectedFile.value.name)) {
+    // Load preview if preview tab is active and file type is supported
+    if (activeTab.value === 'preview' && 
+        (isLasFile(selectedFile.value.name) || isPdfFile(selectedFile.value.name) || isDocxFile(selectedFile.value.name))) {
         loadFilePreview();
     }
 };
@@ -760,44 +790,79 @@ const loadFilePreview = async () => {
     if (!selectedFile.value) return;
     
     isLoadingPreview.value = true;
-    previewData.value = null;
+    
+    // Clear all preview data
+    lasPreviewData.value = null;
+    pdfPreviewData.value = null;
+    docxPreviewData.value = null;
+    docxHtmlContent.value = ''; // Clear DOCX HTML content
     
     try {
+        const filePath = selectedFile.value.path;
+        if (!filePath) {
+            throw new Error('File path not available');
+        }
+
         if (isLasFile(selectedFile.value.name)) {
             // For .las files, use the LAS preview service
-            const filePath = selectedFile.value.path;
-            if (filePath) {
-                previewData.value = await parseLasFileForPreview(filePath);
-            } else {
-                previewData.value = {
-                    asciiText: '',
-                    metadata: {},
-                    error: 'File path not available'
-                };
-            }
+            lasPreviewData.value = await parseLasFileForPreview(filePath);
+        } else if (isPdfFile(selectedFile.value.name)) {
+            // For .pdf files, use the PDF preview service
+            pdfPreviewData.value = await parsePdfFileForPreview(filePath);
+        } else if (isDocxFile(selectedFile.value.name)) {
+            // For .docx files, use the DOCX preview service
+            docxPreviewData.value = await parseDocxFileForPreview(filePath);
         } else {
             // For other file types, show a placeholder
-            previewData.value = {
-                asciiText: `Preview not available for ${selectedFile.value.name}.\nFile type: ${getFileExtension(selectedFile.value.name).toUpperCase()}`,
-                metadata: {},
-            };
+            console.log(`Preview not available for ${selectedFile.value.name}. File type: ${getFileExtension(selectedFile.value.name).toUpperCase()}`);
         }
     } catch (error) {
         console.error('[DataLoading] Error loading file preview:', error);
-        previewData.value = {
-            asciiText: '',
-            metadata: {},
-            error: `Error loading preview: ${error instanceof Error ? error.message : 'Unknown error'}`
-        };
+        const errorMessage = `Error loading preview: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        
+        // Set error on the appropriate preview data based on file type
+        if (isLasFile(selectedFile.value.name)) {
+            lasPreviewData.value = {
+                asciiText: '',
+                metadata: {},
+                error: errorMessage
+            };
+        } else if (isPdfFile(selectedFile.value.name)) {
+            pdfPreviewData.value = {
+                textContent: '',
+                metadata: {},
+                error: errorMessage
+            };
+        } else if (isDocxFile(selectedFile.value.name)) {
+            docxPreviewData.value = {
+                textContent: '',
+                metadata: {},
+                error: errorMessage
+            };
+        }
     } finally {
         isLoadingPreview.value = false;
     }
 };
 
 // Watch for tab changes to load preview when needed
-watch(activeTab, (newTab) => {
-    if (newTab === 'preview' && selectedFile.value && !previewData.value) {
+watch(activeTab, async (newTab) => {
+    if (newTab === 'preview' && selectedFile.value && !lasPreviewData.value && !pdfPreviewData.value && !docxPreviewData.value) {
         loadFilePreview();
+    }
+    // Load DOCX HTML preview if DOCX file is selected
+    if (newTab === 'preview' && selectedFile.value && isDocxFile(selectedFile.value.name)) {
+        if (selectedFile.value.path) {
+            // @ts-ignore
+            const result = await window.electronAPI.convertDocxToHtml(selectedFile.value.path);
+            if (result && result.success) {
+                docxHtmlContent.value = result.htmlContent;
+            } else {
+                docxHtmlContent.value = '<p style="color:red">Unable to render DOCX preview.</p>';
+            }
+        }
+    } else {
+        docxHtmlContent.value = '';
     }
 });
 
@@ -821,6 +886,13 @@ const canProceedToQualityCheck = computed(() => {
                loadingFile.selectedSubDataTypeId && loadingFile.selectedSubDataTypeId !== '' && 
                loadingFile.wellId && loadingFile.wellId !== '';
     });
+});
+
+const pdfFileUrl = computed(() => {
+    if (selectedFile.value && isPdfFile(selectedFile.value.name) && selectedFile.value.path) {
+        return `file://${selectedFile.value.path}`;
+    }
+    return '';
 });
 </script>
 
@@ -1393,6 +1465,41 @@ const canProceedToQualityCheck = computed(() => {
     outline: none;
     border-color: #3b82f6;
     box-shadow: 0 0 0 1px #3b82f6;
+}
+
+/* Text Preview Styles */
+.text-preview {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.text-preview h4 {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    background: #f3f4f6;
+    border-bottom: 1px solid #e5e7eb;
+    color: #1f2937;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.text-content {
+    max-height: 400px;
+    overflow-y: auto;
+    background: #ffffff;
+}
+
+.text-content pre {
+    margin: 0;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: #374151;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    word-wrap: break-word;
 }
 </style>
 

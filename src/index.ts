@@ -1215,3 +1215,435 @@ ipcMain.handle('las:countCurves', async (_event, filePath: string) => {
   }
 });
 
+// ======= PDF File Handlers =======
+
+// PDF file preview handler
+ipcMain.handle('pdf:parseForPreview', async (_event, filePath: string) => {
+  try {
+    const pdfParse = require('pdf-parse');
+    const fs = require('fs');
+    
+    // Read the PDF file
+    const dataBuffer = fs.readFileSync(filePath);
+    
+    // Parse the PDF
+    const data = await pdfParse(dataBuffer);
+    
+    // Get file stats for metadata
+    const fileStats = await fs.promises.stat(filePath);
+    
+    // Extract metadata
+    const metadata = {
+      title: data.info?.Title || '',
+      author: data.info?.Author || '',
+      subject: data.info?.Subject || '',
+      creator: data.info?.Creator || '',
+      producer: data.info?.Producer || '',
+      creationDate: data.info?.CreationDate || '',
+      modificationDate: data.info?.ModDate || '',
+      pageCount: data.numpages || 0,
+      fileSize: fileStats.size
+    };
+    
+    // Limit text content for preview (first 2000 characters)
+    const textContent = data.text ? data.text.substring(0, 2000) + (data.text.length > 2000 ? '...' : '') : '';
+    
+    return {
+      textContent,
+      metadata,
+    };
+
+  } catch (error) {
+    console.error('[PDF Preview Service] Error parsing PDF file:', error);
+    return {
+      textContent: '',
+      metadata: {},
+      error: `Error parsing PDF file: ${error instanceof Error ? error.message : 'Unknown error'}`
+    };
+  }
+});
+
+// PDF metadata extraction handler
+ipcMain.handle('pdf:extractMetadata', async (_event, filePath: string) => {
+  try {
+    const pdfParse = require('pdf-parse');
+    const fs = require('fs');
+    
+    const dataBuffer = fs.readFileSync(filePath);
+    const data = await pdfParse(dataBuffer);
+    const fileStats = await fs.promises.stat(filePath);
+    
+    const metadata = {
+      title: data.info?.Title || '',
+      author: data.info?.Author || '',
+      subject: data.info?.Subject || '',
+      creator: data.info?.Creator || '',
+      producer: data.info?.Producer || '',
+      creationDate: data.info?.CreationDate || '',
+      modificationDate: data.info?.ModDate || '',
+      pageCount: data.numpages || 0,
+      fileSize: fileStats.size,
+      keywords: data.info?.Keywords ? data.info.Keywords.split(',').map((k: string) => k.trim()) : [],
+      language: data.info?.Language || ''
+    };
+
+    return { success: true, metadata };
+
+  } catch (error) {
+    console.error('[PDF Metadata Service] Error extracting metadata:', error);
+    return { 
+      success: false,
+      error: `Error extracting PDF metadata: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    };
+  }
+});
+
+// PDF comprehensive data extraction handler
+ipcMain.handle('pdf:extractComprehensiveData', async (_event, filePath: string, maxPages: number = 10) => {
+  try {
+    const pdfParse = require('pdf-parse');
+    const fs = require('fs');
+    
+    const dataBuffer = fs.readFileSync(filePath);
+    const data = await pdfParse(dataBuffer);
+    const fileStats = await fs.promises.stat(filePath);
+    
+    // Limit text content based on maxPages parameter
+    let textContent = data.text || '';
+    if (maxPages > 0 && data.numpages > maxPages) {
+      // Rough estimation: assume each page has similar amount of text
+      const charsPerPage = Math.floor(textContent.length / data.numpages);
+      textContent = textContent.substring(0, charsPerPage * maxPages) + '...';
+    }
+    
+    const metadata = {
+      title: data.info?.Title || '',
+      author: data.info?.Author || '',
+      subject: data.info?.Subject || '',
+      creator: data.info?.Creator || '',
+      producer: data.info?.Producer || '',
+      creationDate: data.info?.CreationDate || '',
+      modificationDate: data.info?.ModDate || '',
+      pageCount: data.numpages || 0,
+      fileSize: fileStats.size,
+      keywords: data.info?.Keywords ? data.info.Keywords.split(',').map((k: string) => k.trim()) : [],
+      language: data.info?.Language || ''
+    };
+
+    return { 
+      success: true, 
+      data: {
+        textContent,
+        metadata
+      }
+    };
+
+  } catch (error) {
+    console.error('[PDF Comprehensive Service] Error extracting data:', error);
+    return { 
+      success: false,
+      error: `Error extracting comprehensive PDF data: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    };
+  }
+});
+
+// PDF page count handler
+ipcMain.handle('pdf:countPages', async (_event, filePath: string) => {
+  try {
+    const pdfParse = require('pdf-parse');
+    const fs = require('fs');
+    
+    const dataBuffer = fs.readFileSync(filePath);
+    const data = await pdfParse(dataBuffer);
+    
+    return { 
+      success: true, 
+      pageCount: data.numpages || 0
+    };
+
+  } catch (error) {
+    console.error('[PDF Page Count] Error:', error);
+    return { 
+      success: false,
+      error: `Error counting PDF pages: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    };
+  }
+});
+
+// PDF page text extraction handler
+ipcMain.handle('pdf:extractPagesText', async (_event, filePath: string, startPage: number, endPage: number) => {
+  try {
+    const pdfParse = require('pdf-parse');
+    const fs = require('fs');
+    
+    const dataBuffer = fs.readFileSync(filePath);
+    const data = await pdfParse(dataBuffer);
+    
+    // Note: pdf-parse doesn't support page-by-page extraction out of the box
+    // This is a simplified implementation that returns the full text
+    // For true page-by-page extraction, you'd need a more advanced PDF library
+    const textContent = data.text || '';
+    
+    return { 
+      success: true, 
+      textContent
+    };
+
+  } catch (error) {
+    console.error('[PDF Page Text] Error:', error);
+    return { 
+      success: false,
+      error: `Error extracting PDF page text: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    };
+  }
+});
+
+// ======= DOCX File Handlers =======
+
+// DOCX file preview handler
+ipcMain.handle('docx:parseForPreview', async (_event, filePath: string) => {
+  try {
+    const mammoth = require('mammoth');
+    const fs = require('fs');
+    
+    // Read the DOCX file
+    const buffer = fs.readFileSync(filePath);
+    
+    // Extract text content
+    const result = await mammoth.extractRawText({ buffer });
+    const textContent = result.value || '';
+    
+    // Get file stats for metadata
+    const fileStats = await fs.promises.stat(filePath);
+    
+    // Extract metadata (mammoth doesn't provide rich metadata, so we'll use basic info)
+    const metadata = {
+      title: '',
+      author: '',
+      subject: '',
+      creator: '',
+      lastModifiedBy: '',
+      creationDate: '',
+      modificationDate: fileStats.mtime.toISOString(),
+      pageCount: 0, // DOCX doesn't have fixed page count
+      wordCount: textContent.split(/\s+/).length,
+      fileSize: fileStats.size
+    };
+    
+    // Limit text content for preview (first 2000 characters)
+    const limitedTextContent = textContent.substring(0, 2000) + (textContent.length > 2000 ? '...' : '');
+    
+    return {
+      textContent: limitedTextContent,
+      metadata,
+    };
+
+  } catch (error) {
+    console.error('[DOCX Preview Service] Error parsing DOCX file:', error);
+    return {
+      textContent: '',
+      metadata: {},
+      error: `Error parsing DOCX file: ${error instanceof Error ? error.message : 'Unknown error'}`
+    };
+  }
+});
+
+// DOCX metadata extraction handler
+ipcMain.handle('docx:extractMetadata', async (_event, filePath: string) => {
+  try {
+    const mammoth = require('mammoth');
+    const fs = require('fs');
+    
+    const buffer = fs.readFileSync(filePath);
+    const result = await mammoth.extractRawText({ buffer });
+    const textContent = result.value || '';
+    const fileStats = await fs.promises.stat(filePath);
+    
+    const metadata = {
+      title: '',
+      author: '',
+      subject: '',
+      creator: '',
+      lastModifiedBy: '',
+      creationDate: '',
+      modificationDate: fileStats.mtime.toISOString(),
+      pageCount: 0,
+      wordCount: textContent.split(/\s+/).length,
+      fileSize: fileStats.size,
+      keywords: [],
+      language: '',
+      category: '',
+      comments: ''
+    };
+
+    return { success: true, metadata };
+
+  } catch (error) {
+    console.error('[DOCX Metadata Service] Error extracting metadata:', error);
+    return { 
+      success: false,
+      error: `Error extracting DOCX metadata: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    };
+  }
+});
+
+// DOCX comprehensive data extraction handler
+ipcMain.handle('docx:extractComprehensiveData', async (_event, filePath: string, includeHtml: boolean = false) => {
+  try {
+    const mammoth = require('mammoth');
+    const fs = require('fs');
+    
+    const buffer = fs.readFileSync(filePath);
+    const fileStats = await fs.promises.stat(filePath);
+    
+    // Extract text content
+    const textResult = await mammoth.extractRawText({ buffer });
+    const textContent = textResult.value || '';
+    
+    // Extract HTML content if requested
+    let htmlContent = '';
+    if (includeHtml) {
+      const htmlResult = await mammoth.convertToHtml({ buffer });
+      htmlContent = htmlResult.value || '';
+    }
+    
+    const metadata = {
+      title: '',
+      author: '',
+      subject: '',
+      creator: '',
+      lastModifiedBy: '',
+      creationDate: '',
+      modificationDate: fileStats.mtime.toISOString(),
+      pageCount: 0,
+      wordCount: textContent.split(/\s+/).length,
+      fileSize: fileStats.size,
+      keywords: [],
+      language: '',
+      category: '',
+      comments: ''
+    };
+
+    return { 
+      success: true, 
+      data: {
+        metadata,
+        textContent,
+        htmlContent: includeHtml ? htmlContent : undefined,
+        extractedAt: new Date()
+      }
+    };
+
+  } catch (error) {
+    console.error('[DOCX Comprehensive Service] Error extracting data:', error);
+    return { 
+      success: false,
+      error: `Error extracting comprehensive DOCX data: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    };
+  }
+});
+
+// DOCX to HTML conversion handler
+ipcMain.handle('docx:convertToHtml', async (_event, filePath: string) => {
+  try {
+    const mammoth = require('mammoth');
+    const fs = require('fs');
+    
+    const buffer = fs.readFileSync(filePath);
+    const result = await mammoth.convertToHtml({ buffer });
+    
+    return { 
+      success: true, 
+      htmlContent: result.value || ''
+    };
+
+  } catch (error) {
+    console.error('[DOCX HTML Service] Error converting to HTML:', error);
+    return { 
+      success: false,
+      error: `Error converting DOCX to HTML: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    };
+  }
+});
+
+// DOCX word count handler
+ipcMain.handle('docx:countWords', async (_event, filePath: string) => {
+  try {
+    const mammoth = require('mammoth');
+    const fs = require('fs');
+    
+    const buffer = fs.readFileSync(filePath);
+    const result = await mammoth.extractRawText({ buffer });
+    const textContent = result.value || '';
+    const wordCount = textContent.split(/\s+/).length;
+    
+    return { 
+      success: true, 
+      wordCount
+    };
+
+  } catch (error) {
+    console.error('[DOCX Word Count] Error:', error);
+    return { 
+      success: false,
+      error: `Error counting DOCX words: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    };
+  }
+});
+
+// DOCX paragraph text extraction handler
+ipcMain.handle('docx:extractParagraphsText', async (_event, filePath: string, startParagraph: number, endParagraph: number) => {
+  try {
+    const mammoth = require('mammoth');
+    const fs = require('fs');
+    
+    const buffer = fs.readFileSync(filePath);
+    const result = await mammoth.extractRawText({ buffer });
+    const textContent = result.value || '';
+    
+    // Split into paragraphs and extract the requested range
+    const paragraphs = textContent.split(/\n\s*\n/);
+    const selectedParagraphs = paragraphs.slice(startParagraph - 1, endParagraph);
+    const extractedText = selectedParagraphs.join('\n\n');
+    
+    return { 
+      success: true, 
+      textContent: extractedText
+    };
+
+  } catch (error) {
+    console.error('[DOCX Paragraph Text] Error:', error);
+    return { 
+      success: false,
+      error: `Error extracting DOCX paragraph text: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    };
+  }
+});
+
+// DOCX image extraction handler
+ipcMain.handle('docx:extractImages', async (_event, filePath: string) => {
+  try {
+    const mammoth = require('mammoth');
+    const fs = require('fs');
+    
+    const buffer = fs.readFileSync(filePath);
+    const result = await mammoth.extractRawText({ buffer });
+    
+    // Note: mammoth doesn't provide direct image extraction
+    // This is a placeholder for future implementation
+    // You might need a different library like 'docx' for image extraction
+    
+    return { 
+      success: true, 
+      images: []
+    };
+
+  } catch (error) {
+    console.error('[DOCX Image Service] Error:', error);
+    return { 
+      success: false,
+      error: `Error extracting DOCX images: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    };
+  }
+});
+

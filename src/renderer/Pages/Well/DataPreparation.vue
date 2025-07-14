@@ -1113,6 +1113,29 @@ onMounted(() => {
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* Make the well search input shorter */
+.searchable-select .form-input {
+    width: 300px;
+    max-width: 100%;
+}
+
+/* Ensure the button stays beside the input */
+.select-with-search {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+}
+
+.select-with-search .searchable-select {
+    flex: 0 0 auto;
+}
+
+.select-with-search .add-well-btn {
+    flex: 0 0 auto;
+    align-self: flex-start;
+}
+
 .form-input:focus, .form-textarea:focus, .form-select:focus {
     outline: none;
     border-color: #8b5cf6;
