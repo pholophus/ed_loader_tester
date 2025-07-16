@@ -612,8 +612,6 @@ const hideCountryDropdown = () => {
 
 const saveDataset = () => {
     if (!isFormValid.value) return;
-    // Save logic here
-    // console.log('Saving dataset...');
 };
 
 const selectFiles = async () => {

@@ -1,1 +1,0 @@
-/Users/afedsetup/Documents/projects/rnd/auto-import-segy-data/combination test/katalon test import excel.xlsx
