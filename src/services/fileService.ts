@@ -4,9 +4,10 @@ import { dialog } from 'electron';
 
 /**
  * Open a folder dialog and return the selected path
+ * @param extensions - Optional array of file extensions to filter
  * @returns Object with selected folder path or cancellation info
  */
-export async function openFolderDialog() {
+export async function openFolderDialog(extensions?: string[]) {
   return await dialog.showOpenDialog({
     properties: ['openDirectory']
   });

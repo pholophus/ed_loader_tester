@@ -408,6 +408,7 @@ import WorkflowProgress from '../../Components/WorkflowProgress.vue';
 import NotificationModal from '../../Components/NotificationModal.vue';
 import { useSurveyCornerPoints } from '@/Composables/useSurveyCornerPoints';
 import { useSeismicLine } from '@/Composables/useSeismicLine';
+import { FileFilter } from '../../../utils/fileFilter';
 
 const route = useRoute();
 const router = useRouter();
@@ -548,7 +549,9 @@ const saveDataset = () => {
 
 const selectFiles = async () => {
     try {
-        const result = await (window as any).electronAPI.openFile();
+        const typeFormat = uploadOption.value === 'new' ? 'seismic' : 'other';
+        const extensions = FileFilter.getExtensions(typeFormat).map(ext => ext.substring(1)); // Remove the dot
+        const result = await (window as any).electronAPI.openFile(extensions);
         if (!result.canceled && result.filePaths.length > 0) {
             // Read file information for each selected file
             const filePromises = result.filePaths.map(async (filePath: string) => {
@@ -580,7 +583,9 @@ const selectFiles = async () => {
 
 const selectFolder = async () => {
     try {
-        const result = await (window as any).electronAPI.pickFolder();
+        const typeFormat = uploadOption.value === 'new' ? 'seismic' : 'other';
+        const extensions = FileFilter.getExtensions(typeFormat).map(ext => ext.substring(1)); // Remove the dot
+        const result = await (window as any).electronAPI.pickFolder(extensions);
         if (!result.canceled && result.filePaths.length > 0) {
             const folderPath = result.filePaths[0];
             
@@ -594,11 +599,15 @@ const selectFolder = async () => {
                     const stats = await (window as any).electronAPI.getFileStats(filePath);
                     // Only include files, not directories
                     if (stats.isFile) {
-                        return {
-                            name: stats.name,
-                            path: stats.path,
-                            size: stats.size
-                        };
+                        // Check if file extension is allowed for seismic data
+                        const fileExtension = '.' + fileName.split('.').pop()?.toLowerCase();
+                        if (FileFilter.isAllowedExtension(fileExtension, 'seismic')) {
+                            return {
+                                name: stats.name,
+                                path: stats.path,
+                                size: stats.size
+                            };
+                        }
                     }
                     return null;
                 } catch (error) {

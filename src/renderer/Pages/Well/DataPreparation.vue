@@ -387,6 +387,7 @@ import { useWell } from '../../Composables/useWell';
 import { useCRS } from '../../Composables/useCRS';
 import { useCountry } from '../../Composables/useCountry';
 import WorkflowProgress from '../../Components/WorkflowProgress.vue';
+import { FileFilter } from '../../../utils/fileFilter';
 
 const route = useRoute();
 const router = useRouter();
@@ -617,7 +618,8 @@ const saveDataset = () => {
 
 const selectFiles = async () => {
     try {
-        const result = await (window as any).electronAPI.openFile();
+        const extensions = FileFilter.getExtensions('well').map(ext => ext.substring(1)); // Remove the dot
+        const result = await (window as any).electronAPI.openFile(extensions);
         if (!result.canceled && result.filePaths.length > 0) {
             // Read file information for each selected file
             const filePromises = result.filePaths.map(async (filePath: string) => {

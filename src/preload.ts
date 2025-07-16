@@ -13,8 +13,8 @@ interface FileDetails {
 // Expose APIs to renderer process
 contextBridge.exposeInMainWorld('electronAPI', {
   // File operations
-  pickFolder: () => ipcRenderer.invoke('dialog:openFolder'),
-  openFile: () => ipcRenderer.invoke('dialog:openFile'),
+  pickFolder: (extensions?: string[]) => ipcRenderer.invoke('dialog:openFolder', extensions),
+  openFile: (extensions?: string[]) => ipcRenderer.invoke('dialog:openFile', extensions),
   readDirectory: (path: string) => ipcRenderer.invoke('fs:readDir', path),
   readSingleFile: (filePath: string) => ipcRenderer.invoke('fs:readSingleFile', filePath),
   getFileStats: (filePath: string) => ipcRenderer.invoke('fs:getFileStats', filePath),

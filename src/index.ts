@@ -331,13 +331,22 @@ app.on('activate', () => {
 // ======= IPC Handlers =======
 
 // File system handlers
-ipcMain.handle('dialog:openFolder', async () => {
-  return await openFolderDialog();
+ipcMain.handle('dialog:openFolder', async (_event, extensions?: string[]) => {
+  return await openFolderDialog(extensions);
 });
 
-ipcMain.handle('dialog:openFile', async () => {
+ipcMain.handle('dialog:openFile', async (_event, extensions?: string[]) => {
+  const filters = extensions ? [
+    {
+      name: 'Filtered Files',
+      extensions: extensions
+    },
+    { name: 'All Files', extensions: ['*'] }
+  ] : undefined;
+
   const { canceled, filePaths } = await dialog.showOpenDialog({
-    properties: ['openFile', 'multiSelections']
+    properties: ['openFile', 'multiSelections'],
+    filters
   });
   return { canceled, filePaths };
 });
