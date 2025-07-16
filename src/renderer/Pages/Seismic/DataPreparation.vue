@@ -33,55 +33,6 @@
                 <div class="properties-panel">
                     <div class="panel-card">
                         <h2>Properties</h2>
-                        
-                        <!-- <div class="form-group">
-                            <div class="form-row">
-                                <label>Dataset Name</label>
-                                <input 
-                                    type="text" 
-                                    v-model="datasetName" 
-                                    placeholder="Enter dataset name"
-                                    class="form-input"
-                                />
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <div class="form-row">
-                                <label>Dataset ID</label>
-                                <input 
-                                    type="text" 
-                                    v-model="datasetId" 
-                                    placeholder="Auto-generated"
-                                    class="form-input"
-                                    readonly
-                                />
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <div class="form-row">
-                                <label>Description</label>
-                                <textarea 
-                                    v-model="description" 
-                                    placeholder="Enter description"
-                                    class="form-textarea"
-                                    rows="3"
-                                ></textarea>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <div class="form-row">
-                                <label>Data Source</label>
-                                <input 
-                                    type="text" 
-                                    v-model="dataSource" 
-                                    placeholder="e.g., BAKER HUGHES"
-                                    class="form-input"
-                                />
-                            </div>
-                        </div> -->
 
                         <div class="form-group">
                             <label>Choose Option</label>
@@ -250,18 +201,6 @@
                             <div class="col-size">Size</div>
                             <div class="col-progress">Upload Progress</div>
                         </div>
-
-                        <!---<div class="files-upload-area" @drop="onDrop" @dragover="onDragOver" @dragleave="onDragLeave">
-                            <div class="upload-icon">
-                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                                    <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <path d="M17 8L12 3L7 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <path d="M12 3V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </div>
-                            <h3>Drag and drop multiple files to upload</h3>
-                            <p>or use the buttons above to select files or folders</p>
-                        </div>-->
 
                         <div v-if="uploadedFiles.length > 0" class="files-list">
                             <div v-for="file in uploadedFiles" :key="file.id" class="file-item">
@@ -468,6 +407,7 @@ import { useCRS } from '../../Composables/useCRS';
 import WorkflowProgress from '../../Components/WorkflowProgress.vue';
 import NotificationModal from '../../Components/NotificationModal.vue';
 import { useSurveyCornerPoints } from '@/Composables/useSurveyCornerPoints';
+import { useSeismicLine } from '@/Composables/useSeismicLine';
 
 const route = useRoute();
 const router = useRouter();
@@ -574,7 +514,11 @@ const selectAllIndeterminate = computed(() => {
 });
 
 const canPrepareDataset = computed(() => {
-    return uploadedFiles.value.length > 0;
+    if(uploadOption.value == "new"){
+        return uploadedFiles.value.length > 0 && selectedCrsId.value !== '';
+    }else if(uploadOption.value == "existing"){
+        return uploadedFiles.value.length > 0;
+    }
 });
 
 // Watch for uploadOption changes and update store
@@ -671,17 +615,17 @@ const selectFolder = async () => {
     }
 };
 
-const addFiles = (files: File[]) => {
-    files.forEach(file => {
-        uploadedFiles.value.push({
-            id: Math.random().toString(36),
-            name: file.name,
-            size: file.size,
-            progress: 100,
-            path: (file as any).path || (file as any).webkitRelativePath || file.name // Capture file path if available
-        });
-    });
-};
+// const addFiles = (files: File[]) => {
+//     files.forEach(file => {
+//         uploadedFiles.value.push({
+//             id: Math.random().toString(36),
+//             name: file.name,
+//             size: file.size,
+//             progress: 100,
+//             path: (file as any).path || (file as any).webkitRelativePath || file.name // Capture file path if available
+//         });
+//     });
+// };
 
 const addFilesFromPaths = (fileInfos: Array<{name: string, path: string, size: number}>) => {
     fileInfos.forEach(fileInfo => {
@@ -700,22 +644,22 @@ const removeSelectedFiles = () => {
     selectedFiles.value = [];
 };
 
-const onDrop = (e: DragEvent) => {
-    e.preventDefault();
-    const files = e.dataTransfer?.files;
-    if (files) {
-        console.warn('Note: Files added via drag-and-drop may not have full file paths available');
-        addFiles(Array.from(files));
-    }
-};
+// const onDrop = (e: DragEvent) => {
+//     e.preventDefault();
+//     const files = e.dataTransfer?.files;
+//     if (files) {
+//         console.warn('Note: Files added via drag-and-drop may not have full file paths available');
+//         addFiles(Array.from(files));
+//     }
+// };
 
-const onDragOver = (e: DragEvent) => {
-    e.preventDefault();
-};
+// const onDragOver = (e: DragEvent) => {
+//     e.preventDefault();
+// };
 
-const onDragLeave = (e: DragEvent) => {
-    e.preventDefault();
-};
+// const onDragLeave = (e: DragEvent) => {
+//     e.preventDefault();
+// };
 
 const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -725,50 +669,50 @@ const formatFileSize = (bytes: number) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-const filterSeismics = () => {
-    if (!seismicSearchQuery.value.trim()) {
-        filteredSeismics.value = seismics.value;
-        return;
-    }
+// const filterSeismics = () => {
+//     if (!seismicSearchQuery.value.trim()) {
+//         filteredSeismics.value = seismics.value;
+//         return;
+//     }
     
-    const query = seismicSearchQuery.value.toLowerCase();
-    filteredSeismics.value = seismics.value.filter(seismic => {
-        const name = (seismic.name || '').toLowerCase();
-        // const country = (seismic.country || '').toLowerCase();
-        // const block = (seismic.block || '').toLowerCase();
-        // const area = (seismic.area || '').toLowerCase();
-        // const shotBy = (seismic.shotBy || '').toLowerCase();
-        // const recordedBy = (seismic.recordedBy || '').toLowerCase();
+//     const query = seismicSearchQuery.value.toLowerCase();
+//     filteredSeismics.value = seismics.value.filter(seismic => {
+//         const name = (seismic.name || '').toLowerCase();
+//         // const country = (seismic.country || '').toLowerCase();
+//         // const block = (seismic.block || '').toLowerCase();
+//         // const area = (seismic.area || '').toLowerCase();
+//         // const shotBy = (seismic.shotBy || '').toLowerCase();
+//         // const recordedBy = (seismic.recordedBy || '').toLowerCase();
         
-        return name.includes(query)
-            //    country.includes(query) || 
-            //    block.includes(query) ||
-            //    area.includes(query) ||
-            //    shotBy.includes(query) ||
-            //    recordedBy.includes(query);
-    });
-};
+//         return name.includes(query)
+//             //    country.includes(query) || 
+//             //    block.includes(query) ||
+//             //    area.includes(query) ||
+//             //    shotBy.includes(query) ||
+//             //    recordedBy.includes(query);
+//     });
+// };
 
-const selectSeismic = (seismic: any) => {
-    targetSeismic.value = seismic._id;
-    selectedSeismicName.value = seismic.name || `Seismic ${seismic._id}`;
-    seismicSearchQuery.value = '';
-    showSeismicDropdown.value = false;
+// const selectSeismic = (seismic: any) => {
+//     targetSeismic.value = seismic._id;
+//     selectedSeismicName.value = seismic.name || `Seismic ${seismic._id}`;
+//     seismicSearchQuery.value = '';
+//     showSeismicDropdown.value = false;
 
-    seismicStore.addSurveyData({
-        surveyId: seismic._id,
-        name: seismic.name || `Seismic ${seismic._id}`,
-        country: seismic.country || '',
-        dimension: seismic.dimension || ''
-        // block: seismic.block || ''
-    });
-};
+//     seismicStore.addSurveyData({
+//         surveyId: seismic._id,
+//         name: seismic.name || `Seismic ${seismic._id}`,
+//         country: seismic.country || '',
+//         dimension: seismic.dimension || ''
+//         // block: seismic.block || ''
+//     });
+// };
 
-const hideSeismicDropdown = () => {
-    setTimeout(() => {
-        showSeismicDropdown.value = false;
-    }, 200); // Delay to allow click event to fire
-};
+// const hideSeismicDropdown = () => {
+//     setTimeout(() => {
+//         showSeismicDropdown.value = false;
+//     }, 200); // Delay to allow click event to fire
+// };
 
 const searchSeismics = async () => {
     try {
@@ -795,8 +739,8 @@ const toggleSelectAll = () => {
     }
 };
 
-const prepareDataset = () => {
-    console.log("uploadedFiles.value.length ", uploadedFiles.value.length)
+const prepareDataset = async () => {
+    // console.log("uploadedFiles.value.length ", uploadedFiles.value.length)
     
     if (!canPrepareDataset.value) return;
 
@@ -820,6 +764,36 @@ const prepareDataset = () => {
     seismicStore.advanceWorkflow('loading', 'preparation');
 
     seismicStore.setUploadOption(uploadOption.value as 'new' | 'existing');
+
+    if(uploadOption.value === 'existing') {
+        seismicStore.emptyLinesData();
+        
+        const seismicLinesBySurveyId = await useSeismicLine().getBySurveyId(seismicStore.data.survey.surveyId);
+        // console.log("seismicLinesBySurveyId", seismicLinesBySurveyId);
+
+        for(const seismicLine of seismicLinesBySurveyId.data) {
+            seismicStore.addLineData({
+                lineId: seismicLine._id,
+                name: seismicLine.name,
+                firstField: seismicLine.firstField,
+                lastField: seismicLine.lastField,
+                firstShot: seismicLine.firstShotPoint,
+                lastShot: seismicLine.lastShotPoint,
+                firstCDP: seismicLine.firstCDP,
+                lastCDP: seismicLine.lastCDP,
+                firstTrace: seismicLine.firstTrace ? seismicLine.firstTrace.toString() : null,
+                lastTrace: seismicLine.lastTrace ? seismicLine.lastTrace.toString() : null,
+                inLine: seismicLine.inLine ? seismicLine.inLine.toString() : null,
+                crossLine: seismicLine.crossLine ? seismicLine.crossLine.toString() : null,
+                metadata: []
+            });
+        }
+
+        // console.log("seismicStore.data ", seismicStore.data);
+        
+    }
+
+    // return;
 
     // Store selected CRS data
     // seismicStore.setCRS(selectedCrsId.value);
@@ -1026,27 +1000,18 @@ const selectCrs = (crsItem: any) => {
     selectedCrsId.value = crsItem._id;
     crsSearchQuery.value = crsItem.name || crsItem.code || `CRS ${crsItem._id}`;
     showCrsDropdown.value = false;
-
-    // console.log("crsItem chosen", crsItem);
-
-    // console.log("crsItem.proj4", crsItem.proj4);
-    // console.log("crsItem.srid", crsItem.srid);
     
     // Store selected CRS data if needed
     seismicStore.setCRS({
         proj4: crsItem.proj4,
         srid: crsItem.srid
     });
-
-    // console.log("wellStore.data.CRS", wellStore.data.CRS);
-    // console.log("wellStore.data.CRS.proj4", wellStore.data.CRS.proj4);
-    // console.log("wellStore.data.CRS.srid", wellStore.data.CRS.srid);
 };
 
 const hideCrsDropdown = () => {
     setTimeout(() => {
         showCrsDropdown.value = false;
-    }, 200); // Delay to allow click event to fire
+    }, 200);
 };
 
 const searchCrs = async () => {
@@ -1079,7 +1044,6 @@ const addCoordinateRow = () => {
 const removeCoordinateRow = (index: number) => {
     if (surveyCornerPoints.value.length > 1) {
         surveyCornerPoints.value.splice(index, 1);
-        // Update corner numbers to maintain sequence
         surveyCornerPoints.value.forEach((coord, idx) => {
             coord.corner = idx + 1;
         });

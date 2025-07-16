@@ -30,9 +30,17 @@ export const useSeismicLine = () => {
         changedOn: undefined, // Made optional, set to undefined
     });
 
+    const getBySurveyId = async (surveyId: string) => {
+        const response = await apiService.post('seismic-line/getBySurveyId', {
+            surveyId: surveyId
+        });
+        return response;
+    };
+
     return {
         ...baseCrud,
         createBulk,
         createEmptyLine,
+        getBySurveyId
     };
 }; 

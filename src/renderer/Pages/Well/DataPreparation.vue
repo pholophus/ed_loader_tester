@@ -33,55 +33,6 @@
                 <div class="properties-panel">
                     <div class="panel-card">
                         <h2>Properties</h2>
-                        
-                        <!-- <div class="form-group">
-                            <div class="form-row">
-                                <label>Dataset Name</label>
-                                <input 
-                                    type="text" 
-                                    v-model="datasetName" 
-                                    placeholder="Enter dataset name"
-                                    class="form-input"
-                                />
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <div class="form-row">
-                                <label>Dataset ID</label>
-                                <input 
-                                    type="text" 
-                                    v-model="datasetId" 
-                                    placeholder="Auto-generated"
-                                    class="form-input"
-                                    readonly
-                                />
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <div class="form-row">
-                                <label>Description</label>
-                                <textarea 
-                                    v-model="description" 
-                                    placeholder="Enter description"
-                                    class="form-textarea"
-                                    rows="3"
-                                ></textarea>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <div class="form-row">
-                                <label>Data Source</label>
-                                <input 
-                                    type="text" 
-                                    v-model="dataSource" 
-                                    placeholder="e.g., BAKER HUGHES"
-                                    class="form-input"
-                                />
-                            </div>
-                        </div> -->
 
                         <div class="form-group">
                             <div class="form-row">
@@ -107,7 +58,7 @@
                                                 class="dropdown-item"
                                             >
                                                 <span class="well-name">{{ well.name || well.UWI || well.wellboreId || `Well ${well._id}` }}</span>
-                                                <span class="well-details">{{ well.UWI ? `UWI: ${well.UWI}` : '' }} {{ well.field ? `Field: ${well.field}` : '' }}</span>
+                                                <!-- <span class="well-details">{{ well.UWI ? `UWI: ${well.UWI}` : '' }} {{ well.field ? `Field: ${well.field}` : '' }}</span> -->
                                             </div>
                                         </div>
                                         <div v-if="showWellDropdown && filteredWells.length === 0 && wellSearchQuery.length > 0" class="dropdown-list">
@@ -185,7 +136,7 @@
                                                 <div class="well-info">
                                                     <div class="well-details">
                                                         <span class="well-name">{{ well.wellName }}</span>
-                                                        <span class="well-uwi" v-if="well.UWI">{{ well.UWI }}</span>
+                                                        <!-- <span class="well-uwi" v-if="well.UWI">{{ well.UWI }}</span> -->
                                                     </div>
                                                 </div>
                                                 <button 
@@ -204,67 +155,6 @@
                             </div>
                         </div>
 
-                        <!-- <div class="form-group" v-if="selectedTarget === 'well'">
-                            <div class="form-row">
-                                <label>Wellbore</label>
-                                <select v-model="wellbore" class="form-select">
-                                    <option value="">Select a Wellbore</option>
-                                    <option value="wellbore-001">Wellbore 001</option>
-                                    <option value="wellbore-002">Wellbore 002</option>
-                                </select>
-                            </div>
-                        </div> -->
-
-                        <!-- <div class="metadata-section">
-                            <div class="metadata-header">
-                                <label>Metadata File</label>
-                                <div class="metadata-actions">
-                                    <button class="btn btn-outline btn-sm" @click="browseMetadata">
-                                        Browse
-                                    </button>
-                                    <button class="btn btn-link btn-sm" @click="downloadTemplate">
-                                        Download template
-                                    </button>
-                                </div>
-                            </div>
-                        </div> -->
-
-                        <!-- <div class="options-section">
-                            <h3>Options</h3>
-                            <div class="checkbox-group">
-                                <label class="checkbox-item">
-                                    <input type="checkbox" v-model="options.extractFiles" />
-                                    <span class="checkmark"></span>
-                                    Extract files from archive (.zip, .rar, .tar)
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" v-model="options.loadDirectlyToDBAfterExtract" />
-                                    <span class="checkmark"></span>
-                                    Load files directly to staging database after registration
-                                </label>
-                                <label class="checkbox-item">
-                                    <input type="checkbox" v-model="options.publishAuto" />
-                                    <span class="checkmark"></span>
-                                    Publish files automatically after loading and QC
-                                </label>
-                            </div>
-
-                            <div class="form-group my-2">
-                                <label>If faulty files are found during processing</label>
-                                <div class="radio-group">
-                                    <label class="radio-item">
-                                        <input type="radio" value="quarantine" v-model="faultyFileAction" />
-                                        <span class="radio-mark"></span>
-                                        Quarantine faulty files and continue processing
-                                    </label>
-                                    <label class="radio-item">
-                                        <input type="radio" value="stop" v-model="faultyFileAction" />
-                                        <span class="radio-mark"></span>
-                                        Stop processing and mark dataset as failed
-                                    </label>
-                                </div>
-                            </div>
-                        </div> -->
                     </div>
                 </div>
 
@@ -373,7 +263,7 @@
                             />
                         </div>
 
-                        <div class="form-group">
+                        <!-- <div class="form-group">
                             <label>Coordinate Reference System (CRS) *</label>
                             <div class="searchable-select">
                                 <input 
@@ -403,7 +293,7 @@
                                     <div class="dropdown-item no-results">No CRS found</div>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
 
                         <div class="form-group">
                             <label>Country *</label>
@@ -434,6 +324,19 @@
                                 <div v-if="showCountryDropdown && filteredCountries.length === 0 && countrySearchQuery.length > 0" class="dropdown-list">
                                     <div class="dropdown-item no-results">No countries found</div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Operator *</label>
+                            <div class="searchable-select">
+                                <input 
+                                    type="text" 
+                                    v-model="newWell.operator" 
+                                    placeholder="Enter operator"
+                                    class="form-input"
+                                    required
+                                />
                             </div>
                         </div>
 
@@ -487,7 +390,6 @@ import WorkflowProgress from '../../Components/WorkflowProgress.vue';
 
 const route = useRoute();
 const router = useRouter();
-// const fileStore = useFileStore();
 const wellStore = useWellStore();
 const { fetch: fetchWells, insert: createWellAPI } = useWell();
 const { fetch: fetchCrs } = useCRS();
@@ -536,12 +438,13 @@ const newWell = ref({
     name: '',
     crsId: '',
     countryId: '',
+    operator: '',
     coordinateX: null as number | null,
     coordinateY: null as number | null
 });
 
 // New Well CRS data
-const newWellCrsSearchQuery = ref('');
+// const newWellCrsSearchQuery = ref('');
 const filteredNewWellCrs = ref<any[]>([]);
 const showNewWellCrsDropdown = ref(false);
 
@@ -571,8 +474,8 @@ const isFormValid = computed(() => {
 
 const isCreateWellFormValid = computed(() => {
     return newWell.value.name.trim() !== '' && 
-           newWell.value.crsId !== '' && 
            newWell.value.countryId !== '' && 
+           newWell.value.operator.trim() !== '' && 
            newWell.value.coordinateX !== null && 
            newWell.value.coordinateY !== null;
 });
@@ -602,10 +505,11 @@ const openCreateWellModal = () => {
         name: '',
         crsId: '',
         countryId: '',
+        operator: '',
         coordinateX: null,
         coordinateY: null
     };
-    newWellCrsSearchQuery.value = '';
+    // newWellCrsSearchQuery.value = '';
     countrySearchQuery.value = '';
 };
 
@@ -618,15 +522,18 @@ const createWell = async () => {
     
     try {
         creatingWell.value = true;
-        
-        // Prepare well data for API
-        const wellData = {
-            name: newWell.value.name,
-            crsId: newWell.value.crsId,
-            countryId: newWell.value.countryId,
-            coordinateX: newWell.value.coordinateX,
-            coordinateY: newWell.value.coordinateY
-        };
+
+        let wellData = useWell().createEmptyWell();
+
+        wellData.name = newWell.value.name;
+        wellData.country = newWell.value.countryId;
+        wellData.latitude = newWell.value.coordinateX || 0;
+        wellData.longitude = newWell.value.coordinateY || 0;
+        wellData.operator = newWell.value.operator;
+
+        // console.log("wellData body request", wellData);
+
+        // return;
         
         const createdWell = await createWellAPI(wellData);
         
@@ -650,24 +557,24 @@ const createWell = async () => {
 };
 
 // New Well CRS Methods
-const filterNewWellCrs = () => {
-    if (!newWellCrsSearchQuery.value.trim()) {
-        filteredNewWellCrs.value = crs.value;
-        return;
-    }
+// const filterNewWellCrs = () => {
+//     if (!newWellCrsSearchQuery.value.trim()) {
+//         filteredNewWellCrs.value = crs.value;
+//         return;
+//     }
     
-    const query = newWellCrsSearchQuery.value.toLowerCase();
-    filteredNewWellCrs.value = crs.value.filter(crsItem => {
-        const name = (crsItem.name || '').toLowerCase();
-        return name.includes(query);
-    });
-};
+//     const query = newWellCrsSearchQuery.value.toLowerCase();
+//     filteredNewWellCrs.value = crs.value.filter(crsItem => {
+//         const name = (crsItem.name || '').toLowerCase();
+//         return name.includes(query);
+//     });
+// };
 
-const selectNewWellCrs = (crsItem: any) => {
-    newWell.value.crsId = crsItem._id;
-    newWellCrsSearchQuery.value = crsItem.name || crsItem.code || `CRS ${crsItem._id}`;
-    showNewWellCrsDropdown.value = false;
-};
+// const selectNewWellCrs = (crsItem: any) => {
+//     newWell.value.crsId = crsItem._id;
+//     newWellCrsSearchQuery.value = crsItem.name || crsItem.code || `CRS ${crsItem._id}`;
+//     showNewWellCrsDropdown.value = false;
+// };
 
 const hideNewWellCrsDropdown = () => {
     setTimeout(() => {
@@ -817,17 +724,20 @@ const filterWells = () => {
 };
 
 const selectWell = (well: any) => {
-    targetWell.value = well._id;
-    selectedWellName.value = well.name || well.UWI || well.wellboreId || `Well ${well._id}`;
+
+    let wellData = "data" in well ? well.data : well;
+
+    targetWell.value = wellData._id;
+    selectedWellName.value = wellData.name;
     wellSearchQuery.value = '';
     showWellDropdown.value = false;
 
     wellStore.addWellData({
-        wellId: well._id,
-        wellName: well.name || well.UWI || well.wellboreId || `Well ${well._id}`,
-        UWI: well.UWI || '',
-        coordx: well.latitude,
-        coordy: well.longitude,
+        wellId: wellData._id,
+        wellName: wellData.name,
+        UWI: wellData.UWI || '',
+        coordx: wellData.latitude,
+        coordy: wellData.longitude,
     });
 };
 

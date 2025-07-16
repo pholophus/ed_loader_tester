@@ -10,7 +10,7 @@ export interface SeismicSurvey {
   shotFor?: number;
   shotBy?: number;
   surveyArea?: string;
-  surveyAreaUom?: Date;
+  surveyAreaUom?: string;
   country?: string;
   surveyAreaType?: number;
   recordedBy?: string;
@@ -35,14 +35,14 @@ export interface SeismicSurvey {
   energyType?: number;
   numberOfChannels?: string;
   shotDepth?: string;
-  shotDepthUom?: Date;
+  shotDepthUom?: string;
   shotCdpCoverage?: string;
-  shotEnvironment?: Date;
+  shotEnvironment?: string;
   sourceLineInterval?: string;
   sourceLineIntervalUom?: number;
   sourceArray?: number;
   sourceArraySpacing?: number;
-  sourceArraySpacingUom?: number;
+  sourceArraySpacingUom?: string;
   sourceMake?: number;
   makeUpMode?: number;
   gainMode?: number;
@@ -51,5 +51,5 @@ export interface SeismicSurvey {
   receiverArrayType?: number;
   streamerCount?: number;
   streamerLength?: number;
-  streamerLengthUom?: number;
+  streamerLengthUom?: string;
 }

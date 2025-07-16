@@ -50,14 +50,14 @@
                         <label>Loaded:</label>
                         <span>{{ userStore.user?.data.name }}</span>
                     </div>
-                    <div class="info-row">
+                    <!-- <div class="info-row">
                         <label>Approved:</label>
                         <span>{{'-' }}</span>
                     </div>
                     <div class="info-row">
                         <label>Last Updated:</label>
                         <span>{{ '-' }}</span>
-                    </div>
+                    </div> -->
                 </div>
             </div>
             

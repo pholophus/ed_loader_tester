@@ -17,17 +17,18 @@
 
             <!-- Metadata Tab -->
             <div v-if="detailsTab === 'metadata'" class="tab-content">
-                <div class="header-actions">
-                    <button class="btn btn-primary btn-sm">Update</button>
-                    <button class="btn btn-outline btn-sm">Reset</button>
-                </div>
                 <div class="file-metadata">
-                    <!-- Selected Row Info -->
-                    <!-- <div v-if="selectedRowIndex !== null" class="form-group">
-                        <label>Selected Row Index</label>
-                        <span class="form-value">{{ selectedRowIndex }}</span>
-                    </div> -->
-
+                    <div v-if="selectedMetadata" class="form-group">
+                        <label>Seismic Name</label>
+                        <input 
+                            type="text" 
+                            class="form-input" 
+                            v-model="seismicName" 
+                            :placeholder="selectedMetadata.name || 'Enter seismic name'"
+                            @input="updateSeismicName"
+                        />
+                    </div>
+                
                     <div v-if="selectedMetadata" class="form-group">
                         <label>File Name</label>
                         <span class="form-value">{{ selectedMetadata.name || 'N/A' }}</span>
@@ -150,7 +151,7 @@
                                 </div>
                             </div>
                             
-                            <!-- Metadata Section -->
+                            <!-- Metadata Section
                             <div v-if="previewData.metadata && Object.keys(previewData.metadata).length > 0" class="preview-metadata">
                                 <h4>Seismic File Information</h4>
                                 <div class="metadata-grid">
@@ -186,7 +187,6 @@
                                         <label>Crossline:</label>
                                         <span>{{ (previewData.metadata as any).crossline }}</span>
                                     </div>
-                                    <!-- LAS-specific fields (for backward compatibility) -->
                                     <div v-if="'wellName' in previewData.metadata && previewData.metadata.wellName" class="metadata-item">
                                         <label>Well Name:</label>
                                         <span>{{ previewData.metadata.wellName }}</span>
@@ -217,7 +217,7 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Curves List (for LAS files) -->
+                                
                                 <div v-if="'curves' in previewData.metadata && previewData.metadata.curves && previewData.metadata.curves.length > 0" class="curves-section">
                                     <h5>Available Curves</h5>
                                     <div class="curves-list">
@@ -228,14 +228,23 @@
                                 </div>
                             </div>
                             
-                            <!-- ASCII Text Section -->
                             <div class="ascii-preview">
                                 <h4>ASCII Content</h4>
                                 <div class="ascii-content">
                                     <pre>{{ previewData.asciiText }}</pre>
                                 </div>
-                            </div>
+                            </div> -->
                         </div>
+                        
+                        <!-- PDF File Preview -->
+                        <div v-else-if="isPdfFile(selectedMetadata?.name || '') && pdfFileUrl" class="preview-data">
+                            <iframe :src="pdfFileUrl" width="100%" height="600px" style="border: none;"></iframe>
+                        </div>
+                        
+                        <!-- DOCX File Preview -->
+                        <!-- <div v-else-if="isDocxFile(selectedMetadata?.name || '') && docxHtmlContent" class="preview-data">
+                            <div v-html="docxHtmlContent" style="background:white; padding:1rem; min-height:400px;"></div>
+                        </div> -->
                         
                         <div v-else-if="selectedMetadata" class="no-preview">
                             <p>No preview available for this file</p>
@@ -267,6 +276,14 @@ import {
     type LasComprehensiveData
 } from '../../../../services/lasService';
 import { parseSegyFileForPreview, type SegyPreviewData, isSegyFile } from '../../../../services/segyService';
+import { 
+    isPdfFile
+} from '../../../../services/pdfService';
+import { 
+    parseDocxFileForPreview, 
+    isDocxFile,
+    type DocxPreviewData
+} from '../../../../services/docxService';
 import { useUserStore } from '../../../store/userStore';
 
 // Props for receiving data from parent component
@@ -290,7 +307,6 @@ const selectedMetadata = computed(() => {
     
     // Find the corresponding metadata in the seismic store
     const metadata = seismicStore.data.seismicMetadatas.find(m => m.id === props.selectedFile?.id);
-    console.log('Selected metadata from seismic store:', metadata);
     return metadata || null;
 });
 
@@ -305,8 +321,23 @@ const formatFileSize = (bytes: number): string => {
 
 // Local reactive data
 const detailsTab = ref('metadata');
-const previewData = ref<LasPreviewData | SegyPreviewData | null>(null);
+const previewData = ref<LasPreviewData | SegyPreviewData | DocxPreviewData | null>(null);
 const isLoadingPreview = ref(false);
+const seismicName = ref('');
+
+// Method to update seismic name
+const updateSeismicName = () => {
+    if (selectedMetadata.value) {
+        // Update the seismic name in the store
+        const metadataIndex = seismicStore.data.seismicMetadatas.findIndex(m => m.id === selectedMetadata.value?.id);
+        if (metadataIndex !== -1) {
+            seismicStore.data.seismicMetadatas[metadataIndex].seismic_name = seismicName.value;
+        }
+    }
+};
+
+// DOCX HTML preview state
+const docxHtmlContent = ref('');
 
 // Utility function to get file extension
 const getFileExtension = (filename: string): string => {
@@ -318,33 +349,30 @@ const loadFilePreview = async () => {
     if (!selectedMetadata.value) return;
     
     isLoadingPreview.value = true;
+    
+    // Clear all preview data
     previewData.value = null;
+    docxHtmlContent.value = ''; // Clear DOCX HTML content
     
     try {
+        const filePath = selectedMetadata.value.path;
+        if (!filePath) {
+            throw new Error('File path not available');
+        }
+
         if (isLasFile(selectedMetadata.value.name || '')) {
             // For .las files, use the LAS preview service
-            const filePath = selectedMetadata.value.path;
-            if (filePath) {
-                previewData.value = await parseLasFileForPreview(filePath);
-            } else {
-                previewData.value = {
-                    asciiText: '',
-                    metadata: {},
-                    error: 'File path not available'
-                };
-            }
+            previewData.value = await parseLasFileForPreview(filePath);
         } else if (isSegyFile(selectedMetadata.value.name || '')) {
             // For SEGY files, use the SEGY preview service
-            const filePath = selectedMetadata.value.path;
-            if (filePath) {
-                previewData.value = await parseSegyFileForPreview(filePath);
-            } else {
-                previewData.value = {
-                    asciiText: '',
-                    metadata: {},
-                    error: 'File path not available'
-                };
-            }
+            previewData.value = await parseSegyFileForPreview(filePath);
+        } else if (isPdfFile(selectedMetadata.value.name || '')) {
+            // For .pdf files, we'll use iframe display, so no need to call parsePdfFileForPreview
+            // The pdfFileUrl computed property will handle the iframe src
+            console.log(`[FilesDetails] PDF file detected: ${selectedMetadata.value.name}`);
+        } else if (isDocxFile(selectedMetadata.value.name || '')) {
+            // For .docx files, use the DOCX preview service
+            previewData.value = await parseDocxFileForPreview(filePath);
         } else {
             // For other seismic file types, show basic file information
             const fileExtension = getFileExtension(selectedMetadata.value.name || '').toUpperCase();
@@ -383,29 +411,77 @@ const loadFilePreview = async () => {
         }
     } catch (error) {
         console.error('[FilesDetails] Error loading file preview:', error);
-        previewData.value = {
-            asciiText: '',
-            metadata: {},
-            error: `Error loading preview: ${error instanceof Error ? error.message : 'Unknown error'}`
-        };
+        const errorMessage = `Error loading preview: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        
+        // Set error on the appropriate preview data based on file type
+        if (isLasFile(selectedMetadata.value?.name || '')) {
+            previewData.value = {
+                asciiText: '',
+                metadata: {},
+                error: errorMessage
+            };
+        } else if (isSegyFile(selectedMetadata.value?.name || '')) {
+            previewData.value = {
+                asciiText: '',
+                metadata: {},
+                error: errorMessage,
+                isEbcdicHeader: false
+            };
+        } else if (isDocxFile(selectedMetadata.value?.name || '')) {
+            previewData.value = {
+                textContent: '',
+                metadata: {},
+                error: errorMessage
+            };
+        }
     } finally {
         isLoadingPreview.value = false;
     }
 };
 
 // Watch for tab changes to load preview when needed
-watch(detailsTab, (newTab) => {
-    if (newTab === 'preview' && selectedMetadata.value && !previewData.value) {
+watch(detailsTab, async (newTab) => {
+    if (newTab === 'preview' && selectedMetadata.value && !previewData.value && !docxHtmlContent.value) {
+        loadFilePreview();
+    }
+    // Load DOCX HTML preview if DOCX file is selected
+    if (newTab === 'preview' && selectedMetadata.value && isDocxFile(selectedMetadata.value.name || '')) {
+        if (selectedMetadata.value.path) {
+            // @ts-ignore
+            const result = await window.electronAPI.convertDocxToHtml(selectedMetadata.value.path);
+            if (result && result.success) {
+                docxHtmlContent.value = result.htmlContent;
+            } else {
+                docxHtmlContent.value = '<p style="color:red">Unable to render DOCX preview.</p>';
+            }
+        }
+    } else {
+        docxHtmlContent.value = '';
+    }
+});
+
+// Watch for selected metadata changes to clear preview data and initialize seismic name
+watch(selectedMetadata, () => {
+    previewData.value = null;
+    docxHtmlContent.value = ''; // Clear DOCX HTML content
+    
+    // Initialize seismic name with the file name as default
+    if (selectedMetadata.value) {
+        seismicName.value = selectedMetadata.value.name || '';
+    } else {
+        seismicName.value = '';
+    }
+    
+    if (detailsTab.value === 'preview' && selectedMetadata.value) {
         loadFilePreview();
     }
 });
 
-// Watch for selected metadata changes to clear preview data
-watch(selectedMetadata, () => {
-    previewData.value = null;
-    if (detailsTab.value === 'preview' && selectedMetadata.value) {
-        loadFilePreview();
+const pdfFileUrl = computed(() => {
+    if (selectedMetadata.value && isPdfFile(selectedMetadata.value.name || '') && selectedMetadata.value.path) {
+        return `file://${selectedMetadata.value.path}`;
     }
+    return '';
 });
 
 </script>
@@ -509,6 +585,27 @@ watch(selectedMetadata, () => {
 .form-value.error {
     color: #dc2626;
     font-weight: 500;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    background: white;
+    transition: border-color 0.2s ease;
+    color: #1f2937;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-input::placeholder {
+    color: #9ca3af;
 }
 
 .metadata-row {

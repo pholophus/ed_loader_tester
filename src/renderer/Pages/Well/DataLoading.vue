@@ -166,19 +166,19 @@
                                 <div class="metadata-header">
                                     <div></div>
                                     <div class="metadata-actions">
-                                        <button class="btn btn-primary" @click="updateMetadata">Update</button>
-                                        <button class="btn btn-secondary" @click="resetFileName">Reset</button>
+                                        <!-- <button class="btn btn-primary" @click="updateMetadata">Update</button>
+                                        <button class="btn btn-secondary" @click="resetFileName">Reset</button> -->
                                     </div>
                                 </div>
                                 
                                 <div class="form-group">
                                     <label>Edited By</label>
-                                    <span class="form-value">{{ selectedFile.editedBy }}</span>
+                                    <span class="form-value">{{ userStore.user.data?.name }}</span>
                                 </div>
                                 
                                 <div class="form-group">
                                     <label>Created By</label>
-                                    <span class="form-value">{{ selectedFile.createdBy }}</span>
+                                    <span class="form-value">{{ userStore.user.data?.name }}</span>
                                 </div>
 
                                 <div class="form-group">
@@ -403,6 +403,7 @@ import {
     isDocxFile,
     type DocxPreviewData
 } from '../../../services/docxService';
+import { useUserStore } from '../../store/userStore';
 
 const router = useRouter();
 // const fileStore = useFileStore();
@@ -418,6 +419,7 @@ const {
     updateFileData,
     removeFile 
 } = useFileData({ includeLoadingFields: true });
+const userStore = useUserStore();
 
 // State
 const activeTab = ref('metadata');
@@ -611,7 +613,11 @@ const proceedToQualityCheck = () => {
     });
 
     // console.log('[DataLoading] Proceeding to quality check...');
-    console.log('[DataLoading] Metadatas:', metadatas);
+    // console.log('[DataLoading] Metadatas:', metadatas);
+
+    // console.log("Array.from(fileDataMap.value.values()); ", Array.from(fileDataMap.value.values()));
+
+    // return;
     
     // Update the well store with metadata
     wellStore.setMetadatas(metadatas);

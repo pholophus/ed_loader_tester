@@ -78,6 +78,10 @@ export class Converter {
       if (!proj4.defs(params.epsgCode)) {
         this.addProjection(params.epsgCode, params.projDefinition);
       }
+
+      console.log("params.epsgCode", params.epsgCode);
+      console.log("params.projDefinition", params.projDefinition);
+      console.log("params.coordinates", params.coordinates);
       
       // Perform the transformation
       const result = this.transform(params.epsgCode, 'EPSG:4326', params.coordinates);

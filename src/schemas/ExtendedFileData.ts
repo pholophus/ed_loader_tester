@@ -19,6 +19,9 @@ interface ExtendedFileData {
     targetFileName?: string;
     fileFormat?: string;
     
+    // Seismic line selection
+    lineId?: string;
+    
     // Depth information
     // topDepth?: number;
     // topDepthUoM?: string;

@@ -205,6 +205,21 @@ export const useWellStore = defineStore('wellData', {
       this.data.well = this.data.well.filter(well => well.wellId !== wellId);
     },
 
+    clearAll(){
+      this.data.well = [];
+      this.data.wellMetadatas = [];
+      this.data.hasDoneQC = false;
+      this.data.currentStage = 'preparation';
+      this.data.completedStages = [];
+      this.data.approval = {
+        isApproved: false,
+        comments: '',
+      };
+      this.data.CRS = {
+        proj4: '',
+        srid: '',
+      };
+    }
   },
   
   getters: {

@@ -102,72 +102,10 @@
                         <!-- Dataset Tab Content -->
                         <div v-if="activeTab === 'dataset'" class="tab-content">
                             <div class="dataset-info">
-                                <!-- Wells List -->
+                                <!-- Lines List -->
                                 <div class="info-section">
-                                    <!-- <h3>Wells ({{ wellStore.data.well.length }})</h3> -->
-                                    <!-- <div v-if="wellStore.data.well.length === 0" class="no-wells">
-                                        No wells available
-                                    </div>
-                                    <div v-else class="wells-table-container">
-                                        <table class="wells-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Well Name</th>
-                                                    <th>Well ID</th>
-                                                    <th>UWI</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr v-for="well in wellStore.data.well" 
-                                                    :key="well.wellId"
-                                                    :class="{ 'selected-well': selectedLineId === well.wellId }"
-                                                    @click="selectLine(well.wellId)">
-                                                    <td class="well-name">{{ well.wellName }}</td>
-                                                    <td class="well-id-cell">{{ well.wellId }}</td>
-                                                    <td class="well-uwi">{{ well.UWI || 'N/A' }}</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                        <div class="wells-count">
-                                            {{ wellStore.data.well.length }} well{{ wellStore.data.well.length !== 1 ? 's' : '' }}
-                                            <span v-if="selectedLineId" class="selected-well-indicator">
-                                                • {{ getSelectedLineName() }} selected
-                                            </span>
-                                        </div>
-                                    </div> -->
-                                    <!-- <div v-if="seismicStore.data.line.length === 0" class="no-lines">
-                                        No lines available
-                                    </div>
-                                    <div v-else class="lines-table-container">
-                                        <table class="lines-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Line Name</th>
-                                                    <th>Line ID</th>
-                                                    <th>Survey</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr v-for="line in seismicStore.data.line" 
-                                                    :key="line.lineId"
-                                                    :class="{ 'selected-line': selectedLineId === line.lineId }"
-                                                    @click="selectLine(line.lineId)">
-                                                    <td class="line-name">{{ line.name }}</td>
-                                                    <td class="line-id-cell">{{ line.lineId }}</td>
-                                                    <td class="line-survey">{{ seismicStore.data.survey.name || 'N/A' }}</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                        <div class="lines-count">
-                                            {{ seismicStore.data.line.length }} line{{ seismicStore.data.line.length !== 1 ? 's' : '' }}
-                                            <span v-if="selectedLineId" class="selected-line-indicator">
-                                                • {{ getSelectedLineName() }} selected
-                                            </span>
-                                        </div>
-                                    </div> -->
-                                    <div v-if="seismicStore.data.isForCreatingNewSeismic">
+                                    <div>
                                         <div class="survey-details">
-                                            <!-- <h3>Survey Details</h3> -->
                                             <div class="survey-info">
                                                 <div class="info-row">
                                                     <label>Survey Name:</label>
@@ -175,68 +113,65 @@
                                                 </div>
                                                 <div class="info-row">
                                                     <label>Country:</label>
-                                                    <span>{{ seismicStore.data.survey.country || 'Not specified'
-                                                    }}</span>
+                                                    <span>{{ seismicStore.data.survey.country || 'Not specified' }}</span>
                                                 </div>
                                                 <div class="info-row">
                                                     <label>Dimension:</label>
-                                                    <span>{{ seismicStore.data.survey.dimension || 'Not specified'
-                                                    }}</span>
+                                                    <span>{{ seismicStore.data.survey.dimension || 'Not specified' }}</span>
                                                 </div>
                                             </div>
                                         </div>
+                                        
+                                        <!-- Lines List -->
+                                        <!-- <div v-if="seismicStore.data.selectedLines.length > 0 && seismicStore.data.uploadOption === 'existing'" class="lines-details">
+                                            <div class="lines-table-container">
+                                                <table class="lines-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Line Name</th>
+                                                            <th>Line ID</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr 
+                                                            v-for="(line, index) in seismicStore.data.selectedLines" 
+                                                            :key="line.lineId || index" 
+                                                            class="line-item"
+                                                            @click="selectLine(line.lineId)">
+                                                            <td class="line-name">{{ line.name || 'Line' }}</td>
+                                                            <td class="line-id-cell">{{ line.lineId || 'N/A' }}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="lines-count">{{ seismicStore.data.selectedLines.length }} lines</div>
+                                        </div> -->
                                     </div>
                                 </div>
-
-                                <!-- File Info -->
-                                <!-- <div class="info-row">
-                                    <label>Total File Size:</label>
-                                    <span>{{ totalWellFileSize }}</span>
-                                </div> -->
-                                <!-- File Info -->
                                 <div class="info-row">
                                     <label>Total File Size:</label>
                                     <span>{{ totalSeismicFileSize }}</span>
                                 </div>
                             </div>
-
-                            <!-- Status Summary -->
-                            <!-- <div class="status-summary">
-                                <div class="status-item">
-                                    <div class="status-number">{{ statusCounts.logs }}</div>
-                                    <div class="status-label">Logs</div>
-                                </div>
-                                <div class="status-item">
-                                    <div class="status-number">{{ statusCounts.logFiles }}</div>
-                                    <div class="status-label">Log Files</div>
-                                </div>
-                                <div class="status-item">
-                                    <div class="status-number">{{ statusCounts.wellFiles }}</div>
-                                    <div class="status-label">Well Files</div>
-                                </div>
-                                <div class="status-item">
-                                    <div class="status-number">{{ statusCounts.boreholeFiles }}</div>
-                                    <div class="status-label">Borehole Files</div>
-                                </div>
-                            </div> -->
                         </div>
 
                         <!-- Files Tab Content -->
                         <div v-if="activeTab === 'files'" class="tab-content">
-                            <div v-if="seismicStore.data.isForUploadingFileForExistingSeismic && !selectedLineId"
-                                class="no-well-selected">
-                                <div class="no-well-message">
-                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" class="no-well-icon">
+                            <!-- <div v-if="seismicStore.data.uploadOption === 'existing' && selectedLineId == ''"
+                                class="no-line-selected">
+                                <div class="no-line-message">
+                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" class="no-line-icon">
                                         <path d="M9 12L11 14L15 10" stroke="#9ca3af" stroke-width="2"
                                             stroke-linecap="round" stroke-linejoin="round" />
                                         <circle cx="12" cy="12" r="10" stroke="#9ca3af" stroke-width="2" fill="none" />
                                     </svg>
-                                    <h3>Select a Well</h3>
-                                    <p>Please select a well from the Dataset tab to view its files.</p>
+                                    <h3>Select a Line</h3>
+                                    <p>Please select a line from the Dataset tab to view its files.</p>
                                 </div>
-                            </div>
+                            </div> -->
 
-                            <div v-else>
+                            <!-- <div v-else> -->
+                            <div>
                                 <div class="files-actions">
                                     <button class="btn btn-outline btn-sm" @click="removeSelectedFiles"
                                         :disabled="checkedFiles.size === 0">
@@ -258,22 +193,22 @@
                                                         Line</th>
                                                     <th>Category</th>
                                                     <th>Sub Category</th>
-                                                    <th>First Field File</th>
-                                                    <th>Last Field File</th>
-                                                    <th>FSP</th>
-                                                    <th>LSP</th>
-                                                    <th>First CDP</th>
-                                                    <th>Last CDP</th>
-                                                    <th>InLine</th>
-                                                    <th>XLine</th>
-                                                    <th>Validation Status</th>
+                                                    <th v-if="seismicStore.data.uploadOption == 'new'" >First Field File</th>
+                                                    <th v-if="seismicStore.data.uploadOption == 'new'" >Last Field File</th>
+                                                    <th v-if="seismicStore.data.uploadOption == 'new'" >FSP</th>
+                                                    <th v-if="seismicStore.data.uploadOption == 'new'" >LSP</th>
+                                                    <th v-if="seismicStore.data.uploadOption == 'new'" >First CDP</th>
+                                                    <th v-if="seismicStore.data.uploadOption == 'new'" >Last CDP</th>
+                                                    <th v-if="seismicStore.data.uploadOption == 'new'" >InLine</th>
+                                                    <th v-if="seismicStore.data.uploadOption == 'new'" >XLine</th>
+                                                    <!-- <th>Validation Status</th> -->
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr v-for="file in paginatedFiles" :key="file.id" :class="{
                                                     selected: selectedFile?.id === file.id,
-                                                    'validation-error': getValidationStatus(file.id) === 'error',
-                                                    'validation-success': getValidationStatus(file.id) === 'success'
+                                                    // 'validation-error': getValidationStatus(file.id) === 'error',
+                                                    // 'validation-success': getValidationStatus(file.id) === 'success'
                                                 }" @click="selectFile(file)">
                                                     <td><input type="checkbox" :checked="isFileChecked(file.id)"
                                                             @click="toggleFileCheck(file.id, $event)" /></td>
@@ -281,7 +216,7 @@
                                                     <td>{{ formatFileSize(file.size) }}</td>
                                                     <td v-if="seismicStore.data.isForUploadingFileForExistingSeismic">
                                                         <select class="entity-select"
-                                                            v-model="(file as SeismicDataQCFileData).wellId">
+                                                            v-model="(file as SeismicDataQCFileData).lineId">
                                                             <option value="">Select Line</option>
                                                             <option v-for="line in seismicStore.data.lines"
                                                                 :key="line.lineId" :value="line.lineId">
@@ -312,15 +247,15 @@
                                                             </option>
                                                         </select>
                                                     </td>
-                                                    <td>{{ getExtractedValue(file, 'first_trace', 'Ffid') }}</td>
-                                                    <td>{{ getExtractedValue(file, 'last_trace', 'Ffid') }}</td>
-                                                    <td>{{ getExtractedValue(file, 'first_trace', 'Sp') }}</td>
-                                                    <td>{{ getExtractedValue(file, 'last_trace', 'Sp') }}</td>
-                                                    <td>{{ getExtractedValue(file, 'first_trace', 'Cdp') }}</td>
-                                                    <td>{{ getExtractedValue(file, 'last_trace', 'Cdp') }}</td>
-                                                    <td>{{ getExtractedValue(file, 'first_trace', 'Il') }}</td>
-                                                    <td>{{ getExtractedValue(file, 'first_trace', 'Xl') }}</td>
-                                                    <td>
+                                                    <td v-if="seismicStore.data.uploadOption == 'new'">{{ getExtractedValue(file, 'first_trace', 'Ffid') }}</td>
+                                                    <td v-if="seismicStore.data.uploadOption == 'new'">{{ getExtractedValue(file, 'last_trace', 'Ffid') }}</td>
+                                                    <td v-if="seismicStore.data.uploadOption == 'new'">{{ getExtractedValue(file, 'first_trace', 'Sp') }}</td>
+                                                    <td v-if="seismicStore.data.uploadOption == 'new'">{{ getExtractedValue(file, 'last_trace', 'Sp') }}</td>
+                                                    <td v-if="seismicStore.data.uploadOption == 'new'">{{ getExtractedValue(file, 'first_trace', 'Cdp') }}</td>
+                                                    <td v-if="seismicStore.data.uploadOption == 'new'">{{ getExtractedValue(file, 'last_trace', 'Cdp') }}</td>
+                                                    <td v-if="seismicStore.data.uploadOption == 'new'">{{ getExtractedValue(file, 'first_trace', 'Il') }}</td>
+                                                    <td v-if="seismicStore.data.uploadOption == 'new'">{{ getExtractedValue(file, 'first_trace', 'Xl') }}</td>
+                                                    <!-- <td>
                                                         <div class="status-icon" :class="{
                                                             success: getValidationStatus(file.id) === 'success',
                                                             error: getValidationStatus(file.id) === 'error'
@@ -331,13 +266,13 @@
                                                                 v-else-if="getValidationStatus(file.id) === 'error'">✗</span>
                                                             <span v-else>-</span>
                                                         </div>
-                                                    </td>
+                                                    </td> -->
                                                 </tr>
                                             </tbody>
                                         </table>
                                     </div>
 
-                                    <div class="table-footer">
+                                    <!-- <div class="table-footer">
                                         <div class="footer-left">
                                             <span>{{ paginationInfo }}</span>
                                             <div class="items-per-page">
@@ -359,74 +294,11 @@
                                             <button class="page-btn" @click="goToNextPage"
                                                 :disabled="!canGoToNextPage">›</button>
                                         </div>
-                                    </div>
+                                    </div> -->
                                 </div>
                             </div>
                         </div>
 
-
-
-                        <!-- Process Status -->
-                        <!-- <div class="process-status">
-                            <div class="process-stage"
-                                :class="{ active: currentStage === 'preparation', completed: stageCompleted('preparation') }">
-                                <div class="stage-icon">
-                                    <svg v-if="stageCompleted('preparation')" width="32" height="32" viewBox="0 0 24 24"
-                                        fill="none">
-                                        <circle cx="12" cy="12" r="10" fill="#22c55e" />
-                                        <path d="M9 12L11 14L15 10" stroke="white" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round" />
-                                    </svg>
-                                </div>
-                                <div class="stage-label">
-                                    <h3>Preparation</h3>
-                                    <p>100%</p>
-                                </div>
-                            </div>
-
-                            <div class="process-stage"
-                                :class="{ active: currentStage === 'loading', completed: stageCompleted('loading') }">
-                                <div class="stage-icon">
-                                    <div v-if="currentStage === 'loading'" class="loading-circle">
-                                        <div class="spinner"></div>
-                                    </div>
-                                    <svg v-else-if="stageCompleted('loading')" width="32" height="32"
-                                        viewBox="0 0 24 24" fill="none">
-                                        <circle cx="12" cy="12" r="10" fill="#22c55e" />
-                                        <path d="M9 12L11 14L15 10" stroke="white" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round" />
-                                    </svg>
-                                </div>
-                                <div class="stage-label">
-                                    <h3>Loading</h3>
-                                    <p>{{ currentStage === 'loading' ? 'Pending...' : '100%' }}</p>
-                                </div>
-                            </div>
-
-                            <div class="process-stage">
-                                <div class="stage-icon"></div>
-                                <div class="stage-label">
-                                    <h3>Quality Check</h3>
-                                    <p></p>
-                                </div>
-                            </div>
-
-                            <div class="process-stage">
-                                <div class="stage-icon"></div>
-                                <div class="stage-label">
-                                    <h3>Approval</h3>
-                                    <p></p>
-                                </div>
-                            </div>
-
-                            <div class="process-stage">
-                                <div class="stage-icon"></div>
-                                <div class="stage-label">
-                                    <h3>Publication</h3>
-                                    <p></p>
-                                </div>
-                            </div>
-                        </div> -->
                     </div>
                 </div>
 
@@ -618,8 +490,8 @@ interface SeismicDataQCFileData extends ExtendedFileData {
     // Bin spacing
     binSpacing?: number;
 
-    // Well/Line ID (reusing wellId for line selection in seismic context)
-    wellId?: string;
+    // Line ID for seismic line selection
+    lineId?: string;
 }
 
 import {
@@ -660,22 +532,7 @@ const { createBulk: createBulkGeoFile } = useGeoFile();
 
 // Data from route or default values
 const datasetName = ref(route.query.datasetName as string || 'OSDU_Demo');
-// const datasetId = ref(route.query.datasetId as string || '1051');
-// const company = ref(route.query.company as string || 'BAKER HUGHES');
-// const createdBy = ref(route.query.createdBy as string || 'recall_controller');
 const uploadedDate = ref(route.query.uploadedDate as string || new Date().toISOString().slice(0, 19).replace('T', ' '));
-// const totalSize = ref(route.query.totalSize as string || '6.3 MB');
-// const description = ref(route.query.description as string || '');
-// const dataSource = ref(route.query.dataSource as string || 'BAKER HUGHES');
-
-// Additional metadata fields
-// const region = ref('');
-// const createdDate = ref('2021-03-11 10:57:20');
-// const loadedDate = ref('2021-03-11 10:57:20');
-// const loadedBy = ref('recall_controller');
-// const approvedStatus = ref('NotRequired');
-// const lastUpdated = ref('2021-03-11 10:57:20');
-// const lastUpdatedBy = ref('recall_controller');
 
 // Tab management
 const activeTab = ref('dataset');
@@ -701,7 +558,7 @@ const selectedRowIndex = ref<number | null>(null);
 const selectedFile = ref<SeismicDataQCFileData | null>(null);
 const editableFileName = ref('');
 
-// Well selection management
+// Line selection management
 const selectedLineId = ref<string>('');
 
 // Pagination state
@@ -716,12 +573,6 @@ const publishErrorDetails = ref<Array<{ fileName: string, error: string, index?:
 
 // Computed properties
 const files = computed(() => {
-    // If a well is selected, filter files by wellId
-    if (selectedLineId.value) {
-        return getFilesByLineId(selectedLineId.value);
-    }
-
-    // Otherwise return all files
     return Array.from(fileDataMap.value.values());
 });
 
@@ -770,7 +621,7 @@ const debugErrorDetails = computed(() => {
 //     boreholeFiles: 1
 // }));
 
-// Calculate total file size from well store
+// Calculate total file size from line store
 // const totalWellFileSize = computed(() => {
 //     const totalBytes = wellStore.data.wellMetadatas.reduce((total, metadata) => {
 //         return total + (metadata.size || 0);
@@ -880,20 +731,19 @@ const onSubDataTypeChange = (file: ExtendedFileData, subDataTypeId: string) => {
     });
 };
 
-// Well selection methods
-const selectLine = (lineId: string) => {
-    selectedLineId.value = lineId;
-    // Clear file selection when switching wells
-    checkedFiles.value.clear();
-    selectedRowIndex.value = null;
-};
+// Line selection methods
+// const selectLine = (lineId: string) => {
+//     selectedLineId.value = lineId;
+//     // Clear file selection when switching lines
+//     checkedFiles.value.clear();
+//     selectedRowIndex.value = null;
+// };
 
-const getSelectedLineName = (wellId: string | undefined): string => {
-    if (!wellId) return '';
-    // In seismic context, wellId maps to lineId
-    const line = seismicStore.data.lines.find(l => l.lineId === wellId);
-    return line?.name || '';
-};
+// const getSelectedLineName = (lineId: string | undefined): string => {
+//     if (!lineId) return '';
+//     const line = seismicStore.data.lines.find(l => l.lineId === lineId);
+//     return line?.name || '';
+// };
 
 // Validation Methods
 const validateFileData = async (file: SeismicDataQCFileData): Promise<void> => {
@@ -910,17 +760,17 @@ const validateFileData = async (file: SeismicDataQCFileData): Promise<void> => {
         // Prepare validation data
         const validationData = {
             file_name: file.name,
-            edafy_seismic_id: seismicFile.seismicId, // Use seismicId property
-            seismic_name: seismicFile.seismicName, // Use seismicName property
+            edafy_seismic_id: seismicFile.seismicId,
+            seismic_name: seismicFile.seismicName,
             extensionType: file.fileFormat || getFileExtension(file.name).toUpperCase(),
             category: file.selectedDataTypeId,
             subcategory: file.selectedSubDataTypeId,
             dimension: seismicFile.dimension,
             description: seismicFile.description,
             item_remarks: seismicFile.itemRemarks,
-            createdFor: file.createdFor,
-            createdBy: file.createdBy,
-            createdDate: file.createdDate,
+            createdFor: useUserStore().user?.data?.name,
+            createdBy: useUserStore().user?.data?.name,
+            createdDate: new Date().toISOString(),
             first_field_file: seismicFile.firstFieldFile,
             last_field_file: seismicFile.lastFieldFile,
             fsp: seismicFile.fsp,
@@ -1013,7 +863,6 @@ const proceedToQualityCheck = async () => {
 };
 
 const proceedToPublish = async () => {
-    console.log('[QC] Starting publish process...');
 
     try {
         /**JANGAN LUPA UNCOMMENT */
@@ -1026,6 +875,9 @@ const proceedToPublish = async () => {
         let createBulkGeoFileResponse = null;
 
         if (seismicStore.data.uploadOption === 'new') {
+
+            // console.log('[QC] seismicStore.data.seismicMetadatas ', seismicStore.data.seismicMetadatas);
+
             const seismicLines = seismicStore.data.seismicMetadatas.map(metadata => ({
                 firstField: metadata.first_field_file,
                 lastField: metadata.last_field_file,
@@ -1034,22 +886,24 @@ const proceedToPublish = async () => {
                 firstCDP: metadata.first_cdp,
                 lastCDP: metadata.last_cdp,
                 firstInline: metadata.inline,
-                lastInline: undefined, // Not present in Metadata, set as undefined
-                firstXline: undefined, // Not present in Metadata, set as undefined
-                lastXline: undefined, // Not present in Metadata, set as undefined
-                binSpacing: undefined, // Not present in Metadata, set as undefined
-                firstTRC: undefined, // Not present in Metadata, set as undefined
-                lastTRC: undefined, // Not present in Metadata, set as undefined
-                numberOfTraces: undefined, // Not present in Metadata, set as undefined
-                sampleType: undefined, // Not present in Metadata, set as undefined
-                sampleRate: undefined, // Not present in Metadata, set as undefined
-                sampleRateUom: undefined, // Not present in Metadata, set as undefined
-                recordLength: undefined, // Not present in Metadata, set as undefined
-                recordLengthUom: undefined, // Not present in Metadata, set as undefined
-                name: metadata.name,
+                lastInline: undefined,
+                firstXline: undefined,
+                lastXline: undefined,
+                binSpacing: undefined,
+                firstTRC: undefined,
+                lastTRC: undefined,
+                numberOfTraces: undefined,
+                sampleType: undefined,
+                sampleRate: undefined,
+                sampleRateUom: undefined,
+                recordLength: undefined,
+                recordLengthUom: undefined,
+                name: metadata.seismic_name,
                 surveyIds: [seismicStore.data.survey.surveyId]
             }));
 
+
+            // console.log('[QC] seismicLines to post ', seismicLines);
             const seismicLineBodyRequest = {
                 seismicLines: seismicLines
             }
@@ -1104,7 +958,6 @@ const proceedToPublish = async () => {
                     ids: matched._id, 
                 };
             });
-
 
             const geoFileBodyRequest = {
                 geoFiles: geoFiles
@@ -1177,7 +1030,105 @@ const proceedToPublish = async () => {
             }
 
         } else {
-            // update existing seismic
+            // const seismicLines = seismicStore.data.seismicMetadatas.map(metadata => ({
+            //     firstField: metadata.first_field_file,
+            //     lastField: metadata.last_field_file,
+            //     firstShotPoint: metadata.first_shot_point,
+            //     lastShotPoint: metadata.last_shot_point,
+            //     firstCDP: metadata.first_cdp,
+            //     lastCDP: metadata.last_cdp,
+            //     firstInline: metadata.inline,
+            //     lastInline: undefined,
+            //     firstXline: undefined,
+            //     lastXline: undefined,
+            //     binSpacing: undefined,
+            //     firstTRC: undefined,
+            //     lastTRC: undefined, // Not present in Metadata, set as undefined
+            //     numberOfTraces: undefined, // Not present in Metadata, set as undefined
+            //     sampleType: undefined, // Not present in Metadata, set as undefined
+            //     sampleRate: undefined, // Not present in Metadata, set as undefined
+            //     sampleRateUom: undefined, // Not present in Metadata, set as undefined
+            //     recordLength: undefined, // Not present in Metadata, set as undefined
+            //     recordLengthUom: undefined, // Not present in Metadata, set as undefined
+            //     name: metadata.name,
+            //     surveyIds: [seismicStore.data.survey.surveyId]
+            // }));
+
+            // const seismicLineBodyRequest = {
+            //     seismicLines: seismicLines
+            // }
+
+            /**JANGAN LUPA UNCOMMENT */
+            // const createdBulkSeismicLineResponse = await createBulkSeismicLine(seismicLineBodyRequest);
+            // console.log('[QC] createdBulkSeismicLineResponse', createdBulkSeismicLineResponse);
+            // const createdBulkSeismicLines = createdBulkSeismicLineResponse.data.seismicLines;
+            // const { update: updateSeismic, getById } = useSeismic();
+            const user = useUserStore().user;
+
+
+            console.log("[QC]seismicStore.data.seismicMetadatas ", seismicStore.data.seismicMetadatas)
+
+            let lineIds = [];
+
+            // for(const seismicMetadata of seismicStore.data.seismicMetadatas) {
+            //     const lineId = seismicMetadata.lineId;
+            //     if(lineId) {
+            //         lineIds.push(lineId);
+            //     }
+            // }
+            
+
+            // return;
+            /**JANGAN LUPA UNCOMMENT */
+            const geoFiles = seismicStore.data.seismicMetadatas.map(metadata => {
+                // const matched = createdBulkSeismicLines.find(
+                //     (line: any) => line.name === metadata.name
+                // );
+
+                // if (!matched) {
+                //     throw new Error(`No matching createdBulkSeismicLine for name: ${metadata.name}`);
+                // }
+
+                return {
+                    id: metadata.id || '',
+                    fileName: metadata.name || '',
+                    fileFormatId: metadata.fileFormat || '',
+                    dataTypeId: metadata.dataTypeId || '',
+                    subDataTypeId: metadata.subDataTypeId || '',
+                    type: 'seismic',
+                    description: (metadata as any).description || '',
+                    title: (metadata as any).title || metadata.name || '',
+                    remarks: (metadata as any).remarks || '',
+                    createdFor: metadata.createdFor || 'test',
+                    createdBy: user.data?.name,
+                    createdDate: metadata.createdDate ? new Date(metadata.createdDate) : new Date(),
+                    fileLocation: '/homes/public/ed_loader_test/' + metadata.name || '',
+                    fileSize: metadata.size || 0,
+                    status: 'Raw',
+                    ownership: '',
+                    interpretedBy: metadata.editedBy || '',
+                    interpretedOn: metadata.createdDate ? new Date(metadata.createdDate) : new Date(),
+                    approvedBy: user.data?.name,
+                    approvedOn: new Date(),
+                    version: '1.0',
+                    comment: '',
+                    spudDate: new Date(),
+                    completionDate: new Date(),
+                    recordedBy: user.data?.name,
+                    recordedOn: new Date(),
+                    changedBy: null,
+                    changedOn: null,
+                    ids: [metadata.lineId], 
+                };
+            });
+
+
+            const geoFileBodyRequest = {
+                geoFiles: geoFiles
+            };
+
+            /**JANGAN LUPA UNCOMMENT */
+            createBulkGeoFileResponse = await createBulkGeoFile(geoFileBodyRequest);
         }
 
         /**JANGAN LUPA UNCOMMENT */
@@ -1392,6 +1343,11 @@ const showNotification = (type: 'success' | 'error' | 'info', title: string, mes
     // Lifecycle
     onMounted(async () => {
 
+        // console.log("seismic store data", seismicStore.data);
+        // console.log("seismic store selected lines", seismicStore.data.selectedLines);
+
+        console.log(" Array.from(fileDataMap.value.values()); ",  Array.from(fileDataMap.value.values()));
+
         // Initialize file data from store
         initializeFileData();
 
@@ -1427,10 +1383,10 @@ const showNotification = (type: 'success' | 'error' | 'info', title: string, mes
         }
     });
 
-    // Watch for selectedLineId changes to auto-select first file when a well is selected
+    // Watch for selectedLineId changes to auto-select first file when a line is selected
     watch(selectedLineId, (newLineId) => {
         if (newLineId && activeTab.value === 'files' && files.value.length > 0) {
-            // Auto-select the first file when a well is selected and files tab is active
+            // Auto-select the first file when a line is selected and files tab is active
             selectedRowIndex.value = 0;
         }
     });
@@ -2315,7 +2271,7 @@ const showNotification = (type: 'success' | 'error' | 'info', title: string, mes
     line-height: 1.4;
 }
 
-/* Wells List Styles */
+/* Lines List Styles */
 .info-section {
     margin-bottom: 1.5rem;
 }
@@ -2375,37 +2331,41 @@ const showNotification = (type: 'success' | 'error' | 'info', title: string, mes
     flex: 1;
 }
 
-.no-wells {
-    color: #6b7280;
-    font-style: italic;
-    text-align: center;
-    padding: 1rem;
-    background: #f9fafb;
+/* Lines Details Styles */
+.lines-details {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
     border-radius: 8px;
-    font-size: 0.8rem;
+    padding: 1rem;
+    margin-top: 1rem;
 }
 
-.wells-table-container {
+.lines-table-container {
     overflow-x: auto;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    overflow: hidden;
+    max-width: 100%;
+    white-space: nowrap;
 }
 
-.wells-table {
+.lines-table {
     width: 100%;
+    /* min-width: 400px; */
     border-collapse: collapse;
     font-size: 0.8rem;
+    /* table-layout: fixed; */
+    background: white;
 }
 
-.wells-table th,
-.wells-table td {
+.lines-table th,
+.lines-table td {
     padding: 0.5rem 0.75rem;
     text-align: left;
     border-bottom: 1px solid #f3f4f6;
+    /* min-width: 150px; */
 }
 
-.wells-table th {
+.lines-table th {
     background: #f9fafb;
     font-weight: 600;
     color: #374151;
@@ -2413,42 +2373,27 @@ const showNotification = (type: 'success' | 'error' | 'info', title: string, mes
     border-bottom: 1px solid #e5e7eb;
 }
 
-.wells-table tbody tr:hover {
+.lines-table tbody tr:hover {
     background: #f8fafc;
     cursor: pointer;
 }
 
-.wells-table tbody tr.selected-well {
-    background: #dbeafe !important;
-    border-left: 3px solid #3b82f6;
-}
-
-.wells-table tbody tr.selected-well:hover {
-    background: #bfdbfe !important;
-}
-
-.wells-table tbody tr:last-child td {
+.lines-table tbody tr:last-child td {
     border-bottom: none;
 }
 
-.well-name {
+.line-name {
     font-weight: 500;
     color: #1e293b;
 }
 
-.well-id-cell {
+.line-id-cell {
     font-weight: 500;
     color: #64748b;
     font-family: monospace;
 }
 
-.well-uwi {
-    font-weight: 400;
-    color: #6b7280;
-    font-family: monospace;
-}
-
-.wells-count {
+.lines-count {
     margin-top: 0.5rem;
     text-align: right;
     font-size: 0.75rem;
@@ -2458,37 +2403,120 @@ const showNotification = (type: 'success' | 'error' | 'info', title: string, mes
     border-top: 1px solid #e2e8f0;
 }
 
-.selected-well-indicator {
+.no-lines {
+    color: #6b7280;
+    font-style: italic;
+    text-align: center;
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    font-size: 0.8rem;
+}
+
+.lines-table-container {
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.lines-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+
+.lines-table th,
+.lines-table td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.lines-table th {
+    background: #f9fafb;
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.lines-table tbody tr:hover {
+    background: #f8fafc;
+    cursor: pointer;
+}
+
+.lines-table tbody tr.selected-line {
+    background: #dbeafe !important;
+    border-left: 3px solid #3b82f6;
+}
+
+.lines-table tbody tr.selected-line:hover {
+    background: #bfdbfe !important;
+}
+
+.lines-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.line-name {
+    font-weight: 500;
+    color: #1e293b;
+}
+
+.line-id-cell {
+    font-weight: 500;
+    color: #64748b;
+    font-family: monospace;
+}
+
+.line-uwi {
+    font-weight: 400;
+    color: #6b7280;
+    font-family: monospace;
+}
+
+.lines-count {
+    margin-top: 0.5rem;
+    text-align: right;
+    font-size: 0.75rem;
+    color: #6b7280;
+    padding: 0.5rem 0.75rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+}
+
+.selected-line-indicator {
     font-weight: 500;
     color: #3b82f6;
 }
 
-/* No well selected styles */
-.no-well-selected {
+/* No line selected styles */
+.no-line-selected {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 300px;
 }
 
-.no-well-message {
+.no-line-message {
     text-align: center;
     color: #6b7280;
 }
 
-.no-well-icon {
+.no-line-icon {
     margin: 0 auto 1rem;
     opacity: 0.5;
 }
 
-.no-well-message h3 {
+.no-line-message h3 {
     color: #374151;
     font-size: 1.1rem;
     font-weight: 600;
     margin: 0 0 0.5rem 0;
 }
 
-.no-well-message p {
+.no-line-message p {
     color: #6b7280;
     font-size: 0.9rem;
     margin: 0;

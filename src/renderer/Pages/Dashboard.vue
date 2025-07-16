@@ -59,10 +59,6 @@ const settingsStore = useSettingsStore();
 const userStore = useUserStore();
 const selectedTarget = ref('');
 
-onMounted(() => {
-    console.log("Current user from store", userStore.getUser);
-});
-
 // Watch for changes in selectedTarget and save to store + navigate to DataPreparation page
 watch(selectedTarget, (newTarget) => {
     if (newTarget) {

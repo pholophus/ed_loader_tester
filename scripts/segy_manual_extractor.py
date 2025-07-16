@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional
 import numpy as np
 
 
-def read_segy_file(filepath: str, field_mappings: Optional[Dict[str, int]] = None) -> Dict[str, Any]:
+def read_segy_file(filepath: str, field_mappings: Optional[Dict[str, int]] = None, format: str = "4-BYTE") -> Dict[str, Any]:
 
     try:
         hash_sha256 = hashlib.sha256()
@@ -26,8 +26,12 @@ def read_segy_file(filepath: str, field_mappings: Optional[Dict[str, int]] = Non
             first_header = segyfile.header[0]
             last_header = segyfile.header[ntraces - 1]
             
+            # Determine data type based on format
+            data_type = "int16" if format == "2-BYTE" else "int32"
+            
             if field_mappings:
                 print(f"🔍 Using custom field mappings: {field_mappings}")
+                print(f"📏 Using {format} format ({data_type})")
                 
                 # Extract fields based on user-provided byte positions using direct file access
                 extracted_first = {}
@@ -57,8 +61,8 @@ def read_segy_file(filepath: str, field_mappings: Optional[Dict[str, int]] = Non
                 
                 # Extract fields from raw bytes
                 for field_name, byte_position in field_mappings.items():
-                    first_val = extract_field_from_bytes(first_header_bytes, byte_position)
-                    last_val = extract_field_from_bytes(last_header_bytes, byte_position)
+                    first_val = extract_field_from_bytes(first_header_bytes, byte_position, data_type)
+                    last_val = extract_field_from_bytes(last_header_bytes, byte_position, data_type)
                     extracted_first[field_name] = first_val
                     extracted_last[field_name] = last_val
                     print(f"📊 {field_name} at byte {byte_position}: First={first_val}, Last={last_val}")
@@ -83,19 +87,20 @@ def read_segy_file(filepath: str, field_mappings: Optional[Dict[str, int]] = Non
                 
                 # If coordinates not provided by user, extract from standard positions
                 if source_x_first is None:
-                    source_x_first = extract_field_from_bytes(first_header_bytes, 73)
+                    source_x_first = extract_field_from_bytes(first_header_bytes, 73, data_type)
                 if source_y_first is None:
-                    source_y_first = extract_field_from_bytes(first_header_bytes, 77)
+                    source_y_first = extract_field_from_bytes(first_header_bytes, 77, data_type)
                 if source_x_last is None:
-                    source_x_last = extract_field_from_bytes(last_header_bytes, 73)
+                    source_x_last = extract_field_from_bytes(last_header_bytes, 73, data_type)
                 if source_y_last is None:
-                    source_y_last = extract_field_from_bytes(last_header_bytes, 77)
+                    source_y_last = extract_field_from_bytes(last_header_bytes, 77, data_type)
                 
                 # Add all extracted custom fields to the response
                 custom_fields = {
                     "first_trace": extracted_first,
                     "last_trace": extracted_last,
-                    "byte_positions": field_mappings
+                    "byte_positions": field_mappings,
+                    "format_used": format
                 }
             else:
                 print("🔍 Using standard segyio field mappings")
@@ -185,7 +190,8 @@ def read_segy_file(filepath: str, field_mappings: Optional[Dict[str, int]] = Non
                 "unique_id": unique_id,
                 "first5_samples": first5_samples,
                 "error": error_field,
-                "field_mappings_used": field_mappings if field_mappings else "standard_segyio"
+                "field_mappings_used": field_mappings if field_mappings else "standard_segyio",
+                "format_used": format
             }
             
             # Add custom extracted fields if field mappings were provided
@@ -257,58 +263,4 @@ def extract_field_from_bytes(header_bytes: bytes, byte_position: Optional[int], 
         value = struct.unpack(fmt, value_bytes)[0]
         return value
     except Exception:
-        return None
-
-if __name__ == "__main__":
-    test_file = "../../rnd/auto-import-segy-data/2D_SEISMIC/MYS1985P19862DM01PMOPMEC/MYS1985P19862DM01PMOPMEC_CS86-965_RAW_MIGR.sgy"
-    
-    print("🧪 Testing SEGY File Reader")
-    print("=" * 50)
-    
-    try:
-        # Test with standard extraction
-        print("📋 Testing with standard field mappings:")
-        result = read_segy_file(test_file)
-        
-        if "error" in result and result["error"]["type"]:
-            print(f"❌ Error: {result['error']['message']}")
-        else:
-            print("✅ Successfully processed SEGY file")
-            print(f"📁 Folder: {result['folder_name']}")
-            print(f"📄 File: {result['file_name']}")
-            print(f"📊 Traces: {result['ntraces']}")
-            print(f"🔢 Samples: {result['record_length']} {result['record_length_uom']}")
-        
-        # Test with custom field mappings - Example 1: Different byte positions
-        print("\n📋 Testing with custom field mappings (Standard positions):")
-        custom_mappings1 = {
-            "Ffid": 9,   # Standard position
-            "Sp": 17,    # Standard position
-            "Cdp": 21,   # Standard position
-            "Il": 189,   # Standard position
-            "Xl": 193    # Standard position
-        }
-        
-        result2 = read_segy_file(test_file, custom_mappings1)
-        
-        # Test with custom field mappings - Example 2: Different byte positions to show difference
-        print("\n📋 Testing with custom field mappings (Different positions):")
-        custom_mappings2 = {
-            "Ffid": 1,   # Different position - should show different values
-            "Sp": 5,     # Different position - should show different values
-            "Cdp": 13,   # Different position - should show different values
-            "Il": 25,    # Different position - should show different values  
-            "Xl": 29     # Different position - should show different values
-        }
-        
-        result3 = read_segy_file(test_file, custom_mappings2)
-        
-        print("\n🔍 Comparison:")
-        print("Standard vs Custom1 vs Custom2")
-        if not (result.get("error") or result2.get("error") or result3.get("error")):
-            print(f"FFID: {result['header_values']['First_FFID']} vs {result2['header_values']['First_FFID']} vs {result3['header_values']['First_FFID']}")
-            print(f"SP:   {result['header_values']['FSP']} vs {result2['header_values']['FSP']} vs {result3['header_values']['FSP']}")
-            print(f"CDP:  {result['header_values']['First_CDP']} vs {result2['header_values']['First_CDP']} vs {result3['header_values']['First_CDP']}")
-    
-    except Exception as e:
-        print(f"❌ Test failed: {e}") 
+        return None 

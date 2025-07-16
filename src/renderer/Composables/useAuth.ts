@@ -4,6 +4,7 @@ import { pocketBaseConfig } from '../../config/api'
 import { useEmployee } from './useEmployee'
 import { User } from '../../schemas/User'
 import { useUserStore } from '../store/userStore'
+import { apiService } from '../../services/apiService'
 
 export interface LoginPayload {
     identity: string
@@ -40,6 +41,14 @@ const getCookie = (name: string): string | null => {
 
 const deleteCookie = (name: string) => {
     document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`
+}
+
+const validateToken = async (token: string) => {
+    const response = await apiService.post('auth/validate-token', {
+        token: token
+    });
+
+    return response.data
 }
 
 export function useAuth() {
@@ -107,15 +116,27 @@ export function useAuth() {
     }
 
     const validateAndLoadUser = async () => {
-        const token = getToken()
+        const token = getToken();
+
+        console.log("token ", token);
+
         if (!token) {
             return false
         }
 
-        // If user is already loaded, return true
+        const isValid = await validateToken(token);
+
+        if (!isValid) {
+            clearAuth();
+            return false;
+        }
+
         if (userStore.getUser) {
+            console.log("user found, returning true ", userStore.getUser);
             return true
         }
+
+        console.log("user not found, fetching user");
 
         try {
             // Try to get current user with the token
@@ -129,16 +150,23 @@ export function useAuth() {
             })
 
             if (!response.ok) {
-                // Token is invalid, clear it
                 clearAuth()
                 return false
             }
 
+            console.log("response auth fresh", response);
+
             const data: AuthResponse = await response.json()
+
+            console.log("data auth fres response.jsonh", data);
             
             if (data.record.id) {
                 const userData = await useEmployee().fetchByPocketbaseID(data.record.id)
+                console.log("pocketbaseid passed ", data.record.id);
+                console.log("userData by pocketbase", userData);
                 userStore.setUser(userData)
+
+                console.log("user store after set user ", userStore.getUser);
                 return true
             }
 
@@ -158,6 +186,7 @@ export function useAuth() {
         getToken,
         getUser,
         validateAndLoadUser,
-        clearAuth
+        clearAuth,
+        validateToken
     }
 } 

@@ -28,31 +28,27 @@
                 <div class="metadata-info">
                     <div class="info-row">
                         <label>Well Name:</label>
-                        <span>{{ wellStore.data.well.wellName || '-' }}</span>
+                        <span>{{ well?.wellName || '-' }}</span>
                     </div>
                     <div class="info-row">
                         <label>UWI:</label>
-                        <span>{{ wellStore.data.well.UWI || '-' }}</span>
+                        <span>{{ well?.UWI || '-' }}</span>
                     </div>
                     <div class="info-row">
                         <label>Well EDAFY ID:</label>
-                        <span>{{ wellStore.data.well.wellId || '-' }}</span>
+                        <span>{{ well?.wellId || '-' }}</span>
                     </div>
                     <div class="info-row">
                         <label>Created:</label>
-                        <span>{{ '-' }}</span>
+                        <span>{{ userStore.user.data?.name }}</span>
                     </div>
                     <div class="info-row">
                         <label>Loaded:</label>
-                        <span>{{ '-' }}</span>
-                    </div>
-                    <div class="info-row">
-                        <label>Approved:</label>
-                        <span>{{'-' }}</span>
+                        <span>{{ userStore.user.data?.name }}</span>
                     </div>
                     <div class="info-row">
                         <label>Last Updated:</label>
-                        <span>{{ '-' }}</span>
+                        <span>{{ new Date().toLocaleString() }}</span>
                     </div>
                 </div>
             </div>
@@ -78,12 +74,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useWellStore } from '../../../store/wellStore';
 import QCReport from './QCReport.vue';
+import { useUserStore } from '@/store/userStore';
 
 // Initialize the well store
 const wellStore = useWellStore();
+const userStore = useUserStore();
+const props = defineProps<{
+    wellId: string;
+}>();
+
+const well = computed(() => {
+    return wellStore.data.well.find((well) => well.wellId === props.wellId);
+});
+
+onMounted(() => {
+    console.log("well ", well.value);
+});
 
 // Props for receiving data from parent component
 // interface Props {

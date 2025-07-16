@@ -200,35 +200,35 @@ interface LoadedFile {
     validation: ValidationStatus;
 }
 
-interface DatasetInfo {
-    id: number;
-    name: string;
-    workflow: string;
-    source: string;
-    region: string;
-    country: string;
-    county: string;
-    filesCount: number;
-    logsCount: number;
-    size: string;
-    createdBy: string;
-    date: string;
-    editedBy: string;
-    loadedBy: string;
-    lastUpdate: string;
-    checkedBy: string;
-    loadedFiles: number;
-    stagingLogs: number;
-    loadedTapes: number;
-    notLoadedFiles: number;
-    notLoadedStagingLogs: number;
-    notLoadedTapes: number;
-    duplicateFilms: number;
-    duplicateWellFiles: number;
-    duplicateBoreholes: number;
-    duplicateCurves: number;
-    duplicateTapes: number;
-}
+// interface DatasetInfo {
+//     id: number;
+//     name: string;
+//     workflow: string;
+//     source: string;
+//     region: string;
+//     country: string;
+//     county: string;
+//     filesCount: number;
+//     logsCount: number;
+//     size: string;
+//     createdBy: string;
+//     date: string;
+//     editedBy: string;
+//     loadedBy: string;
+//     lastUpdate: string;
+//     checkedBy: string;
+//     loadedFiles: number;
+//     stagingLogs: number;
+//     loadedTapes: number;
+//     notLoadedFiles: number;
+//     notLoadedStagingLogs: number;
+//     notLoadedTapes: number;
+//     duplicateFilms: number;
+//     duplicateWellFiles: number;
+//     duplicateBoreholes: number;
+//     duplicateCurves: number;
+//     duplicateTapes: number;
+// }
 
 const wellStore = useWellStore();
 

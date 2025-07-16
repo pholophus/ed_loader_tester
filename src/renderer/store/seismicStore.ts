@@ -36,6 +36,7 @@ interface Metadata {
     size?: number;
     progress?: number;
     path?: string;
+    seismic_name?: string;
     editedBy?: string;
     createdBy?: string;
     createdFor?: string;
@@ -74,6 +75,7 @@ interface Dataset {
 
     //used when uploading file for existing surveys
     lines: Line[];
+    selectedLines: Line[];
 
     hasDoneQC: boolean;
     currentStage: WorkflowStage;
@@ -115,6 +117,7 @@ export const useSeismicStore = defineStore('seismicData', {
         data: {
             survey: {} as Survey,
             lines: [] as Line[],
+            selectedLines: [] as Line[],
             hasDoneQC: false,
             currentStage: 'preparation' as WorkflowStage,
             completedStages: [] as WorkflowStage[],
@@ -150,8 +153,36 @@ export const useSeismicStore = defineStore('seismicData', {
             this.data.lines.push(data);
         },
 
+        addSelectedLineData(lineId: string, metadata: Metadata) {
+            const existingLineIndex = this.data.selectedLines.findIndex(line => line.lineId === lineId);
+            if (existingLineIndex !== -1) {
+                this.data.selectedLines[existingLineIndex].metadata.push(metadata);
+            } else {
+                // Otherwise, add the line with the new metadata
+                const line = this.data.lines.find(line => line.lineId === lineId);
+                if (line) {
+                    this.data.selectedLines.push({
+                        ...line,
+                        metadata: [...line.metadata, metadata]
+                    });
+                }
+            }
+        },
+
         removeLineData(lineId: string) {
             this.data.lines = this.data.lines.filter(line => line.metadata.find(m => m.id === lineId));
+        },
+
+        removeSelectedLineData(lineId: string) {
+            this.data.selectedLines = this.data.selectedLines.filter(line => line.lineId !== lineId);
+        },
+
+        emptyLinesData() {
+            this.data.lines = [];
+        },
+
+        emptySelectedLinesData() {
+            this.data.selectedLines = [];
         },
         
         setSelectedFiles(files: FileData[]) {
@@ -168,6 +199,12 @@ export const useSeismicStore = defineStore('seismicData', {
             this.data.seismicMetadatas = this.data.seismicMetadatas.map((existingFile, index) => ({
                 ...existingFile,
                 ...(metadatas[index] && {
+                    seismic_name: metadatas[index].seismic_name,
+                    name: metadatas[index].name,
+                    path: metadatas[index].path,
+                    size: metadatas[index].size,
+                    progress: metadatas[index].progress,
+                    lineId: metadatas[index].lineId,
                     editedBy: metadatas[index].editedBy,
                     createdBy: metadatas[index].createdBy,
                     fileFormat: metadatas[index].fileFormat,
@@ -312,6 +349,10 @@ export const useSeismicStore = defineStore('seismicData', {
 
         seismicHasFiles: (state) => (seismicId: string) => {
             return state.data.seismicMetadatas.some(metadata => metadata.id === seismicId);
+        },
+
+        getFilesByLineId: (state) => (lineId: string) => {
+            return state.data.selectedLines.find(line => line.lineId === lineId)?.metadata || [];
         }
     }
 });

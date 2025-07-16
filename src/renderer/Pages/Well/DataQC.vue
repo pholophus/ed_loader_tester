@@ -83,13 +83,6 @@
                             <button class="tab" :class="{ active: activeTab === 'files' }" @click="activeTab = 'files'">
                                 Files ({{ selectedWellId ? wellStore.getWellFileCount(selectedWellId) : files.length }})
                             </button>
-                            <!-- <button class="tab" :class="{ active: activeTab === 'logs' }" @click="activeTab = 'logs'">
-                                Logs ({{ logs.length }})
-                            </button>
-                            <button class="tab" :class="{ active: activeTab === 'curves' }"
-                                @click="activeTab = 'curves'">
-                                Curves ({{ curves.length }})
-                            </button> -->
                         </div>
 
                         <!-- Dataset Tab Content -->
@@ -97,7 +90,6 @@
                             <div class="dataset-info">
                                 <!-- Wells List -->
                                 <div class="info-section">
-                                    <!-- <h3>Wells ({{ wellStore.data.well.length }})</h3> -->
                                     <div v-if="wellStore.data.well.length === 0" class="no-wells">
                                         No wells available
                                     </div>
@@ -107,7 +99,6 @@
                                                 <tr>
                                                     <th>Well Name</th>
                                                     <th>Well ID</th>
-                                                    <th>UWI</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -117,14 +108,13 @@
                                                     @click="selectWell(well.wellId)">
                                                     <td class="well-name">{{ well.wellName }}</td>
                                                     <td class="well-id-cell">{{ well.wellId }}</td>
-                                                    <td class="well-uwi">{{ well.UWI || 'N/A' }}</td>
                                                 </tr>
                                             </tbody>
                                         </table>
                                         <div class="wells-count">
                                             {{ wellStore.data.well.length }} well{{ wellStore.data.well.length !== 1 ? 's' : '' }}
                                             <span v-if="selectedWellId" class="selected-well-indicator">
-                                                • {{ getSelectedWellName() }} selected
+                                                 {{ getSelectedWellName() }} selected
                                             </span>
                                         </div>
                                     </div>
@@ -235,91 +225,28 @@
                                                         </option>
                                                     </select>
                                                 </td>
-                                                <td>{{ (file as DataQCFileData).wellId }}</td>
+                                                <td>{{ (file as DataQCFileData).wellName }}</td>
                                             </tr>
                                         </tbody>
                                     </table>
 
-                                    <div class="table-footer">
+                                    <!-- <div class="table-footer">
                                         <span>{{ files.length > 0 ? `1 - ${files.length} of ${files.length}` : '0' }} results</span>
                                         <div class="pagination">
                                             <button class="page-btn">‹</button>
                                             <span>1</span>
                                             <button class="page-btn">›</button>
                                         </div>
-                                    </div>
+                                    </div> -->
                                 </div>
                             </div>
                         </div>
 
-
-
-                        <!-- Process Status -->
-                        <!-- <div class="process-status">
-                            <div class="process-stage"
-                                :class="{ active: currentStage === 'preparation', completed: stageCompleted('preparation') }">
-                                <div class="stage-icon">
-                                    <svg v-if="stageCompleted('preparation')" width="32" height="32" viewBox="0 0 24 24"
-                                        fill="none">
-                                        <circle cx="12" cy="12" r="10" fill="#22c55e" />
-                                        <path d="M9 12L11 14L15 10" stroke="white" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round" />
-                                    </svg>
-                                </div>
-                                <div class="stage-label">
-                                    <h3>Preparation</h3>
-                                    <p>100%</p>
-                                </div>
-                            </div>
-
-                            <div class="process-stage"
-                                :class="{ active: currentStage === 'loading', completed: stageCompleted('loading') }">
-                                <div class="stage-icon">
-                                    <div v-if="currentStage === 'loading'" class="loading-circle">
-                                        <div class="spinner"></div>
-                                    </div>
-                                    <svg v-else-if="stageCompleted('loading')" width="32" height="32"
-                                        viewBox="0 0 24 24" fill="none">
-                                        <circle cx="12" cy="12" r="10" fill="#22c55e" />
-                                        <path d="M9 12L11 14L15 10" stroke="white" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round" />
-                                    </svg>
-                                </div>
-                                <div class="stage-label">
-                                    <h3>Loading</h3>
-                                    <p>{{ currentStage === 'loading' ? 'Pending...' : '100%' }}</p>
-                                </div>
-                            </div>
-
-                            <div class="process-stage">
-                                <div class="stage-icon"></div>
-                                <div class="stage-label">
-                                    <h3>Quality Check</h3>
-                                    <p></p>
-                                </div>
-                            </div>
-
-                            <div class="process-stage">
-                                <div class="stage-icon"></div>
-                                <div class="stage-label">
-                                    <h3>Approval</h3>
-                                    <p></p>
-                                </div>
-                            </div>
-
-                            <div class="process-stage">
-                                <div class="stage-icon"></div>
-                                <div class="stage-label">
-                                    <h3>Publication</h3>
-                                    <p></p>
-                                </div>
-                            </div>
-                        </div> -->
                     </div>
                 </div>
 
                 <!-- Details Panel -->
-                <DatasetDetails v-if="activeTab === 'dataset'"/>
+                <DatasetDetails v-if="activeTab === 'dataset'" :well-id="selectedWellId"/>
                 <FilesDetails v-if="activeTab === 'files' && selectedRowIndex !== null" :selected-row-index="selectedRowIndex"/>
             </div>
         </main>
@@ -432,6 +359,13 @@
                 </div>
             </div>
         </div>
+
+        <NotificationModal
+            v-model="showNotificationModal"
+            :type="notificationType"
+            :title="notificationTitle"
+            :message="notificationMessage"
+        />
     </div>
 </template>
 
@@ -485,22 +419,8 @@ const {
 
 // Data from route or default values
 const datasetName = ref(route.query.datasetName as string || 'OSDU_Demo');
-// const datasetId = ref(route.query.datasetId as string || '1051');
-// const company = ref(route.query.company as string || 'BAKER HUGHES');
-// const createdBy = ref(route.query.createdBy as string || 'recall_controller');
 const uploadedDate = ref(route.query.uploadedDate as string || new Date().toISOString().slice(0, 19).replace('T', ' '));
-// const totalSize = ref(route.query.totalSize as string || '6.3 MB');
-// const description = ref(route.query.description as string || '');
-// const dataSource = ref(route.query.dataSource as string || 'BAKER HUGHES');
 
-// Additional metadata fields
-// const region = ref('');
-// const createdDate = ref('2021-03-11 10:57:20');
-// const loadedDate = ref('2021-03-11 10:57:20');
-// const loadedBy = ref('recall_controller');
-// const approvedStatus = ref('NotRequired');
-// const lastUpdated = ref('2021-03-11 10:57:20');
-// const lastUpdatedBy = ref('recall_controller');
 
 // Tab management
 const activeTab = ref('dataset');
@@ -522,9 +442,10 @@ const publishErrorDetails = ref<Array<{fileName: string, error: string, index?: 
 const checkedFiles = ref<Set<string>>(new Set());
 const selectAllFiles = ref(false);
 const selectedRowIndex = ref<number | null>(null);
-// Store validation results for each file
-// const validationResults = ref<Map<string, ValidationResult>>(new Map());
-// const selectedFile = ref<ExtendedFileData | null>(null);
+const showNotificationModal = ref(false);
+const notificationType = ref<'success' | 'error' | 'info'>('info');
+const notificationTitle = ref('');
+const notificationMessage = ref('');
 
 // Well selection management
 const selectedWellId = ref<string | null>(null);
@@ -533,7 +454,14 @@ const selectedWellId = ref<string | null>(null);
 const files = computed(() => {
     // If a well is selected, filter files by wellId
     if (selectedWellId.value) {
-        return getFilesByWellId(selectedWellId.value);
+        let files = getFilesByWellId(selectedWellId.value);
+        let filesWithWellName = files.map((file) => {
+            return {
+                ...file,
+                wellName: wellStore.data.well.find((well) => well.wellId === selectedWellId.value)?.wellName
+            }
+        });
+        return filesWithWellName;
     }
     
     // Otherwise return all files
@@ -577,15 +505,12 @@ const debugErrorDetails = computed(() => {
     return publishErrorDetails.value;
 });
 
-// const logs = ref([]);
-// const curves = ref(Array(14).fill(null));
-
-// const statusCounts = computed(() => ({
-//     logs: 1,
-//     logFiles: 2,
-//     wellFiles: 0,
-//     boreholeFiles: 1
-// }));
+const showNotification = (type: 'success' | 'error' | 'info', title: string, message: string) => {
+    notificationType.value = type;
+    notificationTitle.value = title;
+    notificationMessage.value = message;
+    showNotificationModal.value = true;
+};
 
 // Calculate total file size from well store
 const totalWellFileSize = computed(() => {
@@ -712,10 +637,12 @@ const validateFileData = (file: DataQCFileData): ValidationResult => {
             top_depth_uom: file.topDepthUoM,
             base_depth: file.baseDepth,
             base_depth_uom: file.baseDepthUoM,
-            createdFor: file.createdFor,
-            createdBy: file.createdBy,
-            createdDate: file.createdDate,
+            createdFor: userStore.user.data?.name,
+            createdBy: userStore.user.data?.name,
+            createdDate: new Date().toISOString(),
         };
+
+        console.log("validationData ", validationData);
 
         const result = lasSchema.safeParse(validationData);
         
@@ -749,27 +676,20 @@ const validateFileData = (file: DataQCFileData): ValidationResult => {
     }
 };
 
-// const getFileValidationResult = (fileId: string): ValidationResult | null => {
-//     return validationResults.value.get(fileId) || null;
-// };
-
 const runValidationForAllFiles = () => {
     // console.log('[QC] Starting quality check validation...');
+
+    console.log("fileDataMap.value.values() ", Array.from(fileDataMap.value.values()));
 
     wellStore.clearFileValidationResults();
     
     Array.from(fileDataMap.value.values()).forEach(file => {
         const result = validateFileData(file);
-        // validationResults.value.set(file.id, result);
-        
-        // console.log('[QC] File:', file.name, 'Validation Result:', result);
-        // Store validation result in wellStore
         wellStore.updateFileValidationResult(file.id, result);
     });
 };
 
 const proceedToQualityCheck = async () => {
-    // console.log('[QC] Starting quality check process...');
     
     try {
         // Run validation for all files
@@ -802,8 +722,6 @@ const proceedToPublish = async () => {
         const { createBulk } = useGeoFile();
         const { update: updateWell, getById } = useWell();
         const user = userStore.getUser;
-
-        // const wellsToUpdate = [];
         
         // Create geoFiles array according to the expected structure
         const geoFiles = wellStore.data.wellMetadatas.map(metadata => ({
@@ -835,34 +753,11 @@ const proceedToPublish = async () => {
             baseDepthUom: 'm',
             spudDate: new Date(),
             completionDate: new Date(),
-            // firstFieldFile: 0,
-            // lastFieldFile: 0,
-            // firstShotPoint: 0,
-            // lastShotPoint: 0,
-            // firstCDP: 0,
-            // lastCDP: 0,
-            // firstInline: 0,
-            // lastInline: 0,
-            // firstXline: 0,
-            // lastXline: 0,
-            // binSpacing: 0,
-            // firstTRC: 0,
-            // lastTRC: 0,
-            // numberOfTraces: 0,
-            // sampleType: 0,
-            // sampleRate: 0,
-            // sampleRateUom: 0,
-            // recordLength: 0,
-            // recordLengthUom: 0,
             recordedBy: user.data?.name,
             recordedOn: new Date(),
             changedBy: null,
             changedOn: null,
-            ids: wellStore.data.well.map(well => well.wellId), // Associated well IDs,
-            // well: {
-            //     latitude: 0,
-            //     longitude: 0
-            // }
+            ids: wellStore.data.well.map(well => well.wellId)
         }));
 
         const body = {
@@ -871,43 +766,10 @@ const proceedToPublish = async () => {
         
         const response = await createBulk(body);
 
-        if (response.success) {
-            // Check if ALL files were created successfully
-            // if (response.errorCount === 0) {
-            //     // console.log('✅ All GeoFiles created successfully!');
-            //     // console.log(`Created ${response.successCount} GeoFiles`);
-            //     // console.log('[QC] GeoFile creation completed, proceeding with FTP upload...');
-            //     // Continue with FTP upload process
-            // } 
-            // Check if SOME files were created (partial success)
-            if (response.successCount > 0) {
-                // console.log(`⚠️ Partial success: ${response.successCount}/${response.totalProcessed} GeoFiles created`);
-                // console.log('Successful files:', response.results);
-                // console.log('Failed files:', response.errors);
-                
-                publishStatus.value = 'error';
-                publishError.value = response.message || `Partial success: ${response.successCount}/${response.totalProcessed} files created`;
-                publishErrorDetails.value = response.errors || [];
-                // console.log('[QC] Set error details for partial success:', publishErrorDetails.value);
-                return;
-            } 
-            // Check if NO files were created
-            // else {
-            //     // console.log('❌ No GeoFiles were created');
-            //     // console.log('All errors:', response.errors);
-            //     publishStatus.value = 'error';
-            //     publishError.value = response.message || 'Failed to create any GeoFiles';
-            //     publishErrorDetails.value = response.errors || [];
-            //     // console.log('[QC] Set error details for complete failure:', publishErrorDetails.value);
-            //     return;
-            // }
-        } else {
-            // console.error('❌ GeoFile bulk creation failed');
-            // console.log('Response:', response);
+        if (!response.success){
             publishStatus.value = 'error';
             publishError.value = response.message || 'Failed to create GeoFiles';
             publishErrorDetails.value = response.errors || [];
-            // console.log('[QC] Set error details for API failure:', publishErrorDetails.value);
             return;
         }
 
@@ -923,12 +785,11 @@ const proceedToPublish = async () => {
                     const wgs84Coords = Converter.convertCustomToWgs84(customParams);
 
                     await updateWell(well.wellId, {
-                        latitude: wgs84Coords[0],
-                        longitude: wgs84Coords[1]
+                        longitude: wgs84Coords[0],
+                        latitude: wgs84Coords[1]
                     });
 
                     const wellByID = await getById(well.wellId);
-                    console.log("[QC] wellByID", wellByID);
                     
                 } catch (error) {
                     console.error('[CRS] Coordinate conversion error:', error);
@@ -939,22 +800,14 @@ const proceedToPublish = async () => {
         // Get all files to upload
         const filesToUpload = Array.from(fileDataMap.value.values());
         
-        // console.log(`[QC] Publishing ${filesToUpload.length} files via FTP`);
-        
         // Test FTP connection using the configuration from main process
         const ftpStatus = await window.electronAPI.getFtpStatus();
-        // console.log('[QC] FTP status:', ftpStatus);
         if (!ftpStatus.configured || !ftpStatus.enabled) {
             publishStatus.value = 'error';
             publishError.value = 'FTP is not configured or enabled';
             publishErrorDetails.value = [];
             return;
         }
-        
-        // console.log('[QC] FTP is configured and ready');
-        
-        // Upload files to FTP server (simplified approach)
-        // console.log('[QC] Starting FTP upload process...');
         
         for (let i = 0; i < filesToUpload.length; i++) {
             const file = filesToUpload[i];
@@ -997,6 +850,10 @@ const proceedToPublish = async () => {
         
         setTimeout(() => {
             closePublishModal();
+            showNotification('success', 'Publication Complete', 'Dataset has been successfully published to the FTP server.');
+
+            router.push({ path: '/' });
+            wellStore.clearAll();
         }, 2000);
         
     } catch (error: any) {
@@ -1059,6 +916,10 @@ const rejectDataset = () => {
 
 // Lifecycle
 onMounted(async () => {
+
+    // console.log("wellStore.data ", wellStore.data);
+    // console.log("wellStore.data.wellMetadatas ", wellStore.data.wellMetadatas);
+    // console.log("Array.from(fileDataMap.value.values()); ", Array.from(fileDataMap.value.values()));
     
     // Initialize file data from store
     initializeFileData();
@@ -1287,13 +1148,15 @@ onUnmounted(() => {
 .table-container {
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
     margin-bottom: 1rem;
     width: 100%;
 }
 
 .components-table {
     width: 100%;
+    min-width: 800px;
     font-size: 0.75rem;
     border-collapse: collapse;
     table-layout: fixed;
@@ -1329,8 +1192,8 @@ onUnmounted(() => {
 
 .components-table th:nth-child(2),
 .components-table td:nth-child(2) {
-    width: 45%;
-    min-width: 200px;
+    width: 25%;
+    min-width: 120px;
 }
 
 .components-table th:nth-child(3),
@@ -1341,13 +1204,13 @@ onUnmounted(() => {
 
 .components-table th:nth-child(4),
 .components-table td:nth-child(4) {
-    width: 20%;
+    width: 25%;
     min-width: 120px;
 }
 
 .components-table th:nth-child(5),
 .components-table td:nth-child(5) {
-    width: 20%;
+    width: 25%;
     min-width: 120px;
 }
 

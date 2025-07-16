@@ -4,20 +4,15 @@ import { useSeismicStore } from '../store/seismicStore';
 import ExtendedFileData from '../../schemas/ExtendedFileData';
 
 interface FileDataOptions {
-  // For DataQC specific fields
   includeQCFields?: boolean;
-  // For DataLoading specific fields  
   includeLoadingFields?: boolean;
-  // Default quality status for QC view
   defaultQualityStatus?: 'success' | 'error' | 'pending';
-  // Store type to use
   storeType?: 'well' | 'seismic';
 }
 
 export function useFileData(options: FileDataOptions = {}) {
   const { storeType = 'well' } = options;
   
-  // Get the appropriate store based on type
   const wellStore = storeType === 'well' ? useWellStore() : null;
   const seismicStore = storeType === 'seismic' ? useSeismicStore() : null;
   
@@ -27,7 +22,6 @@ export function useFileData(options: FileDataOptions = {}) {
     return filename.split('.').pop()?.toLowerCase() || '';
   };
 
-  // Abstract method to get metadatas based on store type
   const getMetadatas = () => {
     if (storeType === 'well' && wellStore) {
       return wellStore.data.wellMetadatas;
@@ -37,7 +31,6 @@ export function useFileData(options: FileDataOptions = {}) {
     return [];
   };
 
-  // Abstract method to get metadatas by ID
   const getMetadatasById = (id: string) => {
     if (storeType === 'well' && wellStore) {
       return wellStore.getWellMetadatasByWellId(id);
@@ -47,7 +40,6 @@ export function useFileData(options: FileDataOptions = {}) {
     return [];
   };
 
-  // Abstract method to remove file
   const removeFileFromStore = (fileName: string) => {
     if (storeType === 'well' && wellStore) {
       wellStore.removeSelectedFile(fileName);
@@ -59,12 +51,14 @@ export function useFileData(options: FileDataOptions = {}) {
   const initializeFileData = () => {
     const newMap = new Map<string, ExtendedFileData>();
     const metadatas = getMetadatas();
+
+    console.log("storeType ", storeType);
+    console.log("metadatas ", metadatas);
     
     metadatas.forEach((file, index) => {
       const fileId = file.id || `file-${index}-${Date.now()}`;
       const fileName = file.name || 'unknown';
       
-      // Base file data that's common to both
       const baseFileData: ExtendedFileData = {
         id: fileId,
         name: fileName,
@@ -79,11 +73,8 @@ export function useFileData(options: FileDataOptions = {}) {
         fileFormat: file.fileFormat || getFileExtension(fileName).toUpperCase(),
         createdFor: file.createdFor || '',
         createdDate: file.createdDate || '',
-        // For well data, use wellId; for seismic data, use lineId
-        wellId: storeType === 'well' ? ((file as any).wellId || '') : ((file as any).lineId || ''),
       };
 
-      // Add DataLoading specific fields (only for well data as seismic doesn't have depth fields)
       if (options.includeLoadingFields && storeType === 'well') {
         Object.assign(baseFileData, {
           topDepth: (file as any).topDepth || 0,
@@ -93,7 +84,20 @@ export function useFileData(options: FileDataOptions = {}) {
         });
       }
 
-      // Add DataQC specific fields (only for well data as seismic doesn't have depth fields)
+      // Add lineId initialization for seismic files
+      if (storeType === 'seismic') {
+        Object.assign(baseFileData, {
+          lineId: (file as any).lineId || '',
+        });
+      }
+
+      if (storeType === 'well') {
+        Object.assign(baseFileData, {
+          wellId: (file as any).wellId || '',
+          wellName: (file as any).wellName || '',
+        });
+      }
+
       if (options.includeQCFields && storeType === 'well') {
         Object.assign(baseFileData, {
           selected: false,
@@ -103,11 +107,11 @@ export function useFileData(options: FileDataOptions = {}) {
           publication: 'All',
           topDepth: (file as any).topDepth,
           topDepthUoM: (file as any).topDepthUoM,
-          stopDepth: (file as any).baseDepth, // Note: QC uses stopDepth instead of baseDepth
+          stopDepth: (file as any).baseDepth,
           baseDepthUoM: (file as any).baseDepthUoM,
         });
+        
       } else if (options.includeQCFields && storeType === 'seismic') {
-        // For seismic data, add QC fields without depth-related properties
         Object.assign(baseFileData, {
           selected: false,
           targetEntity: 'SEISMIC FILE',
@@ -116,6 +120,8 @@ export function useFileData(options: FileDataOptions = {}) {
           publication: 'All',
         });
       }
+
+      console.log("baseFileData ", baseFileData);
 
       newMap.set(fileId, baseFileData);
     });

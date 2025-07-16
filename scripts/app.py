@@ -102,6 +102,7 @@ def serve_manual_segy_read():
         }
     }
     """
+    
     if request.method == 'GET':
         # Handle GET request with query parameters
         file_path = request.args.get('file_path', DEFAULT_SEGY_FILE)
